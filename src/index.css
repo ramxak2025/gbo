@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+@theme {
+  --color-dark-900: #050505;
+  --color-dark-800: #09090b;
+  --color-dark-700: #111113;
+  --color-dark-600: #1a1a1f;
+  --color-dark-500: #27272a;
+  --color-accent: #dc2626;
+  --color-accent-dark: #b91c1c;
+  --color-accent-light: #ef4444;
+  --color-glass-dark: rgba(255, 255, 255, 0.05);
+  --color-glass-border-dark: rgba(255, 255, 255, 0.1);
+  --color-glass-light: rgba(0, 0, 0, 0.03);
+  --color-glass-border-light: rgba(0, 0, 0, 0.08);
+  --radius-squircle: 24px;
+  --radius-squircle-lg: 32px;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+html {
+  overflow: hidden;
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
+input, select, textarea {
+  font-size: 16px !important;
+}
+
+.slide-in {
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.25s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.press-scale {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.press-scale:active {
+  transform: scale(0.95);
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

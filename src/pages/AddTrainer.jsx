@@ -1,0 +1,92 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useData } from '../context/DataContext'
+import { useTheme } from '../context/ThemeContext'
+import Layout from '../components/Layout'
+import PageHeader from '../components/PageHeader'
+
+export default function AddTrainer() {
+  const navigate = useNavigate()
+  const { addTrainer } = useData()
+  const { dark } = useTheme()
+
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    password: 'trainer123',
+    phone: '',
+    clubName: '',
+  })
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    if (!form.name.trim() || !form.email.trim()) return
+    addTrainer({
+      name: form.name.trim(),
+      email: form.email.trim(),
+      password: form.password,
+      phone: form.phone.trim(),
+      clubName: form.clubName.trim(),
+      avatar: null,
+    })
+    navigate(-1)
+  }
+
+  const inputCls = `
+    w-full px-4 py-3 rounded-[16px] text-base outline-none
+    ${dark
+      ? 'bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-accent'
+      : 'bg-black/[0.03] border border-black/[0.08] text-gray-900 placeholder-gray-400 focus:border-accent'
+    }
+  `
+
+  return (
+    <Layout>
+      <PageHeader title="Новый тренер" back />
+      <div className="px-4 slide-in">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input
+            type="text"
+            placeholder="ФИО *"
+            value={form.name}
+            onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+            className={inputCls}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Название клуба"
+            value={form.clubName}
+            onChange={e => setForm(f => ({ ...f, clubName: e.target.value }))}
+            className={inputCls}
+          />
+          <input
+            type="email"
+            placeholder="Email *"
+            value={form.email}
+            onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+            className={inputCls}
+            required
+          />
+          <input
+            type="tel"
+            placeholder="Телефон"
+            value={form.phone}
+            onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+            className={inputCls}
+          />
+          <input
+            type="text"
+            placeholder="Пароль"
+            value={form.password}
+            onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+            className={inputCls}
+          />
+          <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale mt-4">
+            Добавить тренера
+          </button>
+        </form>
+      </div>
+    </Layout>
+  )
+}
