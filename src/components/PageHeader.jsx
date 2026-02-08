@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, Sun, Moon } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
 
-export default function PageHeader({ title, back, children }) {
+export default function PageHeader({ title, back, logo, children }) {
   const { dark, toggle } = useTheme()
   const navigate = useNavigate()
 
@@ -16,6 +16,9 @@ export default function PageHeader({ title, back, children }) {
           >
             <ChevronLeft size={24} />
           </button>
+        )}
+        {logo && (
+          <img src="/icon.svg" alt="iBorcuha" className="w-8 h-8 rounded-lg" />
         )}
         <h1 className="text-lg font-bold uppercase italic truncate">{title}</h1>
       </div>

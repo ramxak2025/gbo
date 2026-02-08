@@ -61,6 +61,11 @@ export default function Login() {
       <div className="flex-1 flex flex-col items-center justify-center px-6 pb-12">
         <div className="slide-in w-full max-w-sm">
           <div className="text-center mb-8">
+            <img
+              src="/icon.svg"
+              alt="iBorcuha"
+              className="w-24 h-24 mx-auto rounded-[20px] shadow-lg shadow-black/30 mb-4"
+            />
             <h1 className="text-4xl font-black italic tracking-tight">
               i<span className="text-accent">Borcuha</span>
             </h1>

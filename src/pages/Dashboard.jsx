@@ -35,7 +35,7 @@ function SuperAdminDash({ data, dark, navigate }) {
 
   return (
     <Layout>
-      <PageHeader title="iBorcuha" />
+      <PageHeader title="iBorcuha" logo />
       <div className="px-4 space-y-4 slide-in">
         <div className="grid grid-cols-2 gap-3">
           <GlassCard>
@@ -107,7 +107,7 @@ function TrainerDash({ auth, data, dark, navigate }) {
 
   return (
     <Layout>
-      <PageHeader title={auth.user?.clubName || 'Мой клуб'} />
+      <PageHeader title={auth.user?.clubName || 'Мой клуб'} logo />
       <div className="px-4 space-y-4 slide-in">
         <div className="grid grid-cols-3 gap-2">
           <GlassCard className="text-center">
