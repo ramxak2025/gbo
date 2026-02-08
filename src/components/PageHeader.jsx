@@ -32,7 +32,7 @@ export default function PageHeader({ title, back, logo, gradient, children }) {
           </button>
         )}
         {logo && (
-          <img src="/icon.svg" alt="iBorcuha" className="w-8 h-8 rounded-lg" />
+          <img src="/logo.png" alt="iBorcuha" className="w-8 h-8 rounded-lg" />
         )}
         {renderTitle()}
       </div>

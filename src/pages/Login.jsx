@@ -89,7 +89,7 @@ export default function Login() {
           {/* Logo & Branding */}
           <div className="text-center mb-10">
             <img
-              src="/icon.svg"
+              src="/logo.png"
               alt="iBorcuha"
               className="w-28 h-28 mx-auto rounded-[28px] shadow-2xl shadow-black/50 mb-6"
             />

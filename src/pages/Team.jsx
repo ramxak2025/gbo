@@ -35,6 +35,28 @@ function StatusBadge({ status }) {
   )
 }
 
+function StudentCard({ person, dark, onClick, showClub }) {
+  const expired = isExpired(person.subscriptionExpiresAt)
+  return (
+    <GlassCard onClick={onClick} className="flex items-center gap-3">
+      <Avatar name={person.name} src={person.avatar} size={44} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-sm truncate">{person.name}</span>
+          {person.status && <StatusBadge status={person.status} />}
+        </div>
+        <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+          {showClub || (person.belt || '—')}
+        </div>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        {person.belt && <div className="w-4 h-2 rounded-full border border-white/20" style={{ backgroundColor: BELT_COLORS[person.belt] || '#888' }} />}
+        <div className={`w-2.5 h-2.5 rounded-full ${expired ? 'bg-red-500' : 'bg-green-500'}`} />
+      </div>
+    </GlassCard>
+  )
+}
+
 export default function Team() {
   const { auth } = useAuth()
   const { data } = useData()
@@ -48,11 +70,19 @@ export default function Team() {
   const isAdmin = auth.role === 'superadmin'
   const trainers = data.users.filter(u => u.role === 'trainer')
   const students = isAdmin ? data.students : data.students.filter(s => s.trainerId === auth.userId)
+  const myGroups = isAdmin ? data.groups : data.groups.filter(g => g.trainerId === auth.userId)
 
   const filteredTrainers = trainers.filter(t =>
     t.name.toLowerCase().includes(search.toLowerCase()) || t.clubName?.toLowerCase().includes(search.toLowerCase())
   )
   const filteredStudents = students.filter(s => s.name.toLowerCase().includes(search.toLowerCase()))
+
+  // Group students by group for trainer view
+  const studentsByGroup = myGroups.map(g => ({
+    group: g,
+    students: filteredStudents.filter(s => s.groupId === g.id),
+  }))
+  const ungrouped = filteredStudents.filter(s => !s.groupId || !myGroups.find(g => g.id === s.groupId))
 
   const inputCls = `w-full pl-10 pr-4 py-2.5 rounded-[16px] text-sm outline-none ${dark ? 'bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-accent' : 'bg-black/[0.03] border border-black/[0.08] text-gray-900 placeholder-gray-400 focus:border-accent'}`
 
@@ -74,10 +104,11 @@ export default function Team() {
             ))}
           </div>
         )}
-        <div className="space-y-2">
-          {(isAdmin && tab === 'trainers' ? filteredTrainers : filteredStudents).map(person => {
-            const isTrainer = tab === 'trainers' && isAdmin
-            if (isTrainer) {
+
+        {/* Admin trainers list */}
+        {isAdmin && tab === 'trainers' && (
+          <div className="space-y-2">
+            {filteredTrainers.map(person => {
               const count = data.students.filter(s => s.trainerId === person.id).length
               return (
                 <GlassCard key={person.id} onClick={() => navigate(`/trainer/${person.id}`)} className="flex items-center gap-3">
@@ -89,32 +120,60 @@ export default function Team() {
                   <span className={`text-xs ${dark ? 'text-white/30' : 'text-gray-400'}`}>{count} чел.</span>
                 </GlassCard>
               )
-            }
-            const expired = isExpired(person.subscriptionExpiresAt)
-            const trainerName = isAdmin ? data.users.find(u => u.id === person.trainerId)?.clubName : null
-            return (
-              <GlassCard key={person.id} onClick={() => navigate(`/student/${person.id}`)} className="flex items-center gap-3">
-                <Avatar name={person.name} src={person.avatar} size={44} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm truncate">{person.name}</span>
-                    {person.status && <StatusBadge status={person.status} />}
+            })}
+            {filteredTrainers.length === 0 && (
+              <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-400'}`}>{search ? 'Никого не найдено' : 'Список пуст'}</p>
+            )}
+          </div>
+        )}
+
+        {/* Admin students list (flat) */}
+        {isAdmin && tab === 'students' && (
+          <div className="space-y-2">
+            {filteredStudents.map(person => {
+              const trainerName = data.users.find(u => u.id === person.trainerId)?.clubName
+              return <StudentCard key={person.id} person={person} dark={dark} onClick={() => navigate(`/student/${person.id}`)} showClub={trainerName} />
+            })}
+            {filteredStudents.length === 0 && (
+              <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-400'}`}>{search ? 'Никого не найдено' : 'Список пуст'}</p>
+            )}
+          </div>
+        )}
+
+        {/* Trainer students — grouped by group */}
+        {!isAdmin && (
+          <div className="space-y-5">
+            {studentsByGroup.map(({ group, students: groupStudents }) => {
+              if (groupStudents.length === 0) return null
+              return (
+                <div key={group.id}>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className={`text-xs uppercase font-bold ${dark ? 'text-white/50' : 'text-gray-500'}`}>{group.name}</h3>
+                    <span className={`text-[10px] font-medium ${dark ? 'text-white/30' : 'text-gray-400'}`}>{group.schedule}</span>
                   </div>
-                  <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>
-                    {isAdmin ? trainerName : (person.belt || '—')}
+                  <div className="space-y-2">
+                    {groupStudents.map(person => (
+                      <StudentCard key={person.id} person={person} dark={dark} onClick={() => navigate(`/student/${person.id}`)} />
+                    ))}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {person.belt && <div className="w-4 h-2 rounded-full border border-white/20" style={{ backgroundColor: BELT_COLORS[person.belt] || '#888' }} />}
-                  <div className={`w-2.5 h-2.5 rounded-full ${expired ? 'bg-red-500' : 'bg-green-500'}`} />
+              )
+            })}
+            {ungrouped.length > 0 && (
+              <div>
+                <h3 className={`text-xs uppercase font-bold mb-2 ${dark ? 'text-white/50' : 'text-gray-500'}`}>Без группы</h3>
+                <div className="space-y-2">
+                  {ungrouped.map(person => (
+                    <StudentCard key={person.id} person={person} dark={dark} onClick={() => navigate(`/student/${person.id}`)} />
+                  ))}
                 </div>
-              </GlassCard>
-            )
-          })}
-          {(isAdmin && tab === 'trainers' ? filteredTrainers : filteredStudents).length === 0 && (
-            <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-400'}`}>{search ? 'Никого не найдено' : 'Список пуст'}</p>
-          )}
-        </div>
+              </div>
+            )}
+            {filteredStudents.length === 0 && (
+              <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-400'}`}>{search ? 'Никого не найдено' : 'Нет спортсменов'}</p>
+            )}
+          </div>
+        )}
       </div>
     </Layout>
   )
@@ -147,23 +206,20 @@ function StudentTeam({ auth, data, dark, navigate, search, setSearch }) {
           <input type="text" placeholder="Поиск..." value={search} onChange={e => setSearch(e.target.value)} className={inputCls} />
         </div>
         <div className="space-y-2">
-          {filtered.map(s => {
-            const cfg = s.status ? STATUS_CONFIG[s.status] : null
-            return (
-              <GlassCard key={s.id} onClick={() => setSelected(s)} className="flex items-center gap-3">
-                <Avatar name={s.name} src={s.avatar} size={48} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm truncate">{s.name}</span>
-                  </div>
-                  <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>{s.belt || '—'}</div>
+          {filtered.map(s => (
+            <GlassCard key={s.id} onClick={() => setSelected(s)} className="flex items-center gap-3">
+              <Avatar name={s.name} src={s.avatar} size={48} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-sm truncate">{s.name}</span>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {s.status && <StatusBadge status={s.status} />}
-                </div>
-              </GlassCard>
-            )
-          })}
+                <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>{s.belt || '—'}</div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {s.status && <StatusBadge status={s.status} />}
+              </div>
+            </GlassCard>
+          ))}
           {filtered.length === 0 && (
             <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-400'}`}>Нет одногруппников</p>
           )}
@@ -178,7 +234,6 @@ function StudentTeam({ auth, data, dark, navigate, search, setSearch }) {
             onClick={e => e.stopPropagation()}
             className={`relative w-full max-w-xs rounded-[28px] overflow-hidden slide-in ${dark ? 'bg-dark-800' : 'bg-white'}`}
           >
-            {/* Large avatar */}
             <div className="flex justify-center pt-6 pb-4">
               <Avatar name={selected.name} src={selected.avatar} size={120} className="shadow-xl" />
             </div>

@@ -53,7 +53,7 @@ export default function Author() {
         {/* Logo & branding */}
         <div className="flex flex-col items-center text-center pt-4">
           <img
-            src="/icon.svg"
+            src="/logo.png"
             alt="iBorcuha"
             className="w-24 h-24 rounded-[22px] shadow-xl shadow-black/40 mb-4"
           />

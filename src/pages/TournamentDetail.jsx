@@ -137,15 +137,7 @@ export default function TournamentDetail() {
           </GlassCard>
         </div>
 
-        {tournament.description && (
-          <GlassCard>
-            <h3 className={`text-xs uppercase font-bold mb-2 ${dark ? 'text-white/40' : 'text-gray-400'}`}>Описание</h3>
-            <p className={`text-sm leading-relaxed whitespace-pre-line ${dark ? 'text-white/70' : 'text-gray-600'}`}>
-              {tournament.description}
-            </p>
-          </GlassCard>
-        )}
-
+        {/* Student registration button — right after location */}
         {auth.role === 'student' && !isPast && (
           <button
             onClick={toggleRegistration}
@@ -159,6 +151,7 @@ export default function TournamentDetail() {
           </button>
         )}
 
+        {/* Trainer sees registered students — right after location */}
         {auth.role === 'trainer' && trainerRegs.length > 0 && (
           <div>
             <h3 className={`text-xs uppercase font-bold mb-2 flex items-center gap-1 ${dark ? 'text-white/40' : 'text-gray-400'}`}>
@@ -183,10 +176,21 @@ export default function TournamentDetail() {
           </div>
         )}
 
+        {/* Total registrations count */}
         {regs.length > 0 && (
           <GlassCard className="flex items-center gap-2">
             <Users size={16} className="text-orange-400" />
             <span className="text-sm font-semibold">{regs.length} чел. хотят участвовать</span>
+          </GlassCard>
+        )}
+
+        {/* Description — below registration */}
+        {tournament.description && (
+          <GlassCard>
+            <h3 className={`text-xs uppercase font-bold mb-2 ${dark ? 'text-white/40' : 'text-gray-400'}`}>Описание</h3>
+            <p className={`text-sm leading-relaxed whitespace-pre-line ${dark ? 'text-white/70' : 'text-gray-600'}`}>
+              {tournament.description}
+            </p>
           </GlassCard>
         )}
       </div>
