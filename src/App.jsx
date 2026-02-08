@@ -1,9 +1,7 @@
-import { useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from './context/ThemeContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import { DataProvider } from './context/DataContext'
-import { loadData } from './utils/storage'
+import { DataProvider, useData } from './context/DataContext'
 
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -22,8 +20,9 @@ import Author from './pages/Author'
 
 function AppRoutes() {
   const { auth } = useAuth()
+  const { reload } = useData()
 
-  if (!auth) return <Login />
+  if (!auth) return <Login onLogin={reload} />
 
   return (
     <Routes>
@@ -46,12 +45,10 @@ function AppRoutes() {
 }
 
 export default function App() {
-  const [data, setData] = useState(() => loadData())
-
   return (
     <ThemeProvider>
-      <DataProvider initialData={data} onDataChange={setData}>
-        <AuthProvider data={data}>
+      <DataProvider>
+        <AuthProvider>
           <BrowserRouter>
             <AppRoutes />
           </BrowserRouter>

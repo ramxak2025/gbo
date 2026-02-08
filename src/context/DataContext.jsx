@@ -1,122 +1,179 @@
-import { createContext, useContext, useState, useCallback } from 'react'
-import { loadData, saveData, resetData as resetStorage, generateId } from '../utils/storage'
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { api } from '../utils/api'
 
 const DataContext = createContext()
 
-export function DataProvider({ children, initialData, onDataChange }) {
-  const [data, setData] = useState(initialData)
+const EMPTY_DATA = {
+  users: [], groups: [], students: [], transactions: [],
+  tournaments: [], news: [], tournamentRegistrations: [], authorInfo: {},
+}
 
-  const update = useCallback((updater) => {
-    setData(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater
-      saveData(next)
-      if (onDataChange) onDataChange(next)
-      return next
-    })
-  }, [onDataChange])
+export function DataProvider({ children }) {
+  const [data, setData] = useState(EMPTY_DATA)
+  const [loading, setLoading] = useState(true)
 
-  const addStudent = useCallback((student) => {
-    const id = generateId()
-    const newStudent = { ...student, id, createdAt: new Date().toISOString() }
-    update(d => ({ ...d, students: [...d.students, newStudent] }))
-    return id
-  }, [update])
+  const reload = useCallback(async () => {
+    try {
+      const d = await api.getData()
+      setData(d)
+    } catch {
+      // not logged in or error
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-  const updateStudent = useCallback((id, changes) => {
-    update(d => ({
+  useEffect(() => {
+    const token = localStorage.getItem('iborcuha_token')
+    if (token) reload()
+    else setLoading(false)
+  }, [reload])
+
+  // Raw update: for tournament registrations and author info
+  const update = useCallback(async (updater) => {
+    const next = typeof updater === 'function' ? updater(data) : updater
+    // Detect what changed and call appropriate API
+    // Tournament registrations
+    if (next.tournamentRegistrations !== data.tournamentRegistrations) {
+      const oldRegs = data.tournamentRegistrations
+      const newRegs = next.tournamentRegistrations
+      // Find added
+      for (const nr of newRegs) {
+        if (!oldRegs.find(r => r.tournamentId === nr.tournamentId && r.studentId === nr.studentId)) {
+          await api.registerTournament(nr.tournamentId, nr.studentId)
+        }
+      }
+      // Find removed
+      for (const or of oldRegs) {
+        if (!newRegs.find(r => r.tournamentId === or.tournamentId && r.studentId === or.studentId)) {
+          await api.unregisterTournament(or.tournamentId, or.studentId)
+        }
+      }
+    }
+    // Author info
+    if (next.authorInfo !== data.authorInfo) {
+      await api.updateAuthor(next.authorInfo)
+    }
+    setData(next)
+  }, [data])
+
+  const addStudent = useCallback(async (student) => {
+    const s = await api.addStudent(student)
+    setData(d => ({ ...d, students: [...d.students, s] }))
+    return s.id
+  }, [])
+
+  const updateStudent = useCallback(async (id, changes) => {
+    await api.updateStudent(id, changes)
+    setData(d => ({
       ...d,
       students: d.students.map(s => s.id === id ? { ...s, ...changes } : s)
     }))
-  }, [update])
+  }, [])
 
-  const deleteStudent = useCallback((id) => {
-    update(d => ({
+  const deleteStudent = useCallback(async (id) => {
+    await api.deleteStudent(id)
+    setData(d => ({
       ...d,
       students: d.students.filter(s => s.id !== id),
-      transactions: d.transactions.filter(t => t.studentId !== id)
+      transactions: d.transactions.filter(t => t.studentId !== id),
+      tournamentRegistrations: d.tournamentRegistrations.filter(r => r.studentId !== id),
     }))
-  }, [update])
+  }, [])
 
-  const addGroup = useCallback((group) => {
-    const id = generateId()
-    update(d => ({ ...d, groups: [...d.groups, { ...group, id }] }))
-    return id
-  }, [update])
+  const addGroup = useCallback(async (group) => {
+    const g = await api.addGroup(group)
+    setData(d => ({ ...d, groups: [...d.groups, g] }))
+    return g.id
+  }, [])
 
-  const updateGroup = useCallback((id, changes) => {
-    update(d => ({
+  const updateGroup = useCallback(async (id, changes) => {
+    await api.updateGroup(id, changes)
+    setData(d => ({
       ...d,
       groups: d.groups.map(g => g.id === id ? { ...g, ...changes } : g)
     }))
-  }, [update])
+  }, [])
 
-  const deleteGroup = useCallback((id) => {
-    update(d => ({
+  const deleteGroup = useCallback(async (id) => {
+    await api.deleteGroup(id)
+    setData(d => ({
       ...d,
       groups: d.groups.filter(g => g.id !== id),
       students: d.students.map(s => s.groupId === id ? { ...s, groupId: null } : s)
     }))
-  }, [update])
+  }, [])
 
-  const addTransaction = useCallback((tx) => {
-    const id = generateId()
-    update(d => ({ ...d, transactions: [...d.transactions, { ...tx, id, date: new Date().toISOString() }] }))
-    return id
-  }, [update])
+  const addTransaction = useCallback(async (tx) => {
+    const t = await api.addTransaction(tx)
+    setData(d => ({ ...d, transactions: [...d.transactions, t] }))
+    return t.id
+  }, [])
 
-  const updateTransaction = useCallback((id, changes) => {
-    update(d => ({
+  const updateTransaction = useCallback(async (id, changes) => {
+    await api.updateTransaction(id, changes)
+    setData(d => ({
       ...d,
       transactions: d.transactions.map(t => t.id === id ? { ...t, ...changes } : t)
     }))
-  }, [update])
+  }, [])
 
-  const deleteTransaction = useCallback((id) => {
-    update(d => ({ ...d, transactions: d.transactions.filter(t => t.id !== id) }))
-  }, [update])
+  const deleteTransaction = useCallback(async (id) => {
+    await api.deleteTransaction(id)
+    setData(d => ({ ...d, transactions: d.transactions.filter(t => t.id !== id) }))
+  }, [])
 
-  const addTournament = useCallback((tournament) => {
-    const id = generateId()
-    update(d => ({ ...d, tournaments: [...d.tournaments, { ...tournament, id }] }))
-    return id
-  }, [update])
+  const addTournament = useCallback(async (tournament) => {
+    const t = await api.addTournament(tournament)
+    setData(d => ({ ...d, tournaments: [...d.tournaments, t] }))
+    return t.id
+  }, [])
 
-  const updateTournament = useCallback((id, changes) => {
-    update(d => ({
+  const updateTournament = useCallback(async (id, changes) => {
+    await api.updateTournament(id, changes)
+    setData(d => ({
       ...d,
       tournaments: d.tournaments.map(t => t.id === id ? { ...t, ...changes } : t)
     }))
-  }, [update])
+  }, [])
 
-  const deleteTournament = useCallback((id) => {
-    update(d => ({ ...d, tournaments: d.tournaments.filter(t => t.id !== id) }))
-  }, [update])
+  const deleteTournament = useCallback(async (id) => {
+    await api.deleteTournament(id)
+    setData(d => ({
+      ...d,
+      tournaments: d.tournaments.filter(t => t.id !== id),
+      tournamentRegistrations: d.tournamentRegistrations.filter(r => r.tournamentId !== id),
+    }))
+  }, [])
 
-  const addNews = useCallback((news) => {
-    const id = generateId()
-    update(d => ({ ...d, news: [...d.news, { ...news, id, date: new Date().toISOString() }] }))
-    return id
-  }, [update])
+  const addNews = useCallback(async (news) => {
+    const n = await api.addNews(news)
+    setData(d => ({ ...d, news: [...d.news, n] }))
+    return n.id
+  }, [])
 
-  const deleteNews = useCallback((id) => {
-    update(d => ({ ...d, news: d.news.filter(n => n.id !== id) }))
-  }, [update])
+  const deleteNews = useCallback(async (id) => {
+    await api.deleteNews(id)
+    setData(d => ({ ...d, news: d.news.filter(n => n.id !== id) }))
+  }, [])
 
-  const addTrainer = useCallback((trainer) => {
-    const id = generateId()
-    update(d => ({ ...d, users: [...d.users, { ...trainer, id, role: 'trainer' }] }))
-    return id
-  }, [update])
+  const addTrainer = useCallback(async (trainer) => {
+    const t = await api.addTrainer(trainer)
+    setData(d => ({ ...d, users: [...d.users, { ...t, role: 'trainer' }] }))
+    return t.id
+  }, [])
 
-  const updateTrainer = useCallback((id, changes) => {
-    update(d => ({
+  const updateTrainer = useCallback(async (id, changes) => {
+    await api.updateTrainer(id, changes)
+    setData(d => ({
       ...d,
       users: d.users.map(u => u.id === id ? { ...u, ...changes } : u)
     }))
-  }, [update])
+  }, [])
 
-  const deleteTrainer = useCallback((id) => {
-    update(d => ({
+  const deleteTrainer = useCallback(async (id) => {
+    await api.deleteTrainer(id)
+    setData(d => ({
       ...d,
       users: d.users.filter(u => u.id !== id),
       groups: d.groups.filter(g => g.trainerId !== id),
@@ -124,17 +181,15 @@ export function DataProvider({ children, initialData, onDataChange }) {
       transactions: d.transactions.filter(t => t.trainerId !== id),
       news: d.news.filter(n => n.trainerId !== id),
     }))
-  }, [update])
+  }, [])
 
   const resetAll = useCallback(() => {
-    const fresh = resetStorage()
-    setData(fresh)
-    if (onDataChange) onDataChange(fresh)
-  }, [onDataChange])
+    // Not implemented for DB version — would need admin API
+  }, [])
 
   return (
     <DataContext.Provider value={{
-      data, update, resetAll,
+      data, loading, reload, update, resetAll,
       addStudent, updateStudent, deleteStudent,
       addGroup, updateGroup, deleteGroup,
       addTransaction, updateTransaction, deleteTransaction,

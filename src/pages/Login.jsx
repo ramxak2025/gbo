@@ -1,32 +1,19 @@
 import { useState } from 'react'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
-import { useData } from '../context/DataContext'
 import { Sun, Moon, Eye, EyeOff, MessageCircle, Phone } from 'lucide-react'
 
-function cleanPhone(phone) {
-  return (phone || '').replace(/[^\d+]/g, '')
-}
-
-function phonesMatch(a, b) {
-  const da = (a || '').replace(/\D/g, '')
-  const db = (b || '').replace(/\D/g, '')
-  if (!da || !db) return false
-  // compare last 10 digits (ignore country code variations)
-  return da.slice(-10) === db.slice(-10)
-}
-
-export default function Login() {
+export default function Login({ onLogin }) {
   const { dark, toggle } = useTheme()
   const { login } = useAuth()
-  const { data } = useData()
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [error, setError] = useState('')
-  const [errorType, setErrorType] = useState(null) // 'student' | 'trainer' | null
+  const [errorType, setErrorType] = useState(null)
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setErrorType(null)
@@ -37,34 +24,27 @@ export default function Login() {
       return
     }
 
-    // 1. Check users (admin/trainer) by phone
-    const user = data.users.find(u => phonesMatch(u.phone, trimmedPhone) && u.password === password)
-    if (user) {
-      login(user.id, user.role)
-      return
-    }
-
-    // 2. Check students by phone
-    const student = data.students.find(s => phonesMatch(s.phone, trimmedPhone) && s.password === password)
-    if (student) {
-      const trainer = data.users.find(u => u.id === student.trainerId)
-      if (!trainer) {
-        setError('Тренер не найден')
+    setLoading(true)
+    try {
+      await login(trimmedPhone, password)
+      if (onLogin) onLogin()
+    } catch (err) {
+      // Parse error from API
+      try {
+        const resp = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: trimmedPhone, password }),
+        })
+        const data = await resp.json()
+        setError(data.error || 'Ошибка входа')
+        setErrorType(data.errorType || 'student')
+      } catch {
+        setError(err.message || 'Ошибка входа')
         setErrorType('student')
-        return
       }
-      login(trainer.id, 'student', student.id)
-      return
-    }
-
-    // 3. Determine error type — check if phone exists in any list
-    const isTrainerPhone = data.users.find(u => phonesMatch(u.phone, trimmedPhone))
-    if (isTrainerPhone) {
-      setError('Неверный пароль')
-      setErrorType('trainer')
-    } else {
-      setError('Неверный номер или пароль')
-      setErrorType('student')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -169,9 +149,10 @@ export default function Login() {
 
             <button
               type="submit"
-              className="w-full py-3.5 rounded-[16px] bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-base press-scale hover:opacity-90 transition-opacity shadow-lg shadow-purple-600/20"
+              disabled={loading}
+              className="w-full py-3.5 rounded-[16px] bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-base press-scale hover:opacity-90 transition-opacity shadow-lg shadow-purple-600/20 disabled:opacity-50"
             >
-              Войти
+              {loading ? 'Вход...' : 'Войти'}
             </button>
           </form>
 
