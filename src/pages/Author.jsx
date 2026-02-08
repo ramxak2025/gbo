@@ -55,7 +55,7 @@ export default function Author() {
           <img
             src="/icon.svg"
             alt="iBorcuha"
-            className="w-20 h-20 rounded-[18px] shadow-lg shadow-black/30 mb-4"
+            className="w-24 h-24 rounded-[22px] shadow-xl shadow-black/40 mb-4"
           />
           <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${dark ? 'bg-accent/15 text-accent' : 'bg-accent/10 text-accent'}`}>
             <Code size={12} />
@@ -136,7 +136,7 @@ export default function Author() {
         {/* Branding footer */}
         <div className="text-center pt-4 pb-2">
           <p className={`text-xs ${dark ? 'text-white/20' : 'text-gray-300'}`}>
-            iBorcuha — Web-Kultura Edition
+            <span>i</span><span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">Borcuha</span> — Web-Kultura Edition
           </p>
         </div>
       </div>

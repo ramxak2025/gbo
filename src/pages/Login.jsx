@@ -2,40 +2,51 @@ import { useState } from 'react'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
-import { Sun, Moon, Eye, EyeOff, MessageCircle } from 'lucide-react'
+import { Sun, Moon, Eye, EyeOff, MessageCircle, Phone } from 'lucide-react'
+
+function cleanPhone(phone) {
+  return (phone || '').replace(/[^\d+]/g, '')
+}
+
+function phonesMatch(a, b) {
+  const da = (a || '').replace(/\D/g, '')
+  const db = (b || '').replace(/\D/g, '')
+  if (!da || !db) return false
+  // compare last 10 digits (ignore country code variations)
+  return da.slice(-10) === db.slice(-10)
+}
 
 export default function Login() {
   const { dark, toggle } = useTheme()
   const { login } = useAuth()
   const { data } = useData()
-  const [mode, setMode] = useState('student')
-  const [email, setEmail] = useState('')
-  const [studentLogin, setStudentLogin] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [error, setError] = useState('')
-  const [errorType, setErrorType] = useState(null)
+  const [errorType, setErrorType] = useState(null) // 'student' | 'trainer' | null
 
   const handleSubmit = (e) => {
     e.preventDefault()
     setError('')
     setErrorType(null)
 
-    if (mode === 'trainer') {
-      const user = data.users.find(u => u.email === email && u.password === password)
-      if (!user) {
-        setError('Неверный email или пароль')
-        setErrorType('trainer')
-        return
-      }
+    const trimmedPhone = phone.trim()
+    if (!trimmedPhone || !password) {
+      setError('Введите номер телефона и пароль')
+      return
+    }
+
+    // 1. Check users (admin/trainer) by phone
+    const user = data.users.find(u => phonesMatch(u.phone, trimmedPhone) && u.password === password)
+    if (user) {
       login(user.id, user.role)
-    } else {
-      const student = data.students.find(s => s.login === studentLogin && s.password === password)
-      if (!student) {
-        setError('Неверный логин или пароль')
-        setErrorType('student')
-        return
-      }
+      return
+    }
+
+    // 2. Check students by phone
+    const student = data.students.find(s => phonesMatch(s.phone, trimmedPhone) && s.password === password)
+    if (student) {
       const trainer = data.users.find(u => u.id === student.trainerId)
       if (!trainer) {
         setError('Тренер не найден')
@@ -43,6 +54,17 @@ export default function Login() {
         return
       }
       login(trainer.id, 'student', student.id)
+      return
+    }
+
+    // 3. Determine error type — check if phone exists in any list
+    const isTrainerPhone = data.users.find(u => phonesMatch(u.phone, trimmedPhone))
+    if (isTrainerPhone) {
+      setError('Неверный пароль')
+      setErrorType('trainer')
+    } else {
+      setError('Неверный номер или пароль')
+      setErrorType('student')
     }
   }
 
@@ -64,140 +86,99 @@ export default function Login() {
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 pb-8">
         <div className="slide-in w-full max-w-sm">
-          <div className="text-center mb-8">
+          {/* Logo & Branding */}
+          <div className="text-center mb-10">
             <img
               src="/icon.svg"
               alt="iBorcuha"
-              className="w-28 h-28 mx-auto rounded-[24px] shadow-2xl shadow-black/40 mb-5"
+              className="w-28 h-28 mx-auto rounded-[28px] shadow-2xl shadow-black/50 mb-6"
             />
-            <h1 className="text-4xl font-black italic tracking-tight">
-              i<span className="text-accent">Borcuha</span>
+            <h1 className="text-3xl font-black tracking-tight">
+              <span className={`${dark ? 'text-white/70' : 'text-gray-500'}`}>i</span>
+              <span className="bg-gradient-to-r from-purple-400 via-violet-500 to-indigo-500 bg-clip-text text-transparent">
+                Borcuha
+              </span>
             </h1>
-            <p className={`text-sm mt-1 ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+            <p className={`text-xs mt-1.5 font-medium tracking-widest uppercase ${dark ? 'text-white/25' : 'text-gray-300'}`}>
               Web-Kultura Edition
             </p>
           </div>
 
-          {mode === 'student' ? (
-            <>
-              <form onSubmit={handleSubmit} className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Логин"
-                  value={studentLogin}
-                  onChange={e => setStudentLogin(e.target.value)}
-                  className={inputCls}
-                  autoComplete="username"
-                />
-                <div className="relative">
-                  <input
-                    type={showPw ? 'text' : 'password'}
-                    placeholder="Пароль"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    className={inputCls}
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPw(!showPw)}
-                    className={`absolute right-3 top-1/2 -translate-y-1/2 ${dark ? 'text-white/30' : 'text-gray-400'}`}
-                  >
-                    {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
+          {/* Unified login form */}
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div className="relative">
+              <Phone size={16} className={`absolute left-4 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-300'}`} />
+              <input
+                type="tel"
+                placeholder="Номер телефона"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                className={`${inputCls} pl-11`}
+                autoComplete="tel"
+              />
+            </div>
+            <div className="relative">
+              <input
+                type={showPw ? 'text' : 'password'}
+                placeholder="Пароль"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className={inputCls}
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPw(!showPw)}
+                className={`absolute right-3 top-1/2 -translate-y-1/2 ${dark ? 'text-white/30' : 'text-gray-400'}`}
+              >
+                {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
 
-                {error && errorType === 'student' && (
-                  <div className="text-center space-y-2 py-1">
-                    <p className="text-accent text-sm font-medium">{error}</p>
-                    <p className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>
-                      Обратитесь к своему тренеру за паролем
-                    </p>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold text-base press-scale hover:bg-accent-dark transition-colors"
-                >
-                  Войти
-                </button>
-              </form>
-
-              <div className="mt-8 text-center">
-                <button
-                  onClick={() => { setMode('trainer'); setError(''); setErrorType(null) }}
-                  className={`text-sm font-medium press-scale ${dark ? 'text-white/30 hover:text-white/50' : 'text-gray-400 hover:text-gray-600'}`}
-                >
-                  Войти как тренер
-                </button>
+            {/* Error messages */}
+            {error && errorType === 'student' && (
+              <div className="text-center space-y-2 py-1">
+                <p className="text-accent text-sm font-medium">{error}</p>
+                <p className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+                  Обратитесь к своему тренеру за паролем
+                </p>
               </div>
-            </>
-          ) : (
-            <>
-              <form onSubmit={handleSubmit} className="space-y-3">
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className={inputCls}
-                  autoComplete="email"
-                />
-                <div className="relative">
-                  <input
-                    type={showPw ? 'text' : 'password'}
-                    placeholder="Пароль"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    className={inputCls}
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPw(!showPw)}
-                    className={`absolute right-3 top-1/2 -translate-y-1/2 ${dark ? 'text-white/30' : 'text-gray-400'}`}
-                  >
-                    {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
+            )}
 
-                {error && errorType === 'trainer' && (
-                  <div className="text-center space-y-3 py-1">
-                    <p className="text-accent text-sm font-medium">{error}</p>
-                    <p className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>
-                      Обратитесь к автору проекта по номеру:
-                    </p>
-                    <a
-                      href="https://wa.me/89884444436"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[14px] bg-green-600 text-white text-sm font-bold press-scale"
-                    >
-                      <MessageCircle size={18} />
-                      8-988-444-44-36
-                    </a>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold text-base press-scale hover:bg-accent-dark transition-colors"
+            {error && errorType === 'trainer' && (
+              <div className="text-center space-y-3 py-1">
+                <p className="text-accent text-sm font-medium">{error}</p>
+                <p className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+                  Обратитесь к автору проекта по номеру:
+                </p>
+                <a
+                  href="https://wa.me/89884444436"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-[14px] bg-green-600 text-white text-sm font-bold press-scale"
                 >
-                  Войти
-                </button>
-              </form>
-
-              <div className="mt-8 text-center">
-                <button
-                  onClick={() => { setMode('student'); setError(''); setErrorType(null) }}
-                  className={`text-sm font-medium press-scale ${dark ? 'text-white/30 hover:text-white/50' : 'text-gray-400 hover:text-gray-600'}`}
-                >
-                  Войти как ученик
-                </button>
+                  <MessageCircle size={18} />
+                  8-988-444-44-36
+                </a>
               </div>
-            </>
-          )}
+            )}
+
+            {error && !errorType && (
+              <p className="text-accent text-sm font-medium text-center">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              className="w-full py-3.5 rounded-[16px] bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-base press-scale hover:opacity-90 transition-opacity shadow-lg shadow-purple-600/20"
+            >
+              Войти
+            </button>
+          </form>
+
+          {/* Footer */}
+          <div className={`mt-10 text-center text-[11px] ${dark ? 'text-white/15' : 'text-gray-300'}`}>
+            BJJ / MMA / Grappling
+          </div>
         </div>
       </div>
     </div>

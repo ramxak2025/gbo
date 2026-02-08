@@ -23,15 +23,13 @@ export default function AddStudent() {
     belt: 'Белый',
     birthDate: '',
     groupId: myGroups[0]?.id || '',
-    login: '',
     password: 'student123',
   })
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!form.name.trim()) return
+    if (!form.name.trim() || !form.phone.trim()) return
 
-    const group = myGroups.find(g => g.id === form.groupId)
     const expiresAt = new Date()
     expiresAt.setMonth(expiresAt.getMonth() + 1)
 
@@ -45,7 +43,6 @@ export default function AddStudent() {
       birthDate: form.birthDate,
       avatar: null,
       subscriptionExpiresAt: expiresAt.toISOString(),
-      login: form.login.trim() || form.name.trim().toLowerCase().split(' ')[0],
       password: form.password,
     })
     navigate(-1)
@@ -74,10 +71,11 @@ export default function AddStudent() {
           />
           <input
             type="tel"
-            placeholder="Телефон"
+            placeholder="Телефон (для входа) *"
             value={form.phone}
             onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
             className={inputCls}
+            required
           />
           <select
             value={form.groupId}
@@ -113,20 +111,13 @@ export default function AddStudent() {
           />
 
           <div className={`pt-2 ${dark ? 'border-t border-white/10' : 'border-t border-black/[0.08]'}`}>
-            <p className={`text-xs mb-2 ${dark ? 'text-white/40' : 'text-gray-400'}`}>Данные для входа ученика</p>
-            <input
-              type="text"
-              placeholder="Логин (латиницей)"
-              value={form.login}
-              onChange={e => setForm(f => ({ ...f, login: e.target.value }))}
-              className={inputCls}
-            />
+            <p className={`text-xs mb-2 ${dark ? 'text-white/40' : 'text-gray-400'}`}>Пароль для входа ученика</p>
             <input
               type="text"
               placeholder="Пароль"
               value={form.password}
               onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-              className={`${inputCls} mt-3`}
+              className={inputCls}
             />
           </div>
 

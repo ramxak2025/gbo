@@ -16,6 +16,11 @@ function isValidData(data) {
   ) return false
   if (!Array.isArray(data.tournamentRegistrations)) data.tournamentRegistrations = []
   if (!data.authorInfo) data.authorInfo = { ...seedData.authorInfo }
+  // Migrate: ensure students have password and phone (phone-based login)
+  data.students.forEach(s => {
+    if (!s.password) s.password = 'student123'
+    if (!s.phone) s.phone = ''
+  })
   return true
 }
 

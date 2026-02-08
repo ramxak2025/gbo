@@ -67,7 +67,7 @@ function SuperAdminDash({ data, dark, navigate }) {
 
   return (
     <Layout>
-      <PageHeader title="iBorcuha" logo />
+      <PageHeader title="iBorcuha" logo gradient />
       <div className="px-4 space-y-4 slide-in">
         <div className="grid grid-cols-2 gap-3">
           <GlassCard>
