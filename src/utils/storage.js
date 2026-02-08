@@ -4,16 +4,19 @@ const STORAGE_KEY = 'iborcuha_data'
 const AUTH_KEY = 'iborcuha_auth'
 
 function isValidData(data) {
-  return (
-    data &&
-    typeof data === 'object' &&
-    Array.isArray(data.users) &&
-    Array.isArray(data.groups) &&
-    Array.isArray(data.students) &&
-    Array.isArray(data.transactions) &&
-    Array.isArray(data.tournaments) &&
-    Array.isArray(data.news)
-  )
+  if (
+    !data ||
+    typeof data !== 'object' ||
+    !Array.isArray(data.users) ||
+    !Array.isArray(data.groups) ||
+    !Array.isArray(data.students) ||
+    !Array.isArray(data.transactions) ||
+    !Array.isArray(data.tournaments) ||
+    !Array.isArray(data.news)
+  ) return false
+  if (!Array.isArray(data.tournamentRegistrations)) data.tournamentRegistrations = []
+  if (!data.authorInfo) data.authorInfo = { ...seedData.authorInfo }
+  return true
 }
 
 export function loadData() {

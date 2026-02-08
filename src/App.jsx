@@ -18,6 +18,7 @@ import AddTournament from './pages/AddTournament'
 import AddTrainer from './pages/AddTrainer'
 import TrainerDetail from './pages/TrainerDetail'
 import Groups from './pages/Groups'
+import Author from './pages/Author'
 
 function AppRoutes() {
   const { auth } = useAuth()
@@ -33,6 +34,7 @@ function AppRoutes() {
       <Route path="/tournaments" element={<Tournaments />} />
       <Route path="/tournaments/:id" element={<TournamentDetail />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/author" element={<Author />} />
       {auth.role === 'trainer' && <Route path="/add-student" element={<AddStudent />} />}
       {auth.role === 'trainer' && <Route path="/groups" element={<Groups />} />}
       {auth.role === 'superadmin' && <Route path="/add-tournament" element={<AddTournament />} />}

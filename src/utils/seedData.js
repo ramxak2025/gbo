@@ -48,35 +48,35 @@ export const seedData = {
       name: 'Алихан Магомедов', phone: '+7 900 301-01-01',
       weight: 77, belt: 'Синий', birthDate: '2000-03-15',
       avatar: null, subscriptionExpiresAt: inMonth, createdAt: now,
-      login: 'alikhan', password: 'student123',
+      login: 'alikhan', password: 'student123', status: null,
     },
     {
       id: 's2', trainerId: 'u2', groupId: 'g1',
       name: 'Тимур Валиев', phone: '+7 900 302-02-02',
       weight: 84, belt: 'Фиолетовый', birthDate: '1998-07-22',
       avatar: null, subscriptionExpiresAt: expired, createdAt: now,
-      login: 'timur', password: 'student123',
+      login: 'timur', password: 'student123', status: 'injury',
     },
     {
       id: 's3', trainerId: 'u2', groupId: 'g2',
       name: 'Заур Рахманов', phone: '+7 900 303-03-03',
       weight: 93, belt: 'Белый', birthDate: '2002-11-01',
       avatar: null, subscriptionExpiresAt: inMonth, createdAt: now,
-      login: 'zaur', password: 'student123',
+      login: 'zaur', password: 'student123', status: null,
     },
     {
       id: 's4', trainerId: 'u3', groupId: 'g3',
       name: 'Магомед Исмаилов', phone: '+7 900 304-04-04',
       weight: 93, belt: 'Коричневый', birthDate: '1995-01-10',
       avatar: null, subscriptionExpiresAt: inMonth, createdAt: now,
-      login: 'magomed', password: 'student123',
+      login: 'magomed', password: 'student123', status: null,
     },
     {
       id: 's5', trainerId: 'u3', groupId: 'g3',
       name: 'Ислам Махачев', phone: '+7 900 305-05-05',
       weight: 70, belt: 'Черный', birthDate: '1991-09-27',
       avatar: null, subscriptionExpiresAt: expired, createdAt: now,
-      login: 'islam', password: 'student123',
+      login: 'islam', password: 'student123', status: 'sick',
     },
   ],
 
@@ -111,4 +111,14 @@ export const seedData = {
     { id: 'n1', trainerId: 'u2', groupId: 'g1', title: 'Смена расписания', content: 'С 1 марта тренировки по понедельникам переносятся на 10:00.', date: now },
     { id: 'n2', trainerId: 'u3', groupId: 'g3', title: 'Открытый мат', content: 'В субботу проводим открытую тренировку. Можно приглашать друзей!', date: now },
   ],
+
+  tournamentRegistrations: [],
+
+  authorInfo: {
+    name: 'Шамсудинов Рамазан Магомедович',
+    instagram: 'ramazan.spb',
+    website: 'web-kultura.ru',
+    description: 'Разработка веб-приложений и цифровых решений для спорта и бизнеса.',
+    phone: '8-988-444-44-36',
+  },
 }
