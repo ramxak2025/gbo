@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
+import { api } from '../utils/api'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
@@ -11,7 +12,7 @@ import Modal from '../components/Modal'
 
 export default function Profile() {
   const { auth, logout } = useAuth()
-  const { data, resetAll, updateStudent, addNews, deleteNews, update } = useData()
+  const { data, resetAll, updateStudent, updateTrainer, addNews, deleteNews } = useData()
   const { dark } = useTheme()
   const [showNews, setShowNews] = useState(false)
   const [newsForm, setNewsForm] = useState({ title: '', content: '', groupId: '' })
@@ -28,21 +29,19 @@ export default function Profile() {
   const myGroups = auth.role === 'trainer' ? data.groups.filter(g => g.trainerId === auth.userId) : []
   const myNews = auth.role === 'trainer' ? data.news.filter(n => n.trainerId === auth.userId) : []
 
-  const handleAvatarUpload = (e) => {
+  const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => {
+    try {
+      const url = await api.uploadFile(file)
       if (auth.role === 'student' && student) {
-        updateStudent(student.id, { avatar: ev.target.result })
+        updateStudent(student.id, { avatar: url })
       } else {
-        update(d => ({
-          ...d,
-          users: d.users.map(u => u.id === auth.userId ? { ...u, avatar: ev.target.result } : u)
-        }))
+        await updateTrainer(auth.userId, { avatar: url })
       }
+    } catch (err) {
+      console.error('Upload failed:', err)
     }
-    reader.readAsDataURL(file)
   }
 
   const handleAddNews = (e) => {

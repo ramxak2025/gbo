@@ -17,7 +17,25 @@ async function request(url, options = {}) {
   return data
 }
 
+async function uploadFile(file) {
+  const token = localStorage.getItem('iborcuha_token')
+  const formData = new FormData()
+  formData.append('file', file)
+  const res = await fetch(`${BASE}/upload`, {
+    method: 'POST',
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    credentials: 'include',
+    body: formData,
+  })
+  if (!res.ok) throw new Error('Upload failed')
+  const data = await res.json()
+  return data.url
+}
+
 export const api = {
+  // Upload
+  uploadFile,
+
   // Auth
   login: (phone, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ phone, password }) }),
   logout: () => request('/auth/logout', { method: 'POST' }),

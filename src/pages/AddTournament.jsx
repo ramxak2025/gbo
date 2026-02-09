@@ -4,6 +4,7 @@ import { Camera } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
+import { api } from '../utils/api'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 
@@ -21,12 +22,15 @@ export default function AddTournament() {
     coverImage: null,
   })
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => setForm(f => ({ ...f, coverImage: ev.target.result }))
-    reader.readAsDataURL(file)
+    try {
+      const url = await api.uploadFile(file)
+      setForm(f => ({ ...f, coverImage: url }))
+    } catch (err) {
+      console.error('Upload failed:', err)
+    }
   }
 
   const handleSubmit = (e) => {

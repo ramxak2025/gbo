@@ -4,6 +4,7 @@ import { Phone, Calendar, Scale, Award, Trash2, Edit3, Camera } from 'lucide-rea
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
+import { api } from '../utils/api'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
@@ -73,14 +74,15 @@ export default function StudentDetail() {
     }
   }
 
-  const handleAvatarUpload = (e) => {
+  const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      updateStudent(student.id, { avatar: ev.target.result })
+    try {
+      const url = await api.uploadFile(file)
+      updateStudent(student.id, { avatar: url })
+    } catch (err) {
+      console.error('Upload failed:', err)
     }
-    reader.readAsDataURL(file)
   }
 
   const inputCls = `
