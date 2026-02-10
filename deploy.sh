@@ -17,7 +17,8 @@ git checkout "$BRANCH"
 git pull origin "$BRANCH"
 
 echo "2. Installing dependencies..."
-npm install
+rm -rf node_modules
+npm install --include=dev
 
 echo "3. Building frontend..."
 npm run build
