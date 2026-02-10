@@ -68,7 +68,7 @@ function SuperAdminDash({ data, dark, navigate }) {
   return (
     <Layout>
       <PageHeader title="iBorcuha" logo gradient />
-      <div className="px-4 space-y-4 slide-in">
+      <div className="px-4 space-y-4 slide-in stagger">
         <div className="grid grid-cols-2 gap-3">
           <GlassCard>
             <div className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-400'}`}>Тренеры</div>
@@ -133,7 +133,7 @@ function TrainerDash({ auth, data, dark, navigate }) {
   return (
     <Layout>
       <PageHeader title={auth.user?.clubName || 'Мой клуб'} logo />
-      <div className="px-4 space-y-4 slide-in">
+      <div className="px-4 space-y-4 slide-in stagger">
         <div className="grid grid-cols-3 gap-2">
           <GlassCard className="text-center">
             <Users size={18} className="mx-auto mb-1 text-accent" />
@@ -266,7 +266,7 @@ function StudentDash({ auth, data, dark, navigate }) {
   return (
     <Layout>
       <PageHeader title="Мой кабинет" logo />
-      <div className="px-4 space-y-4 slide-in">
+      <div className="px-4 space-y-4 slide-in stagger">
         <GlassCard>
           <div className="text-center">
             <div className="text-lg font-bold">{student?.name}</div>

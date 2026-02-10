@@ -43,14 +43,15 @@ input, select, textarea {
   font-size: 16px !important;
 }
 
+/* === Page enter animation === */
 .slide-in {
-  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
@@ -58,8 +59,9 @@ input, select, textarea {
   }
 }
 
+/* === Fade in === */
 .fade-in {
-  animation: fadeIn 0.25s ease-out forwards;
+  animation: fadeIn 0.3s ease-out forwards;
 }
 
 @keyframes fadeIn {
@@ -67,17 +69,185 @@ input, select, textarea {
   to { opacity: 1; }
 }
 
-.press-scale {
-  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+/* === Stagger children: cards appear one by one === */
+.stagger > * {
+  opacity: 0;
+  animation: staggerItem 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
-.press-scale:active {
-  transform: scale(0.95);
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 40ms; }
+.stagger > *:nth-child(3) { animation-delay: 80ms; }
+.stagger > *:nth-child(4) { animation-delay: 120ms; }
+.stagger > *:nth-child(5) { animation-delay: 160ms; }
+.stagger > *:nth-child(6) { animation-delay: 200ms; }
+.stagger > *:nth-child(7) { animation-delay: 240ms; }
+.stagger > *:nth-child(8) { animation-delay: 280ms; }
+.stagger > *:nth-child(9) { animation-delay: 320ms; }
+.stagger > *:nth-child(10) { animation-delay: 360ms; }
+.stagger > *:nth-child(n+11) { animation-delay: 400ms; }
+
+@keyframes staggerItem {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
+/* === Scale in (for avatars, icons) === */
+.scale-in {
+  animation: scaleIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* === Press feedback (native tap) === */
+.press-scale {
+  transition: transform 0.12s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.12s ease;
+  will-change: transform;
+}
+.press-scale:active {
+  transform: scale(0.96);
+  opacity: 0.85;
+}
+
+/* === Bottom sheet modal === */
+.modal-overlay {
+  animation: overlayIn 0.3s ease-out forwards;
+}
+
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-sheet {
+  animation: sheetUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes sheetUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* === Skeleton shimmer === */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.04) 25%,
+    rgba(255,255,255,0.08) 50%,
+    rgba(255,255,255,0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 12px;
+}
+
+.skeleton-light {
+  background: linear-gradient(
+    90deg,
+    rgba(0,0,0,0.04) 25%,
+    rgba(0,0,0,0.07) 50%,
+    rgba(0,0,0,0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 12px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* === Tab bar indicator === */
+.tab-indicator {
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* === Smooth list transitions === */
+.list-item {
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+/* === Card hover glow (desktop) === */
+@media (hover: hover) {
+  .glass-hover {
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+  .glass-hover:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+}
+
+/* === Bounce in (for badges, counters) === */
+.bounce-in {
+  animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes bounceIn {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  60% {
+    transform: scale(1.1);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* === Scrollbar hide === */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* === Toast notification === */
+.toast-in {
+  animation: toastIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.toast-out {
+  animation: toastOut 0.25s ease-in forwards;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toastOut {
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
 }

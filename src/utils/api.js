@@ -79,4 +79,11 @@ export const api = {
 
   // Author
   updateAuthor: (data) => request('/data/author', { method: 'PUT', body: JSON.stringify(data) }),
+
+  // Push notifications
+  getVapidKey: () => request('/push/vapid-key'),
+  subscribePush: (subscription) => request('/push/subscribe', { method: 'POST', body: JSON.stringify({ subscription }) }),
+  unsubscribePush: (endpoint) => request('/push/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint }) }),
+  getNotificationSettings: () => request('/push/settings'),
+  updateNotificationSettings: (data) => request('/push/settings', { method: 'PUT', body: JSON.stringify(data) }),
 }

@@ -71,7 +71,7 @@ export default function Login({ onLogin }) {
             <img
               src="/logo.png"
               alt="iBorcuha"
-              className="w-28 h-28 mx-auto rounded-[28px] shadow-2xl shadow-black/50 mb-6"
+              className="w-28 h-28 mx-auto rounded-[28px] shadow-2xl shadow-black/50 mb-6 scale-in"
             />
             <h1 className="text-3xl font-black tracking-tight">
               <span className={`${dark ? 'text-white/70' : 'text-gray-500'}`}>i</span>
@@ -90,7 +90,7 @@ export default function Login({ onLogin }) {
               <Phone size={16} className={`absolute left-4 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-300'}`} />
               <input
                 type="tel"
-                placeholder="Номер телефона"
+                placeholder="89001234567"
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
                 className={`${inputCls} pl-11`}

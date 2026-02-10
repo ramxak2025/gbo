@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { Phone, Mail, Users, Trash2, Edit3 } from 'lucide-react'
+import { Phone, Users, Trash2, Edit3 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
@@ -43,7 +43,6 @@ export default function TrainerDetail() {
     e.preventDefault()
     updateTrainer(id, {
       name: form.name,
-      email: form.email,
       phone: form.phone,
       clubName: form.clubName,
     })
@@ -93,13 +92,6 @@ export default function TrainerDetail() {
             <span className="text-sm">{trainer.phone}</span>
           </GlassCard>
         )}
-        {trainer.email && (
-          <GlassCard className="flex items-center gap-3">
-            <Mail size={16} className="text-accent" />
-            <span className="text-sm">{trainer.email}</span>
-          </GlassCard>
-        )}
-
         <GlassCard className="flex items-center gap-3">
           <Users size={16} className="text-accent" />
           <span className="text-sm">{students.length} учеников, {groups.length} групп</span>
@@ -142,8 +134,7 @@ export default function TrainerDetail() {
           <form onSubmit={saveEdit} className="space-y-3">
             <input type="text" placeholder="ФИО" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} />
             <input type="text" placeholder="Клуб" value={form.clubName} onChange={e => setForm(f => ({ ...f, clubName: e.target.value }))} className={inputCls} />
-            <input type="email" placeholder="Email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className={inputCls} />
-            <input type="tel" placeholder="Телефон" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className={inputCls} />
+            <input type="tel" placeholder="89001234567" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className={inputCls} />
             <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale">Сохранить</button>
           </form>
         )}

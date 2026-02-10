@@ -12,7 +12,6 @@ export default function AddTrainer() {
 
   const [form, setForm] = useState({
     name: '',
-    email: '',
     password: 'trainer123',
     phone: '',
     clubName: '',
@@ -20,10 +19,9 @@ export default function AddTrainer() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!form.name.trim() || !form.email.trim()) return
+    if (!form.name.trim() || !form.phone.trim()) return
     addTrainer({
       name: form.name.trim(),
-      email: form.email.trim(),
       password: form.password,
       phone: form.phone.trim(),
       clubName: form.clubName.trim(),
@@ -61,19 +59,12 @@ export default function AddTrainer() {
             className={inputCls}
           />
           <input
-            type="email"
-            placeholder="Email *"
-            value={form.email}
-            onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-            className={inputCls}
-            required
-          />
-          <input
             type="tel"
-            placeholder="Телефон"
+            placeholder="89001234567 *"
             value={form.phone}
             onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
             className={inputCls}
+            required
           />
           <input
             type="text"

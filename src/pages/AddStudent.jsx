@@ -71,7 +71,7 @@ export default function AddStudent() {
           />
           <input
             type="tel"
-            placeholder="Телефон (для входа) *"
+            placeholder="89001234567 *"
             value={form.phone}
             onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
             className={inputCls}

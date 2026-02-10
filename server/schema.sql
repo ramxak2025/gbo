@@ -71,6 +71,27 @@ CREATE TABLE IF NOT EXISTS news (
   date TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id SERIAL PRIMARY KEY,
+  user_id TEXT,
+  student_id TEXT,
+  endpoint TEXT NOT NULL UNIQUE,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS notification_settings (
+  id SERIAL PRIMARY KEY,
+  user_id TEXT,
+  student_id TEXT,
+  news BOOLEAN DEFAULT true,
+  tournaments BOOLEAN DEFAULT true,
+  payments BOOLEAN DEFAULT true,
+  schedule BOOLEAN DEFAULT true,
+  UNIQUE(user_id, student_id)
+);
+
 CREATE TABLE IF NOT EXISTS author_info (
   id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
   name VARCHAR(255),

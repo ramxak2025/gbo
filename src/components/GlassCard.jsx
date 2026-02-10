@@ -7,7 +7,8 @@ export default function GlassCard({ children, className = '', onClick }) {
       onClick={onClick}
       className={`
         rounded-[24px] p-4
-        backdrop-blur-xl
+        backdrop-blur-xl glass-hover
+        transition-all duration-200
         ${dark
           ? 'bg-white/5 border border-white/10'
           : 'bg-black/[0.03] border border-black/[0.08]'

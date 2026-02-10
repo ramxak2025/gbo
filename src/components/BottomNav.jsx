@@ -56,12 +56,17 @@ export default function BottomNav() {
               onClick={() => navigate(path)}
               className={`
                 flex flex-col items-center gap-0.5 px-2 py-1 press-scale
-                transition-colors duration-200
-                ${active ? 'text-accent' : dark ? 'text-white/50' : 'text-black/40'}
+                transition-all duration-200
+                ${active ? 'text-accent' : dark ? 'text-white/40' : 'text-black/35'}
               `}
             >
-              <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
-              <span className={`text-[10px] leading-tight ${active ? 'font-semibold' : 'font-medium'}`}>
+              <div className="relative">
+                <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
+                {active && (
+                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent bounce-in" />
+                )}
+              </div>
+              <span className={`text-[10px] leading-tight ${active ? 'font-bold' : 'font-medium'}`}>
                 {label}
               </span>
             </button>

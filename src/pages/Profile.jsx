@@ -1,5 +1,6 @@
-import { Camera, LogOut, RotateCcw, Newspaper, Plus } from 'lucide-react'
+import { Camera, LogOut, RotateCcw, Newspaper, Plus, Bell } from 'lucide-react'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -14,6 +15,7 @@ export default function Profile() {
   const { auth, logout } = useAuth()
   const { data, resetAll, updateStudent, updateTrainer, addNews, deleteNews } = useData()
   const { dark } = useTheme()
+  const navigate = useNavigate()
   const [showNews, setShowNews] = useState(false)
   const [newsForm, setNewsForm] = useState({ title: '', content: '', groupId: '' })
 
@@ -111,13 +113,6 @@ export default function Profile() {
             <span className="font-semibold text-sm">{user.phone}</span>
           </GlassCard>
         )}
-        {user?.email && auth.role !== 'student' && (
-          <GlassCard className="flex items-center justify-between">
-            <span className={`text-sm ${dark ? 'text-white/40' : 'text-gray-400'}`}>Email</span>
-            <span className="font-semibold text-sm">{user.email}</span>
-          </GlassCard>
-        )}
-
         {/* Trainer: News management */}
         {auth.role === 'trainer' && (
           <div>
@@ -153,6 +148,15 @@ export default function Profile() {
 
         {/* Actions */}
         <div className="space-y-2 pt-2">
+          <button
+            onClick={() => navigate('/notifications')}
+            className={`w-full py-3.5 rounded-[16px] font-bold text-base press-scale flex items-center justify-center gap-2 ${
+              dark ? 'bg-white/5 text-white' : 'bg-black/[0.03] text-gray-900'
+            }`}
+          >
+            <Bell size={18} />
+            Уведомления
+          </button>
           <button
             onClick={handleLogout}
             className={`w-full py-3.5 rounded-[16px] font-bold text-base press-scale flex items-center justify-center gap-2 ${

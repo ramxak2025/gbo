@@ -9,6 +9,7 @@ import { seedDatabase } from './seed.js'
 import authRoutes from './routes/auth.js'
 import dataRoutes from './routes/data.js'
 import uploadRoutes from './routes/upload.js'
+import pushRoutes from './routes/push.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
@@ -26,6 +27,7 @@ app.use('/uploads', express.static(uploadsPath))
 app.use('/api/auth', authRoutes)
 app.use('/api/data', dataRoutes)
 app.use('/api/upload', uploadRoutes)
+app.use('/api/push', pushRoutes)
 
 // Serve React build
 const distPath = path.join(__dirname, '..', 'dist')
