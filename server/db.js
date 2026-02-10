@@ -1,8 +1,16 @@
 import pg from 'pg'
 const { Pool } = pg
 
+const dbUrl = process.env.DATABASE_URL || ''
+const needSSL = dbUrl.includes('neon.tech') ||
+  dbUrl.includes('supabase') ||
+  dbUrl.includes('vercel-storage') ||
+  dbUrl.includes('sslmode=require') ||
+  process.env.DB_SSL === 'true'
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: dbUrl,
+  ssl: needSSL ? { rejectUnauthorized: false } : undefined,
 })
 
 export default pool
