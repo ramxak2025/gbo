@@ -4,6 +4,7 @@ import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
+import PhoneInput, { cleanPhone } from '../components/PhoneInput'
 
 export default function AddTrainer() {
   const navigate = useNavigate()
@@ -19,11 +20,12 @@ export default function AddTrainer() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!form.name.trim() || !form.phone.trim()) return
+    const phoneDigits = cleanPhone(form.phone)
+    if (!form.name.trim() || phoneDigits.length < 11) return
     addTrainer({
       name: form.name.trim(),
       password: form.password,
-      phone: form.phone.trim(),
+      phone: phoneDigits,
       clubName: form.clubName.trim(),
       avatar: null,
     })
@@ -58,11 +60,9 @@ export default function AddTrainer() {
             onChange={e => setForm(f => ({ ...f, clubName: e.target.value }))}
             className={inputCls}
           />
-          <input
-            type="tel"
-            placeholder="89001234567 *"
+          <PhoneInput
             value={form.phone}
-            onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+            onChange={v => setForm(f => ({ ...f, phone: v }))}
             className={inputCls}
             required
           />

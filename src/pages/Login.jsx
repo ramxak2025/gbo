@@ -3,6 +3,27 @@ import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 import { Sun, Moon, Eye, EyeOff, MessageCircle, Phone } from 'lucide-react'
 
+function formatPhone(value) {
+  const digits = value.replace(/\D/g, '').slice(0, 11)
+  if (!digits) return ''
+  let d = digits
+  // Normalize: if starts with 7 and has 11 digits, treat as 8
+  if (d.length > 0 && d[0] === '7' && d.length <= 11) d = '8' + d.slice(1)
+  if (d.length > 0 && d[0] !== '8') d = '8' + d
+
+  let result = d[0] || ''
+  if (d.length > 1) result += ' (' + d.slice(1, 4)
+  if (d.length >= 4) result += ') '
+  if (d.length > 4) result += d.slice(4, 7)
+  if (d.length > 7) result += '-' + d.slice(7, 9)
+  if (d.length > 9) result += '-' + d.slice(9, 11)
+  return result
+}
+
+function cleanPhone(value) {
+  return value.replace(/\D/g, '')
+}
+
 export default function Login({ onLogin }) {
   const { dark, toggle } = useTheme()
   const { login } = useAuth()
@@ -13,36 +34,33 @@ export default function Login({ onLogin }) {
   const [errorType, setErrorType] = useState(null)
   const [loading, setLoading] = useState(false)
 
+  const handlePhoneChange = (e) => {
+    const formatted = formatPhone(e.target.value)
+    setPhone(formatted)
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setErrorType(null)
 
-    const trimmedPhone = phone.trim()
-    if (!trimmedPhone || !password) {
-      setError('Введите номер телефона и пароль')
+    const digits = cleanPhone(phone)
+    if (digits.length < 11) {
+      setError('Введите полный номер телефона')
+      return
+    }
+    if (!password) {
+      setError('Введите пароль')
       return
     }
 
     setLoading(true)
     try {
-      await login(trimmedPhone, password)
+      await login(digits, password)
       if (onLogin) onLogin()
     } catch (err) {
-      // Parse error from API
-      try {
-        const resp = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: trimmedPhone, password }),
-        })
-        const data = await resp.json()
-        setError(data.error || 'Ошибка входа')
-        setErrorType(data.errorType || 'student')
-      } catch {
-        setError(err.message || 'Ошибка входа')
-        setErrorType('student')
-      }
+      setError(err.message || 'Ошибка входа')
+      setErrorType(err.errorType || null)
     } finally {
       setLoading(false)
     }
@@ -90,11 +108,12 @@ export default function Login({ onLogin }) {
               <Phone size={16} className={`absolute left-4 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-300'}`} />
               <input
                 type="tel"
-                placeholder="89001234567"
+                placeholder="8 (900) 123-45-67"
                 value={phone}
-                onChange={e => setPhone(e.target.value)}
+                onChange={handlePhoneChange}
                 className={`${inputCls} pl-11`}
                 autoComplete="tel"
+                maxLength={18}
               />
             </div>
             <div className="relative">

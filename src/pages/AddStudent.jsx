@@ -5,6 +5,7 @@ import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
+import PhoneInput, { cleanPhone } from '../components/PhoneInput'
 
 const BELTS = ['Белый', 'Синий', 'Фиолетовый', 'Коричневый', 'Черный']
 
@@ -28,7 +29,8 @@ export default function AddStudent() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!form.name.trim() || !form.phone.trim()) return
+    const phoneDigits = cleanPhone(form.phone)
+    if (!form.name.trim() || phoneDigits.length < 11) return
 
     const expiresAt = new Date()
     expiresAt.setMonth(expiresAt.getMonth() + 1)
@@ -37,7 +39,7 @@ export default function AddStudent() {
       trainerId: auth.userId,
       groupId: form.groupId || null,
       name: form.name.trim(),
-      phone: form.phone.trim(),
+      phone: phoneDigits,
       weight: parseFloat(form.weight) || 0,
       belt: form.belt,
       birthDate: form.birthDate,
@@ -69,11 +71,9 @@ export default function AddStudent() {
             className={inputCls}
             required
           />
-          <input
-            type="tel"
-            placeholder="89001234567 *"
+          <PhoneInput
             value={form.phone}
-            onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+            onChange={v => setForm(f => ({ ...f, phone: v }))}
             className={inputCls}
             required
           />

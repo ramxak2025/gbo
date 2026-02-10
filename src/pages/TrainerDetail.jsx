@@ -3,6 +3,7 @@ import { Phone, Users, Trash2, Edit3 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
+import PhoneInput, { formatPhone, cleanPhone } from '../components/PhoneInput'
 import { useTheme } from '../context/ThemeContext'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
@@ -35,7 +36,7 @@ export default function TrainerDetail() {
   const groups = data.groups.filter(g => g.trainerId === id)
 
   const startEdit = () => {
-    setForm({ ...trainer })
+    setForm({ ...trainer, phone: formatPhone(trainer.phone || '') })
     setEditing(true)
   }
 
@@ -43,7 +44,7 @@ export default function TrainerDetail() {
     e.preventDefault()
     updateTrainer(id, {
       name: form.name,
-      phone: form.phone,
+      phone: cleanPhone(form.phone),
       clubName: form.clubName,
     })
     setEditing(false)
@@ -134,7 +135,7 @@ export default function TrainerDetail() {
           <form onSubmit={saveEdit} className="space-y-3">
             <input type="text" placeholder="ФИО" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} />
             <input type="text" placeholder="Клуб" value={form.clubName} onChange={e => setForm(f => ({ ...f, clubName: e.target.value }))} className={inputCls} />
-            <input type="tel" placeholder="89001234567" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className={inputCls} />
+            <PhoneInput value={form.phone} onChange={v => setForm(f => ({ ...f, phone: v }))} className={inputCls} />
             <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale">Сохранить</button>
           </form>
         )}

@@ -37,7 +37,19 @@ export const api = {
   uploadFile,
 
   // Auth
-  login: (phone, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ phone, password }) }),
+  login: async (phone, password) => {
+    const token = localStorage.getItem('iborcuha_token')
+    const headers = { 'Content-Type': 'application/json' }
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    const res = await fetch(`${BASE}/auth/login`, { method: 'POST', headers, credentials: 'include', body: JSON.stringify({ phone, password }) })
+    const data = await res.json()
+    if (!res.ok) {
+      const err = new Error(data.error || 'Ошибка входа')
+      err.errorType = data.errorType || null
+      throw err
+    }
+    return data
+  },
   logout: () => request('/auth/logout', { method: 'POST' }),
   me: () => request('/auth/me'),
 

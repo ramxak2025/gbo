@@ -57,7 +57,8 @@ router.post('/login', async (req, res) => {
 
   // Error type
   if (user) return res.status(401).json({ error: 'Неверный пароль', errorType: 'trainer' })
-  return res.status(401).json({ error: 'Неверный номер или пароль', errorType: 'student' })
+  if (student) return res.status(401).json({ error: 'Неверный пароль', errorType: 'student' })
+  return res.status(401).json({ error: 'Пользователь не найден', errorType: 'student' })
 })
 
 router.post('/logout', (req, res) => {

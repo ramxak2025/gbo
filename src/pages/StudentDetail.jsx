@@ -8,6 +8,7 @@ import { api } from '../utils/api'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
+import PhoneInput, { formatPhone, cleanPhone } from '../components/PhoneInput'
 import Avatar from '../components/Avatar'
 import Modal from '../components/Modal'
 
@@ -51,7 +52,7 @@ export default function StudentDetail() {
   const canEditAdmin = auth.role === 'superadmin'
 
   const startEdit = () => {
-    setForm({ ...student })
+    setForm({ ...student, phone: formatPhone(student.phone || '') })
     setEditing(true)
   }
 
@@ -59,7 +60,7 @@ export default function StudentDetail() {
     e.preventDefault()
     updateStudent(student.id, {
       name: form.name,
-      phone: form.phone,
+      phone: cleanPhone(form.phone),
       weight: parseFloat(form.weight) || 0,
       belt: form.belt,
       birthDate: form.birthDate,
@@ -196,11 +197,9 @@ export default function StudentDetail() {
               onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               className={inputCls}
             />
-            <input
-              type="tel"
-              placeholder="Телефон"
+            <PhoneInput
               value={form.phone}
-              onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+              onChange={v => setForm(f => ({ ...f, phone: v }))}
               className={inputCls}
             />
             <input
