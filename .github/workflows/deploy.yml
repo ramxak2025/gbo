@@ -2,7 +2,9 @@ name: Deploy to VDS
 
 on:
   push:
-    branches: [main]
+    branches:
+      - claude/iborcuha-saas-platform-m8HZw
+      - main
 
 jobs:
   deploy:
@@ -16,7 +18,10 @@ jobs:
           key: ${{ secrets.VDS_SSH_KEY }}
           script: |
             cd /root/gbo
-            git pull origin main
+            git fetch origin claude/iborcuha-saas-platform-m8HZw
+            git checkout claude/iborcuha-saas-platform-m8HZw
+            git pull origin claude/iborcuha-saas-platform-m8HZw
             npm install --production
             npm run build
-            pm2 restart iborcuha
+            pm2 restart iborcuha 2>/dev/null || pm2 start ecosystem.config.cjs
+            pm2 save
