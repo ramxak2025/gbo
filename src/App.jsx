@@ -3,6 +3,7 @@ import { ThemeProvider } from './context/ThemeContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { DataProvider, useData } from './context/DataContext'
 
+import InstallPrompt from './components/InstallPrompt'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Cash from './pages/Cash'
@@ -53,6 +54,7 @@ export default function App() {
         <AuthProvider>
           <BrowserRouter>
             <AppRoutes />
+            <InstallPrompt />
           </BrowserRouter>
         </AuthProvider>
       </DataProvider>

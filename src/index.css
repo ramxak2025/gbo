@@ -225,7 +225,20 @@ input, select, textarea {
   display: none;
 }
 
-/* === Toast notification === */
+/* === Slide up (install prompt) === */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* === Safe area bottom padding === */
+.safe-area-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom, 16px), 16px);
+}
 .toast-in {
   animation: toastIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
