@@ -1,31 +1,31 @@
 import { useState, useEffect } from 'react'
 import { X, Share, PlusSquare, MoreVertical, Download } from 'lucide-react'
 
+function detectPlatform() {
+  const ua = navigator.userAgent || ''
+  if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return 'ios'
+  if (/Android/.test(ua)) return 'android'
+  return 'other'
+}
+
 export default function InstallPrompt() {
   const [show, setShow] = useState(false)
-  const [platform, setPlatform] = useState('android') // 'ios' | 'android'
+  const [platform, setPlatform] = useState('android')
   const [deferredPrompt, setDeferredPrompt] = useState(null)
 
   useEffect(() => {
-    // Don't show if already installed as PWA
+    // Already installed as PWA — don't show
     if (window.matchMedia('(display-mode: standalone)').matches) return
     if (window.navigator.standalone) return
 
-    // Don't show if user dismissed recently (24 hours)
+    // Dismissed within last 24 hours
     const dismissed = localStorage.getItem('iborcuha_install_dismissed')
     if (dismissed && Date.now() - parseInt(dismissed) < 24 * 60 * 60 * 1000) return
 
-    // Detect platform
-    const ua = navigator.userAgent || ''
-    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-    const isAndroid = /Android/.test(ua)
-    const isMobile = isIOS || isAndroid || /Mobile/.test(ua)
+    const plat = detectPlatform()
+    setPlatform(plat)
 
-    if (!isMobile) return
-
-    setPlatform(isIOS ? 'ios' : 'android')
-
-    // Android: listen for beforeinstallprompt
+    // Listen for native install prompt (Chrome Android/Desktop)
     const handleBeforeInstall = (e) => {
       e.preventDefault()
       setDeferredPrompt(e)
@@ -33,20 +33,11 @@ export default function InstallPrompt() {
     }
     window.addEventListener('beforeinstallprompt', handleBeforeInstall)
 
-    // iOS: show after short delay (no native install prompt)
-    if (isIOS) {
-      const timer = setTimeout(() => setShow(true), 2000)
-      return () => {
-        clearTimeout(timer)
-        window.removeEventListener('beforeinstallprompt', handleBeforeInstall)
-      }
-    }
-
-    // Android: show after delay if no beforeinstallprompt fires
-    const fallbackTimer = setTimeout(() => setShow(true), 3000)
+    // Show prompt after delay for all platforms
+    const timer = setTimeout(() => setShow(true), 1500)
 
     return () => {
-      clearTimeout(fallbackTimer)
+      clearTimeout(timer)
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall)
     }
   }, [])
@@ -70,7 +61,7 @@ export default function InstallPrompt() {
   if (!show) return null
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[9999] animate-[slideUp_0.4s_ease-out]">
+    <div className="fixed bottom-0 left-0 right-0 z-[9999]" style={{ animation: 'slideUp 0.4s ease-out' }}>
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/40" onClick={handleDismiss} />
 
@@ -81,11 +72,8 @@ export default function InstallPrompt() {
           <div className="w-10 h-1 rounded-full bg-white/20" />
         </div>
 
-        {/* Close button */}
-        <button
-          onClick={handleDismiss}
-          className="absolute top-3 right-4 p-1.5 rounded-full bg-white/10 text-white/50"
-        >
+        {/* Close */}
+        <button onClick={handleDismiss} className="absolute top-3 right-4 p-1.5 rounded-full bg-white/10 text-white/50">
           <X size={16} />
         </button>
 
@@ -98,18 +86,26 @@ export default function InstallPrompt() {
           </div>
         </div>
 
-        {platform === 'ios' ? (
+        {/* Native install button (Chrome) */}
+        {deferredPrompt ? (
+          <div className="space-y-3">
+            <button
+              onClick={handleInstall}
+              className="w-full py-3.5 rounded-2xl bg-accent text-white font-semibold text-base active:scale-[0.97] transition-transform"
+            >
+              Установить приложение
+            </button>
+          </div>
+        ) : platform === 'ios' ? (
           /* iOS instructions */
           <div className="space-y-3">
-            <p className="text-white/70 text-sm">
-              Чтобы установить приложение на iPhone:
-            </p>
+            <p className="text-white/70 text-sm">Чтобы установить приложение:</p>
             <div className="flex items-center gap-3 bg-white/5 rounded-2xl p-3">
               <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
                 <Share size={18} className="text-blue-400" />
               </div>
               <p className="text-white/80 text-sm">
-                <span className="font-medium text-white">1.</span> Нажмите кнопку <span className="font-medium text-white">«Поделиться»</span> внизу браузера
+                <span className="font-medium text-white">1.</span> Нажмите <span className="font-medium text-white">«Поделиться»</span> внизу Safari
               </p>
             </div>
             <div className="flex items-center gap-3 bg-white/5 rounded-2xl p-3">
@@ -117,51 +113,34 @@ export default function InstallPrompt() {
                 <PlusSquare size={18} className="text-blue-400" />
               </div>
               <p className="text-white/80 text-sm">
-                <span className="font-medium text-white">2.</span> Выберите <span className="font-medium text-white">«На экран "Домой"»</span>
+                <span className="font-medium text-white">2.</span> Выберите <span className="font-medium text-white">«На экран Домой»</span>
               </p>
             </div>
           </div>
         ) : (
-          /* Android */
+          /* Android / Other */
           <div className="space-y-3">
-            {deferredPrompt ? (
-              <button
-                onClick={handleInstall}
-                className="w-full py-3.5 rounded-2xl bg-accent text-white font-semibold text-base active:scale-[0.97] transition-transform"
-              >
-                Установить приложение
-              </button>
-            ) : (
-              <>
-                <p className="text-white/70 text-sm">
-                  Чтобы установить приложение:
-                </p>
-                <div className="flex items-center gap-3 bg-white/5 rounded-2xl p-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                    <MoreVertical size={18} className="text-blue-400" />
-                  </div>
-                  <p className="text-white/80 text-sm">
-                    <span className="font-medium text-white">1.</span> Нажмите <span className="font-medium text-white">⋮</span> в правом верхнем углу
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 bg-white/5 rounded-2xl p-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                    <Download size={18} className="text-blue-400" />
-                  </div>
-                  <p className="text-white/80 text-sm">
-                    <span className="font-medium text-white">2.</span> Выберите <span className="font-medium text-white">«Установить приложение»</span>
-                  </p>
-                </div>
-              </>
-            )}
+            <p className="text-white/70 text-sm">Чтобы установить приложение:</p>
+            <div className="flex items-center gap-3 bg-white/5 rounded-2xl p-3">
+              <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                <MoreVertical size={18} className="text-blue-400" />
+              </div>
+              <p className="text-white/80 text-sm">
+                <span className="font-medium text-white">1.</span> Нажмите <span className="font-medium text-white">⋮</span> в правом верхнем углу браузера
+              </p>
+            </div>
+            <div className="flex items-center gap-3 bg-white/5 rounded-2xl p-3">
+              <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                <Download size={18} className="text-blue-400" />
+              </div>
+              <p className="text-white/80 text-sm">
+                <span className="font-medium text-white">2.</span> Выберите <span className="font-medium text-white">«Добавить на главный экран»</span>
+              </p>
+            </div>
           </div>
         )}
 
-        {/* Dismiss text */}
-        <button
-          onClick={handleDismiss}
-          className="w-full mt-3 py-2 text-white/40 text-sm text-center"
-        >
+        <button onClick={handleDismiss} className="w-full mt-3 py-2 text-white/40 text-sm text-center">
           Не сейчас
         </button>
       </div>
