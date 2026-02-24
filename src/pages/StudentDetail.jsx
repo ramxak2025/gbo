@@ -11,6 +11,7 @@ import GlassCard from '../components/GlassCard'
 import PhoneInput, { formatPhone, cleanPhone } from '../components/PhoneInput'
 import Avatar from '../components/Avatar'
 import Modal from '../components/Modal'
+import { getRankOptions, getRankLabel } from '../utils/sports'
 
 function isExpired(dateStr) {
   if (!dateStr) return true
@@ -21,8 +22,6 @@ function formatDate(iso) {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
 }
-
-const BELTS = ['Белый', 'Синий', 'Фиолетовый', 'Коричневый', 'Черный']
 
 export default function StudentDetail() {
   const { id } = useParams()
@@ -50,6 +49,8 @@ export default function StudentDetail() {
   const expired = isExpired(student.subscriptionExpiresAt)
   const canEdit = auth.role === 'trainer' && auth.userId === student.trainerId
   const canEditAdmin = auth.role === 'superadmin'
+  const rankOptions = getRankOptions(trainer?.sportType)
+  const rankLabel = getRankLabel(trainer?.sportType)
 
   const startEdit = () => {
     setForm({ ...student, phone: formatPhone(student.phone || '') })
@@ -144,7 +145,7 @@ export default function StudentDetail() {
           <GlassCard>
             <div className="flex items-center gap-2 mb-1">
               <Award size={14} className="text-accent" />
-              <span className={`text-xs uppercase ${dark ? 'text-white/40' : 'text-gray-400'}`}>Пояс</span>
+              <span className={`text-xs uppercase ${dark ? 'text-white/40' : 'text-gray-400'}`}>{rankLabel}</span>
             </div>
             <div className="font-bold">{student.belt || '—'}</div>
           </GlassCard>
@@ -215,8 +216,8 @@ export default function StudentDetail() {
               onChange={e => setForm(f => ({ ...f, belt: e.target.value }))}
               className={inputCls}
             >
-              <option value="">— Пояс —</option>
-              {BELTS.map(b => <option key={b} value={b}>{b}</option>)}
+              <option value="">— {rankLabel} —</option>
+              {rankOptions.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
             <input
               type="date"

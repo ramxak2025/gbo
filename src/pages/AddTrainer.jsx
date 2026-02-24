@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import PhoneInput, { cleanPhone } from '../components/PhoneInput'
+import { SPORT_TYPES } from '../utils/sports'
 
 export default function AddTrainer() {
   const navigate = useNavigate()
@@ -16,6 +17,7 @@ export default function AddTrainer() {
     password: 'trainer123',
     phone: '',
     clubName: '',
+    sportType: 'bjj',
   })
 
   const handleSubmit = (e) => {
@@ -27,6 +29,7 @@ export default function AddTrainer() {
       password: form.password,
       phone: phoneDigits,
       clubName: form.clubName.trim(),
+      sportType: form.sportType,
       avatar: null,
     })
     navigate(-1)
@@ -60,6 +63,13 @@ export default function AddTrainer() {
             onChange={e => setForm(f => ({ ...f, clubName: e.target.value }))}
             className={inputCls}
           />
+          <select
+            value={form.sportType}
+            onChange={e => setForm(f => ({ ...f, sportType: e.target.value }))}
+            className={inputCls}
+          >
+            {SPORT_TYPES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+          </select>
           <PhoneInput
             value={form.phone}
             onChange={v => setForm(f => ({ ...f, phone: v }))}

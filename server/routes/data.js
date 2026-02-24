@@ -8,7 +8,10 @@ const router = Router()
 const genId = () => Date.now().toString(36) + crypto.randomBytes(4).toString('hex')
 
 function mapUser(u) {
-  return { id: u.id, name: u.name, phone: u.phone, role: u.role, avatar: u.avatar, clubName: u.club_name }
+  return { id: u.id, name: u.name, phone: u.phone, role: u.role, avatar: u.avatar, clubName: u.club_name, sportType: u.sport_type }
+}
+function mapInternalTournament(t) {
+  return { id: t.id, trainerId: t.trainer_id, title: t.title, date: t.date, status: t.status, brackets: t.brackets, createdAt: t.created_at }
 }
 function mapStudent(s) {
   return {
@@ -39,7 +42,7 @@ function mapAuthor(a) {
 // GET all data (role-aware)
 router.get('/', authMiddleware, async (req, res) => {
   const { userId, role, studentId } = req.user
-  const [users, groups, students, transactions, tournaments, news, regs, author] = await Promise.all([
+  const [users, groups, students, transactions, tournaments, news, regs, author, intTournaments] = await Promise.all([
     pool.query('SELECT * FROM users'),
     pool.query('SELECT * FROM groups'),
     pool.query('SELECT * FROM students'),
@@ -48,6 +51,7 @@ router.get('/', authMiddleware, async (req, res) => {
     pool.query('SELECT * FROM news ORDER BY date DESC'),
     pool.query('SELECT * FROM tournament_registrations'),
     pool.query('SELECT * FROM author_info WHERE id = 1'),
+    pool.query('SELECT * FROM internal_tournaments ORDER BY created_at DESC'),
   ])
   res.json({
     users: users.rows.map(mapUser),
@@ -58,6 +62,7 @@ router.get('/', authMiddleware, async (req, res) => {
     news: news.rows.map(mapNews),
     tournamentRegistrations: regs.rows.map(r => ({ tournamentId: r.tournament_id, studentId: r.student_id })),
     authorInfo: mapAuthor(author.rows[0]),
+    internalTournaments: intTournaments.rows.map(mapInternalTournament),
   })
 })
 
@@ -198,18 +203,18 @@ router.delete('/news/:id', authMiddleware, async (req, res) => {
 
 // --- Trainers (admin only) ---
 router.post('/trainers', authMiddleware, async (req, res) => {
-  const { name, phone, password, clubName, avatar } = req.body
+  const { name, phone, password, clubName, avatar, sportType } = req.body
   const id = genId()
   const hash = bcrypt.hashSync(password || 'trainer123', 10)
-  await pool.query('INSERT INTO users (id, name, phone, password_hash, role, club_name, avatar) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-    [id, name, phone, hash, 'trainer', clubName || '', avatar || null])
-  res.json({ id, name, phone, role: 'trainer', clubName, avatar })
+  await pool.query('INSERT INTO users (id, name, phone, password_hash, role, club_name, avatar, sport_type) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
+    [id, name, phone, hash, 'trainer', clubName || '', avatar || null, sportType || null])
+  res.json({ id, name, phone, role: 'trainer', clubName, avatar, sportType })
 })
 
 router.put('/trainers/:id', authMiddleware, async (req, res) => {
-  const { name, phone, clubName, avatar } = req.body
-  await pool.query('UPDATE users SET name=COALESCE($1,name), phone=COALESCE($2,phone), club_name=COALESCE($3,club_name), avatar=COALESCE($4,avatar) WHERE id=$5',
-    [name, phone, clubName, avatar, req.params.id])
+  const { name, phone, clubName, avatar, sportType } = req.body
+  await pool.query('UPDATE users SET name=COALESCE($1,name), phone=COALESCE($2,phone), club_name=COALESCE($3,club_name), avatar=COALESCE($4,avatar), sport_type=COALESCE($5,sport_type) WHERE id=$6',
+    [name, phone, clubName, avatar, sportType, req.params.id])
   res.json({ ok: true })
 })
 
@@ -233,6 +238,37 @@ router.put('/author', authMiddleware, async (req, res) => {
     `INSERT INTO author_info (id, name, instagram, website, description, phone) VALUES (1,$1,$2,$3,$4,$5)
      ON CONFLICT (id) DO UPDATE SET name=$1, instagram=$2, website=$3, description=$4, phone=$5`,
     [name, instagram, website, description, phone])
+  res.json({ ok: true })
+})
+
+// --- Internal Tournaments (trainer brackets) ---
+router.post('/internal-tournaments', authMiddleware, async (req, res) => {
+  const { title, date, brackets } = req.body
+  const id = genId()
+  await pool.query('INSERT INTO internal_tournaments (id, trainer_id, title, date, brackets) VALUES ($1,$2,$3,$4,$5)',
+    [id, req.user.userId, title, date || null, JSON.stringify(brackets || {})])
+  const { rows: [t] } = await pool.query('SELECT * FROM internal_tournaments WHERE id = $1', [id])
+  res.json(mapInternalTournament(t))
+})
+
+router.put('/internal-tournaments/:id', authMiddleware, async (req, res) => {
+  const { title, date, status, brackets } = req.body
+  const sets = []
+  const vals = []
+  let i = 1
+  if (title !== undefined) { sets.push(`title = $${i++}`); vals.push(title) }
+  if (date !== undefined) { sets.push(`date = $${i++}`); vals.push(date) }
+  if (status !== undefined) { sets.push(`status = $${i++}`); vals.push(status) }
+  if (brackets !== undefined) { sets.push(`brackets = $${i++}`); vals.push(JSON.stringify(brackets)) }
+  if (sets.length === 0) return res.json({ ok: true })
+  vals.push(req.params.id)
+  await pool.query(`UPDATE internal_tournaments SET ${sets.join(', ')} WHERE id = $${i}`, vals)
+  const { rows: [t] } = await pool.query('SELECT * FROM internal_tournaments WHERE id = $1', [req.params.id])
+  res.json(mapInternalTournament(t))
+})
+
+router.delete('/internal-tournaments/:id', authMiddleware, async (req, res) => {
+  await pool.query('DELETE FROM internal_tournaments WHERE id = $1', [req.params.id])
   res.json({ ok: true })
 })
 

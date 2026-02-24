@@ -1,13 +1,15 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap } from 'lucide-react'
+import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
+import Avatar from '../components/Avatar'
 import Modal from '../components/Modal'
+import { getRankLabel } from '../utils/sports'
 
 const STATUS_CONFIG = {
   sick: { label: 'Болеет', icon: Thermometer, color: 'text-yellow-400', bg: 'bg-yellow-500/15', border: 'border-yellow-500/30' },
@@ -256,6 +258,27 @@ function StudentDash({ auth, data, dark, navigate }) {
     .filter(t => t && new Date(t.date) >= new Date())
     .sort((a, b) => new Date(a.date) - new Date(b.date))
 
+  // Find next opponent in active internal tournaments
+  const myInternalMatches = useMemo(() => {
+    const matches = []
+    const internalTournaments = (data.internalTournaments || []).filter(t =>
+      t.status === 'active' && t.brackets?.participants?.includes(auth.studentId)
+    )
+    for (const tournament of internalTournaments) {
+      const rounds = tournament.brackets?.rounds || []
+      for (let ri = 0; ri < rounds.length; ri++) {
+        for (const match of rounds[ri]) {
+          if (!match.winner && (match.player1 === auth.studentId || match.player2 === auth.studentId)) {
+            const opponentId = match.player1 === auth.studentId ? match.player2 : match.player1
+            const opponent = opponentId ? data.students.find(s => s.id === opponentId) : null
+            matches.push({ tournament, roundIdx: ri, opponent })
+          }
+        }
+      }
+    }
+    return matches
+  }, [data.internalTournaments, data.students, auth.studentId])
+
   const statusCfg = student?.status ? STATUS_CONFIG[student.status] : null
 
   const setStatus = (status) => {
@@ -314,9 +337,56 @@ function StudentDash({ auth, data, dark, navigate }) {
 
         {student?.belt && (
           <GlassCard className="flex items-center justify-between">
-            <span className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-400'}`}>Пояс</span>
+            <span className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-400'}`}>{getRankLabel(trainer?.sportType)}</span>
             <span className="font-bold">{student.belt}</span>
           </GlassCard>
+        )}
+
+        {/* Next opponent in internal tournaments */}
+        {myInternalMatches.length > 0 && (
+          <div>
+            <h2 className={`text-sm uppercase font-bold mb-3 flex items-center gap-2 ${dark ? 'text-white/50' : 'text-gray-500'}`}>
+              <Swords size={14} className="text-accent" /> Следующий бой
+            </h2>
+            {myInternalMatches.map((m, i) => (
+              <GlassCard
+                key={i}
+                onClick={() => navigate(`/internal-tournament/${m.tournament.id}`)}
+                className="mb-2 border border-accent/30 bg-gradient-to-r from-accent/5 to-purple-500/5"
+              >
+                <div className="text-[10px] uppercase font-bold text-accent mb-2">
+                  {m.tournament.title} — Раунд {m.roundIdx + 1}
+                </div>
+                {m.opponent ? (
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <Avatar name={student?.name || '?'} src={student?.avatar} size={36} />
+                      <div className="min-w-0">
+                        <div className="font-bold text-sm truncate">{student?.name}</div>
+                        <div className={`text-[10px] ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+                          {student?.weight ? student.weight + ' кг' : ''}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-xl font-black text-accent">VS</div>
+                    <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
+                      <div className="min-w-0 text-right">
+                        <div className="font-bold text-sm truncate">{m.opponent.name}</div>
+                        <div className={`text-[10px] ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+                          {m.opponent.weight ? m.opponent.weight + ' кг' : ''}
+                        </div>
+                      </div>
+                      <Avatar name={m.opponent.name} src={m.opponent.avatar} size={36} />
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`text-sm text-center py-1 ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+                    Ожидание соперника...
+                  </div>
+                )}
+              </GlassCard>
+            ))}
+          </div>
         )}
 
         {/* Tournament countdown */}

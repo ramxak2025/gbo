@@ -60,12 +60,7 @@ export default function BottomNav() {
                 ${active ? 'text-accent' : dark ? 'text-white/40' : 'text-black/35'}
               `}
             >
-              <div className="relative">
-                <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
-                {active && (
-                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent bounce-in" />
-                )}
-              </div>
+              <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
               <span className={`text-[10px] leading-tight ${active ? 'font-bold' : 'font-medium'}`}>
                 {label}
               </span>

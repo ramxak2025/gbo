@@ -19,6 +19,8 @@ import TrainerDetail from './pages/TrainerDetail'
 import Groups from './pages/Groups'
 import Author from './pages/Author'
 import NotificationSettings from './pages/NotificationSettings'
+import CreateInternalTournament from './pages/CreateInternalTournament'
+import InternalTournamentDetail from './pages/InternalTournamentDetail'
 
 function AppRoutes() {
   const { auth } = useAuth()
@@ -39,6 +41,8 @@ function AppRoutes() {
       <Route path="/author" element={<Author />} />
       {auth.role === 'trainer' && <Route path="/add-student" element={<AddStudent />} />}
       {auth.role === 'trainer' && <Route path="/groups" element={<Groups />} />}
+      {auth.role === 'trainer' && <Route path="/create-internal-tournament" element={<CreateInternalTournament />} />}
+      <Route path="/internal-tournament/:id" element={<InternalTournamentDetail />} />
       {auth.role === 'superadmin' && <Route path="/add-tournament" element={<AddTournament />} />}
       {auth.role === 'superadmin' && <Route path="/add-trainer" element={<AddTrainer />} />}
       {auth.role === 'superadmin' && <Route path="/trainer/:id" element={<TrainerDetail />} />}

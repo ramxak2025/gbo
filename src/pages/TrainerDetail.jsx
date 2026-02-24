@@ -1,9 +1,10 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { Phone, Users, Trash2, Edit3 } from 'lucide-react'
+import { Phone, Users, Trash2, Edit3, Dumbbell } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import PhoneInput, { formatPhone, cleanPhone } from '../components/PhoneInput'
+import { SPORT_TYPES, getSportLabel, getRankLabel } from '../utils/sports'
 import { useTheme } from '../context/ThemeContext'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
@@ -46,6 +47,7 @@ export default function TrainerDetail() {
       name: form.name,
       phone: cleanPhone(form.phone),
       clubName: form.clubName,
+      sportType: form.sportType,
     })
     setEditing(false)
   }
@@ -93,6 +95,12 @@ export default function TrainerDetail() {
             <span className="text-sm">{trainer.phone}</span>
           </GlassCard>
         )}
+        {trainer.sportType && (
+          <GlassCard className="flex items-center gap-3">
+            <Dumbbell size={16} className="text-accent" />
+            <span className="text-sm">{getSportLabel(trainer.sportType)}</span>
+          </GlassCard>
+        )}
         <GlassCard className="flex items-center gap-3">
           <Users size={16} className="text-accent" />
           <span className="text-sm">{students.length} учеников, {groups.length} групп</span>
@@ -135,6 +143,10 @@ export default function TrainerDetail() {
           <form onSubmit={saveEdit} className="space-y-3">
             <input type="text" placeholder="ФИО" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} />
             <input type="text" placeholder="Клуб" value={form.clubName} onChange={e => setForm(f => ({ ...f, clubName: e.target.value }))} className={inputCls} />
+            <select value={form.sportType || ''} onChange={e => setForm(f => ({ ...f, sportType: e.target.value }))} className={inputCls}>
+              <option value="">— Вид спорта —</option>
+              {SPORT_TYPES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+            </select>
             <PhoneInput value={form.phone} onChange={v => setForm(f => ({ ...f, phone: v }))} className={inputCls} />
             <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale">Сохранить</button>
           </form>

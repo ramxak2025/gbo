@@ -6,8 +6,7 @@ import { useTheme } from '../context/ThemeContext'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import PhoneInput, { cleanPhone } from '../components/PhoneInput'
-
-const BELTS = ['Белый', 'Синий', 'Фиолетовый', 'Коричневый', 'Черный']
+import { getRankOptions, getRankLabel } from '../utils/sports'
 
 export default function AddStudent() {
   const navigate = useNavigate()
@@ -16,12 +15,15 @@ export default function AddStudent() {
   const { dark } = useTheme()
 
   const myGroups = data.groups.filter(g => g.trainerId === auth.userId)
+  const trainer = data.users.find(u => u.id === auth.userId)
+  const rankOptions = getRankOptions(trainer?.sportType)
+  const rankLabel = getRankLabel(trainer?.sportType)
 
   const [form, setForm] = useState({
     name: '',
     phone: '',
     weight: '',
-    belt: 'Белый',
+    belt: rankOptions[0] || '',
     birthDate: '',
     groupId: myGroups[0]?.id || '',
     password: 'student123',
@@ -99,7 +101,7 @@ export default function AddStudent() {
               onChange={e => setForm(f => ({ ...f, belt: e.target.value }))}
               className={inputCls}
             >
-              {BELTS.map(b => <option key={b} value={b}>{b}</option>)}
+              {rankOptions.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
           <input

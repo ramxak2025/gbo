@@ -92,6 +92,11 @@ export const api = {
   // Author
   updateAuthor: (data) => request('/data/author', { method: 'PUT', body: JSON.stringify(data) }),
 
+  // Internal Tournaments (brackets)
+  addInternalTournament: (data) => request('/data/internal-tournaments', { method: 'POST', body: JSON.stringify(data) }),
+  updateInternalTournament: (id, data) => request(`/data/internal-tournaments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteInternalTournament: (id) => request(`/data/internal-tournaments/${id}`, { method: 'DELETE' }),
+
   // Push notifications
   getVapidKey: () => request('/push/vapid-key'),
   subscribePush: (subscription) => request('/push/subscribe', { method: 'POST', body: JSON.stringify({ subscription }) }),

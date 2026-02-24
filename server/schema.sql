@@ -92,6 +92,22 @@ CREATE TABLE IF NOT EXISTS notification_settings (
   UNIQUE(user_id, student_id)
 );
 
+-- Sport type for trainers
+DO $$ BEGIN
+  ALTER TABLE users ADD COLUMN sport_type VARCHAR(50);
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS internal_tournaments (
+  id TEXT PRIMARY KEY,
+  trainer_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  date DATE,
+  status VARCHAR(20) DEFAULT 'active',
+  brackets JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS author_info (
   id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
   name VARCHAR(255),

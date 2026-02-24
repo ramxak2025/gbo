@@ -6,6 +6,7 @@ const DataContext = createContext()
 const EMPTY_DATA = {
   users: [], groups: [], students: [], transactions: [],
   tournaments: [], news: [], tournamentRegistrations: [], authorInfo: {},
+  internalTournaments: [],
 }
 
 export function DataProvider({ children }) {
@@ -183,6 +184,25 @@ export function DataProvider({ children }) {
     }))
   }, [])
 
+  const addInternalTournament = useCallback(async (tournament) => {
+    const t = await api.addInternalTournament(tournament)
+    setData(d => ({ ...d, internalTournaments: [...d.internalTournaments, t] }))
+    return t.id
+  }, [])
+
+  const updateInternalTournament = useCallback(async (id, changes) => {
+    await api.updateInternalTournament(id, changes)
+    setData(d => ({
+      ...d,
+      internalTournaments: d.internalTournaments.map(t => t.id === id ? { ...t, ...changes } : t)
+    }))
+  }, [])
+
+  const deleteInternalTournament = useCallback(async (id) => {
+    await api.deleteInternalTournament(id)
+    setData(d => ({ ...d, internalTournaments: d.internalTournaments.filter(t => t.id !== id) }))
+  }, [])
+
   const resetAll = useCallback(() => {
     // Not implemented for DB version — would need admin API
   }, [])
@@ -196,6 +216,7 @@ export function DataProvider({ children }) {
       addTournament, updateTournament, deleteTournament,
       addNews, deleteNews,
       addTrainer, updateTrainer, deleteTrainer,
+      addInternalTournament, updateInternalTournament, deleteInternalTournament,
     }}>
       {children}
     </DataContext.Provider>
