@@ -59,8 +59,12 @@ export default function Tournaments() {
             </h2>
             <div className="space-y-2">
               {myInternalTournaments.map(t => {
-                const champion = t.brackets?.rounds?.[t.brackets.rounds.length - 1]?.[0]?.winner
-                const championStudent = champion ? data.students.find(s => s.id === champion) : null
+                const cats = t.brackets?.categories || []
+                const isLegacy = !cats.length && t.brackets?.rounds
+                const totalParticipants = isLegacy
+                  ? (t.brackets?.participants?.length || 0)
+                  : cats.reduce((s, c) => s + (c.participants?.length || 0), 0)
+                const catCount = isLegacy ? 1 : cats.length
                 return (
                   <GlassCard
                     key={t.id}
@@ -80,22 +84,12 @@ export default function Tournaments() {
                         <div className={`flex items-center gap-2 mt-1 text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>
                           <Calendar size={11} />
                           <span>{formatDate(t.date)}</span>
-                          {t.brackets?.weightClass && (
-                            <>
-                              <span>•</span>
-                              <span>{t.brackets.weightClass}</span>
-                            </>
-                          )}
                           <span>•</span>
-                          <span>{t.brackets?.participants?.length || 0} чел.</span>
+                          <span>{catCount} {catCount === 1 ? 'весовая' : 'весовых'}</span>
+                          <span>•</span>
+                          <span>{totalParticipants} чел.</span>
                         </div>
                       </div>
-                      {championStudent && (
-                        <div className="shrink-0 ml-3 flex items-center gap-2">
-                          <Trophy size={14} className="text-yellow-400" />
-                          <Avatar name={championStudent.name} src={championStudent.avatar} size={28} />
-                        </div>
-                      )}
                     </div>
                   </GlassCard>
                 )

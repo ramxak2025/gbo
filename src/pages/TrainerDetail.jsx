@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { Phone, Users, Trash2, Edit3, Dumbbell } from 'lucide-react'
+import { Phone, Users, Trash2, Edit3, Dumbbell, MapPin } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
@@ -47,6 +47,7 @@ export default function TrainerDetail() {
       name: form.name,
       phone: cleanPhone(form.phone),
       clubName: form.clubName,
+      city: form.city,
       sportType: form.sportType,
     })
     setEditing(false)
@@ -101,6 +102,12 @@ export default function TrainerDetail() {
             <span className="text-sm">{getSportLabel(trainer.sportType)}</span>
           </GlassCard>
         )}
+        {trainer.city && (
+          <GlassCard className="flex items-center gap-3">
+            <MapPin size={16} className="text-accent" />
+            <span className="text-sm">{trainer.city}</span>
+          </GlassCard>
+        )}
         <GlassCard className="flex items-center gap-3">
           <Users size={16} className="text-accent" />
           <span className="text-sm">{students.length} учеников, {groups.length} групп</span>
@@ -143,6 +150,7 @@ export default function TrainerDetail() {
           <form onSubmit={saveEdit} className="space-y-3">
             <input type="text" placeholder="ФИО" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} />
             <input type="text" placeholder="Клуб" value={form.clubName} onChange={e => setForm(f => ({ ...f, clubName: e.target.value }))} className={inputCls} />
+            <input type="text" placeholder="Город" value={form.city || ''} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} className={inputCls} />
             <select value={form.sportType || ''} onChange={e => setForm(f => ({ ...f, sportType: e.target.value }))} className={inputCls}>
               <option value="">— Вид спорта —</option>
               {SPORT_TYPES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}

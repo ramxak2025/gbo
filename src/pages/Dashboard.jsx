@@ -258,20 +258,38 @@ function StudentDash({ auth, data, dark, navigate }) {
     .filter(t => t && new Date(t.date) >= new Date())
     .sort((a, b) => new Date(a.date) - new Date(b.date))
 
-  // Find next opponent in active internal tournaments
+  // Find next opponent in active internal tournaments (supports multi-category)
   const myInternalMatches = useMemo(() => {
     const matches = []
-    const internalTournaments = (data.internalTournaments || []).filter(t =>
-      t.status === 'active' && t.brackets?.participants?.includes(auth.studentId)
-    )
+    const internalTournaments = (data.internalTournaments || []).filter(t => t.status === 'active')
     for (const tournament of internalTournaments) {
-      const rounds = tournament.brackets?.rounds || []
-      for (let ri = 0; ri < rounds.length; ri++) {
-        for (const match of rounds[ri]) {
-          if (!match.winner && (match.player1 === auth.studentId || match.player2 === auth.studentId)) {
-            const opponentId = match.player1 === auth.studentId ? match.player2 : match.player1
-            const opponent = opponentId ? data.students.find(s => s.id === opponentId) : null
-            matches.push({ tournament, roundIdx: ri, opponent })
+      const brackets = tournament.brackets || {}
+      const cats = brackets.categories || []
+      // Multi-category format
+      if (cats.length > 0) {
+        for (const cat of cats) {
+          if (!cat.participants?.includes(auth.studentId)) continue
+          const rounds = cat.rounds || []
+          for (let ri = 0; ri < rounds.length; ri++) {
+            for (const match of rounds[ri]) {
+              if (!match.winner && (match.s1 === auth.studentId || match.s2 === auth.studentId)) {
+                const opponentId = match.s1 === auth.studentId ? match.s2 : match.s1
+                const opponent = opponentId ? data.students.find(s => s.id === opponentId) : null
+                matches.push({ tournament, roundIdx: ri, opponent, weightClass: cat.weightClass })
+              }
+            }
+          }
+        }
+      } else if (brackets.rounds && brackets.participants?.includes(auth.studentId)) {
+        // Legacy single bracket
+        const rounds = brackets.rounds || []
+        for (let ri = 0; ri < rounds.length; ri++) {
+          for (const match of rounds[ri]) {
+            if (!match.winner && (match.s1 === auth.studentId || match.s2 === auth.studentId)) {
+              const opponentId = match.s1 === auth.studentId ? match.s2 : match.s1
+              const opponent = opponentId ? data.students.find(s => s.id === opponentId) : null
+              matches.push({ tournament, roundIdx: ri, opponent, weightClass: brackets.weightClass })
+            }
           }
         }
       }
@@ -355,7 +373,7 @@ function StudentDash({ auth, data, dark, navigate }) {
                 className="mb-2 border border-accent/30 bg-gradient-to-r from-accent/5 to-purple-500/5"
               >
                 <div className="text-[10px] uppercase font-bold text-accent mb-2">
-                  {m.tournament.title} — Раунд {m.roundIdx + 1}
+                  {m.tournament.title}{m.weightClass ? ` • ${m.weightClass}` : ''} — Раунд {m.roundIdx + 1}
                 </div>
                 {m.opponent ? (
                   <div className="flex items-center gap-3">

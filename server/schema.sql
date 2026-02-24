@@ -98,6 +98,12 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_column THEN NULL;
 END $$;
 
+-- City for trainers
+DO $$ BEGIN
+  ALTER TABLE users ADD COLUMN city VARCHAR(255);
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
 CREATE TABLE IF NOT EXISTS internal_tournaments (
   id TEXT PRIMARY KEY,
   trainer_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

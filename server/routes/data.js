@@ -8,7 +8,7 @@ const router = Router()
 const genId = () => Date.now().toString(36) + crypto.randomBytes(4).toString('hex')
 
 function mapUser(u) {
-  return { id: u.id, name: u.name, phone: u.phone, role: u.role, avatar: u.avatar, clubName: u.club_name, sportType: u.sport_type }
+  return { id: u.id, name: u.name, phone: u.phone, role: u.role, avatar: u.avatar, clubName: u.club_name, sportType: u.sport_type, city: u.city }
 }
 function mapInternalTournament(t) {
   return { id: t.id, trainerId: t.trainer_id, title: t.title, date: t.date, status: t.status, brackets: t.brackets, createdAt: t.created_at }
@@ -203,18 +203,18 @@ router.delete('/news/:id', authMiddleware, async (req, res) => {
 
 // --- Trainers (admin only) ---
 router.post('/trainers', authMiddleware, async (req, res) => {
-  const { name, phone, password, clubName, avatar, sportType } = req.body
+  const { name, phone, password, clubName, avatar, sportType, city } = req.body
   const id = genId()
   const hash = bcrypt.hashSync(password || 'trainer123', 10)
-  await pool.query('INSERT INTO users (id, name, phone, password_hash, role, club_name, avatar, sport_type) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
-    [id, name, phone, hash, 'trainer', clubName || '', avatar || null, sportType || null])
-  res.json({ id, name, phone, role: 'trainer', clubName, avatar, sportType })
+  await pool.query('INSERT INTO users (id, name, phone, password_hash, role, club_name, avatar, sport_type, city) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+    [id, name, phone, hash, 'trainer', clubName || '', avatar || null, sportType || null, city || null])
+  res.json({ id, name, phone, role: 'trainer', clubName, avatar, sportType, city })
 })
 
 router.put('/trainers/:id', authMiddleware, async (req, res) => {
-  const { name, phone, clubName, avatar, sportType } = req.body
-  await pool.query('UPDATE users SET name=COALESCE($1,name), phone=COALESCE($2,phone), club_name=COALESCE($3,club_name), avatar=COALESCE($4,avatar), sport_type=COALESCE($5,sport_type) WHERE id=$6',
-    [name, phone, clubName, avatar, sportType, req.params.id])
+  const { name, phone, clubName, avatar, sportType, city } = req.body
+  await pool.query('UPDATE users SET name=COALESCE($1,name), phone=COALESCE($2,phone), club_name=COALESCE($3,club_name), avatar=COALESCE($4,avatar), sport_type=COALESCE($5,sport_type), city=COALESCE($6,city) WHERE id=$7',
+    [name, phone, clubName, avatar, sportType, city, req.params.id])
   res.json({ ok: true })
 })
 

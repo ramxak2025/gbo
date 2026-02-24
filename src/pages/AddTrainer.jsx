@@ -17,6 +17,7 @@ export default function AddTrainer() {
     password: 'trainer123',
     phone: '',
     clubName: '',
+    city: '',
     sportType: 'bjj',
   })
 
@@ -29,6 +30,7 @@ export default function AddTrainer() {
       password: form.password,
       phone: phoneDigits,
       clubName: form.clubName.trim(),
+      city: form.city.trim(),
       sportType: form.sportType,
       avatar: null,
     })
@@ -61,6 +63,13 @@ export default function AddTrainer() {
             placeholder="Название клуба"
             value={form.clubName}
             onChange={e => setForm(f => ({ ...f, clubName: e.target.value }))}
+            className={inputCls}
+          />
+          <input
+            type="text"
+            placeholder="Город"
+            value={form.city}
+            onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
             className={inputCls}
           />
           <select
