@@ -31,8 +31,26 @@ app.use('/api/push', pushRoutes)
 
 // Serve React build
 const distPath = path.join(__dirname, '..', 'dist')
-app.use(express.static(distPath))
+
+// Prevent caching of sw.js so browser always checks for updates
+app.get('/sw.js', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+  res.setHeader('Pragma', 'no-cache')
+  res.setHeader('Expires', '0')
+  res.sendFile(path.join(distPath, 'sw.js'))
+})
+
+app.use(express.static(distPath, {
+  setHeaders: (res, filePath) => {
+    // No cache for index.html, aggressive cache for hashed assets
+    if (filePath.endsWith('index.html') || filePath.endsWith('manifest.json')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
+    }
+  }
+}))
+
 app.use((req, res) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate')
   res.sendFile(path.join(distPath, 'index.html'))
 })
 

@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords, MapPin } from 'lucide-react'
+import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords, MapPin, Megaphone, Plus } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -164,12 +164,15 @@ function SuperAdminDash({ data, dark, navigate }) {
 }
 
 function TrainerDash({ auth, data, dark, navigate }) {
+  const { addNews } = useData()
   const myStudents = data.students.filter(s => s.trainerId === auth.userId)
   const myGroups = data.groups.filter(g => g.trainerId === auth.userId)
   const myTx = data.transactions.filter(t => t.trainerId === auth.userId)
   const myNews = data.news.filter(n => n.trainerId === auth.userId)
 
   const studentsWithStatus = myStudents.filter(s => s.status)
+  const [showNews, setShowNews] = useState(false)
+  const [newsForm, setNewsForm] = useState({ title: '', content: '', groupId: '__all__' })
 
   const stats = useMemo(() => {
     const active = myStudents.filter(s => !isExpired(s.subscriptionExpiresAt)).length
@@ -179,10 +182,40 @@ function TrainerDash({ auth, data, dark, navigate }) {
     return { total: myStudents.length, active, debtors, income, expense, balance: income - expense }
   }, [myStudents, myTx])
 
+  const handleAddNews = (e) => {
+    e.preventDefault()
+    if (!newsForm.title.trim()) return
+    addNews({
+      trainerId: auth.userId,
+      groupId: newsForm.groupId === '__all__' ? null : newsForm.groupId,
+      title: newsForm.title.trim(),
+      content: newsForm.content.trim(),
+    })
+    setNewsForm({ title: '', content: '', groupId: '__all__' })
+    setShowNews(false)
+  }
+
+  const inputCls = `
+    w-full px-4 py-3 rounded-[16px] text-base outline-none
+    ${dark
+      ? 'bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-accent'
+      : 'bg-black/[0.03] border border-black/[0.08] text-gray-900 placeholder-gray-400 focus:border-accent'
+    }
+  `
+
   return (
     <Layout>
       <PageHeader title={auth.user?.clubName || 'Мой клуб'} logo />
       <div className="px-4 space-y-4 slide-in stagger">
+        {/* Add news button — prominent */}
+        <button
+          onClick={() => { setNewsForm({ title: '', content: '', groupId: '__all__' }); setShowNews(true) }}
+          className="w-full py-3.5 rounded-[20px] bg-gradient-to-r from-accent to-purple-600 text-white font-bold press-scale flex items-center justify-center gap-2.5 shadow-lg shadow-accent/25"
+        >
+          <Megaphone size={20} />
+          Новая новость
+        </button>
+
         <div className="grid grid-cols-3 gap-2">
           <GlassCard className="text-center">
             <Users size={18} className="mx-auto mb-1 text-accent" />
@@ -270,21 +303,57 @@ function TrainerDash({ auth, data, dark, navigate }) {
           <div>
             <h2 className={`text-sm uppercase font-bold mb-3 ${dark ? 'text-white/50' : 'text-gray-500'}`}>Последние новости</h2>
             <div className="space-y-2">
-              {myNews.slice(-2).reverse().map(n => (
-                <GlassCard key={n.id}>
-                  <div className="flex items-start gap-2">
-                    <Newspaper size={16} className="text-accent shrink-0 mt-0.5" />
-                    <div>
-                      <div className="font-semibold text-sm">{n.title}</div>
-                      <div className={`text-xs mt-0.5 ${dark ? 'text-white/40' : 'text-gray-400'}`}>{n.content}</div>
+              {myNews.slice(-3).reverse().map(n => {
+                const g = myGroups.find(g => g.id === n.groupId)
+                return (
+                  <GlassCard key={n.id}>
+                    <div className="flex items-start gap-2">
+                      <Newspaper size={16} className="text-accent shrink-0 mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-sm">{n.title}</div>
+                        <div className={`text-xs mt-0.5 ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+                          {n.groupId ? g?.name || '—' : 'Все группы'} — {n.content?.slice(0, 50)}{n.content?.length > 50 ? '...' : ''}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </GlassCard>
-              ))}
+                  </GlassCard>
+                )
+              })}
             </div>
           </div>
         )}
       </div>
+
+      {/* News creation modal */}
+      <Modal open={showNews} onClose={() => setShowNews(false)} title="Новая новость">
+        <form onSubmit={handleAddNews} className="space-y-3">
+          <select
+            value={newsForm.groupId}
+            onChange={e => setNewsForm(f => ({ ...f, groupId: e.target.value }))}
+            className={inputCls}
+          >
+            <option value="__all__">Все группы</option>
+            {myGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+          <input
+            type="text"
+            placeholder="Заголовок"
+            value={newsForm.title}
+            onChange={e => setNewsForm(f => ({ ...f, title: e.target.value }))}
+            className={inputCls}
+          />
+          <textarea
+            placeholder="Текст новости"
+            value={newsForm.content}
+            onChange={e => setNewsForm(f => ({ ...f, content: e.target.value }))}
+            className={`${inputCls} min-h-[100px] resize-none`}
+            rows={3}
+          />
+          <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale">
+            Опубликовать
+          </button>
+        </form>
+      </Modal>
     </Layout>
   )
 }
@@ -293,7 +362,7 @@ function StudentDash({ auth, data, dark, navigate }) {
   const student = data.students.find(s => s.id === auth.studentId)
   const group = student ? data.groups.find(g => g.id === student.groupId) : null
   const trainer = data.users.find(u => u.id === auth.userId)
-  const myNews = data.news.filter(n => n.groupId === student?.groupId)
+  const myNews = data.news.filter(n => n.groupId === student?.groupId || (!n.groupId && n.trainerId === auth.userId))
   const expired = isExpired(student?.subscriptionExpiresAt)
   const { updateStudent } = useData()
   const [showStatus, setShowStatus] = useState(false)

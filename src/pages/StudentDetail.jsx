@@ -11,6 +11,7 @@ import GlassCard from '../components/GlassCard'
 import PhoneInput, { formatPhone, cleanPhone } from '../components/PhoneInput'
 import Avatar from '../components/Avatar'
 import Modal from '../components/Modal'
+import DateButton from '../components/DateButton'
 import { getRankOptions, getRankLabel } from '../utils/sports'
 
 function isExpired(dateStr) {
@@ -97,13 +98,6 @@ export default function StudentDetail() {
     }
   `
 
-  const dateInputCls = `
-    w-full px-2 py-1.5 rounded-lg text-xs outline-none
-    ${dark
-      ? 'bg-white/5 border border-white/10 text-white focus:border-accent'
-      : 'bg-black/[0.03] border border-black/[0.08] text-gray-900 focus:border-accent'
-    }
-  `
 
   return (
     <Layout>
@@ -235,22 +229,10 @@ export default function StudentDetail() {
               <option value="">— {rankLabel} —</option>
               {rankOptions.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
-            <div className={`space-y-2 pt-2 ${dark ? 'border-t border-white/5' : 'border-t border-black/5'}`}>
-              <p className={`text-[11px] uppercase font-semibold ${dark ? 'text-white/30' : 'text-gray-400'}`}>Даты</p>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <p className={`text-[10px] mb-1 ${dark ? 'text-white/30' : 'text-gray-400'}`}>Рождение</p>
-                  <input type="date" value={form.birthDate || ''} onChange={e => setForm(f => ({ ...f, birthDate: e.target.value }))} className={dateInputCls} />
-                </div>
-                <div>
-                  <p className={`text-[10px] mb-1 ${dark ? 'text-white/30' : 'text-gray-400'}`}>Тренируется с</p>
-                  <input type="date" value={form.trainingStartDate || ''} onChange={e => setForm(f => ({ ...f, trainingStartDate: e.target.value }))} className={dateInputCls} />
-                </div>
-              </div>
-              <div>
-                <p className={`text-[10px] mb-1 ${dark ? 'text-white/30' : 'text-gray-400'}`}>Абонемент до</p>
-                <input type="date" value={form.subscriptionExpiresAt ? new Date(form.subscriptionExpiresAt).toISOString().split('T')[0] : ''} onChange={e => setForm(f => ({ ...f, subscriptionExpiresAt: e.target.value }))} className={dateInputCls} />
-              </div>
+            <div className={`flex flex-wrap gap-3 pt-3 ${dark ? 'border-t border-white/5' : 'border-t border-black/5'}`}>
+              <DateButton label="Рождение" value={form.birthDate || ''} onChange={v => setForm(f => ({ ...f, birthDate: v }))} />
+              <DateButton label="Тренируется с" value={form.trainingStartDate || ''} onChange={v => setForm(f => ({ ...f, trainingStartDate: v }))} />
+              <DateButton label="Абонемент до" value={form.subscriptionExpiresAt ? new Date(form.subscriptionExpiresAt).toISOString().split('T')[0] : ''} onChange={v => setForm(f => ({ ...f, subscriptionExpiresAt: v }))} />
             </div>
             <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale">
               Сохранить

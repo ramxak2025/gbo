@@ -1,4 +1,4 @@
-import { Camera, LogOut, Newspaper, Plus, Bell } from 'lucide-react'
+import { Camera, LogOut, Newspaper, Bell } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -9,15 +9,12 @@ import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
 import Avatar from '../components/Avatar'
-import Modal from '../components/Modal'
 
 export default function Profile() {
   const { auth, logout } = useAuth()
-  const { data, updateStudent, updateTrainer, addNews, deleteNews } = useData()
+  const { data, updateStudent, updateTrainer, deleteNews } = useData()
   const { dark } = useTheme()
   const navigate = useNavigate()
-  const [showNews, setShowNews] = useState(false)
-  const [newsForm, setNewsForm] = useState({ title: '', content: '', groupId: '' })
 
   const user = auth.user
   const student = auth.student ? data.students.find(s => s.id === auth.studentId) : null
@@ -46,30 +43,9 @@ export default function Profile() {
     }
   }
 
-  const handleAddNews = (e) => {
-    e.preventDefault()
-    if (!newsForm.title.trim() || !newsForm.groupId) return
-    addNews({
-      trainerId: auth.userId,
-      groupId: newsForm.groupId,
-      title: newsForm.title.trim(),
-      content: newsForm.content.trim(),
-    })
-    setNewsForm({ title: '', content: '', groupId: myGroups[0]?.id || '' })
-    setShowNews(false)
-  }
-
   const handleLogout = () => {
     logout()
   }
-
-  const inputCls = `
-    w-full px-4 py-3 rounded-[16px] text-base outline-none
-    ${dark
-      ? 'bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-accent'
-      : 'bg-black/[0.03] border border-black/[0.08] text-gray-900 placeholder-gray-400 focus:border-accent'
-    }
-  `
 
   const avatarSrc = auth.role === 'student' ? student?.avatar : user?.avatar
 
@@ -106,18 +82,10 @@ export default function Profile() {
             <span className="font-semibold text-sm">{user.phone}</span>
           </GlassCard>
         )}
-        {/* Trainer: News management */}
-        {auth.role === 'trainer' && (
+        {/* Trainer: News list */}
+        {auth.role === 'trainer' && myNews.length > 0 && (
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className={`text-sm uppercase font-bold ${dark ? 'text-white/50' : 'text-gray-500'}`}>Мои новости</h2>
-              <button
-                onClick={() => { setNewsForm({ title: '', content: '', groupId: myGroups[0]?.id || '' }); setShowNews(true) }}
-                className="text-accent text-xs font-semibold flex items-center gap-1 press-scale"
-              >
-                <Plus size={14} /> Добавить
-              </button>
-            </div>
+            <h2 className={`text-sm uppercase font-bold mb-3 ${dark ? 'text-white/50' : 'text-gray-500'}`}>Мои новости</h2>
             <div className="space-y-2">
               {myNews.slice().reverse().map(n => {
                 const g = myGroups.find(g => g.id === n.groupId)
@@ -126,7 +94,7 @@ export default function Profile() {
                     <div className="min-w-0">
                       <div className="font-semibold text-sm">{n.title}</div>
                       <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-400'}`}>
-                        {g?.name || '—'} — {n.content?.slice(0, 60)}{n.content?.length > 60 ? '...' : ''}
+                        {n.groupId ? (g?.name || '—') : 'Все группы'} — {n.content?.slice(0, 60)}{n.content?.length > 60 ? '...' : ''}
                       </div>
                     </div>
                     <button onClick={() => deleteNews(n.id)} className="press-scale p-1 shrink-0">
@@ -162,36 +130,6 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* News Modal */}
-      <Modal open={showNews} onClose={() => setShowNews(false)} title="Новая новость">
-        <form onSubmit={handleAddNews} className="space-y-3">
-          <select
-            value={newsForm.groupId}
-            onChange={e => setNewsForm(f => ({ ...f, groupId: e.target.value }))}
-            className={inputCls}
-          >
-            <option value="">— Выбрать группу —</option>
-            {myGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-          </select>
-          <input
-            type="text"
-            placeholder="Заголовок"
-            value={newsForm.title}
-            onChange={e => setNewsForm(f => ({ ...f, title: e.target.value }))}
-            className={inputCls}
-          />
-          <textarea
-            placeholder="Текст новости"
-            value={newsForm.content}
-            onChange={e => setNewsForm(f => ({ ...f, content: e.target.value }))}
-            className={`${inputCls} min-h-[100px] resize-none`}
-            rows={3}
-          />
-          <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale">
-            Опубликовать
-          </button>
-        </form>
-      </Modal>
     </Layout>
   )
 }

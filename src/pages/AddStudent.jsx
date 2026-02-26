@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Calendar } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import PhoneInput, { cleanPhone } from '../components/PhoneInput'
+import DateButton from '../components/DateButton'
 import { getRankOptions, getRankLabel } from '../utils/sports'
 
 export default function AddStudent() {
@@ -69,16 +69,6 @@ export default function AddStudent() {
     }
   `
 
-  const dateInputCls = `
-    w-full px-2 py-1.5 rounded-lg text-xs outline-none
-    ${dark
-      ? 'bg-white/5 border border-white/10 text-white focus:border-accent'
-      : 'bg-black/[0.03] border border-black/[0.08] text-gray-900 focus:border-accent'
-    }
-  `
-
-  const dateLabelCls = `text-[11px] uppercase font-semibold mb-1 flex items-center gap-1.5 ${dark ? 'text-white/40' : 'text-gray-400'}`
-
   return (
     <Layout>
       <PageHeader title="Новый ученик" back />
@@ -125,21 +115,10 @@ export default function AddStudent() {
           </div>
 
           {/* Dates section */}
-          <div className={`space-y-2.5 pt-2 ${dark ? 'border-t border-white/10' : 'border-t border-black/[0.08]'}`}>
-            <div>
-              <div className={dateLabelCls}><Calendar size={11} /> Дата рождения</div>
-              <input type="date" value={form.birthDate} onChange={e => setForm(f => ({ ...f, birthDate: e.target.value }))} className={dateInputCls} />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <div className={dateLabelCls}><Calendar size={11} /> Тренируется с</div>
-                <input type="date" value={form.trainingStartDate} onChange={e => setForm(f => ({ ...f, trainingStartDate: e.target.value }))} className={dateInputCls} />
-              </div>
-              <div>
-                <div className={dateLabelCls}><Calendar size={11} /> Абонемент до</div>
-                <input type="date" value={form.subscriptionExpiresAt} onChange={e => setForm(f => ({ ...f, subscriptionExpiresAt: e.target.value }))} className={dateInputCls} />
-              </div>
-            </div>
+          <div className={`flex flex-wrap gap-3 pt-3 ${dark ? 'border-t border-white/10' : 'border-t border-black/[0.08]'}`}>
+            <DateButton label="Дата рождения" value={form.birthDate} onChange={v => setForm(f => ({ ...f, birthDate: v }))} />
+            <DateButton label="Тренируется с" value={form.trainingStartDate} onChange={v => setForm(f => ({ ...f, trainingStartDate: v }))} />
+            <DateButton label="Абонемент до" value={form.subscriptionExpiresAt} onChange={v => setForm(f => ({ ...f, subscriptionExpiresAt: v }))} />
           </div>
 
           <div className={`pt-2 ${dark ? 'border-t border-white/10' : 'border-t border-black/[0.08]'}`}>
