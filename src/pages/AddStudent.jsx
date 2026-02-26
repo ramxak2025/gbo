@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Calendar } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -27,6 +28,8 @@ export default function AddStudent() {
     birthDate: '',
     groupId: myGroups[0]?.id || '',
     password: 'student123',
+    trainingStartDate: new Date().toISOString().split('T')[0],
+    subscriptionExpiresAt: '',
   })
 
   const handleSubmit = (e) => {
@@ -34,8 +37,13 @@ export default function AddStudent() {
     const phoneDigits = cleanPhone(form.phone)
     if (!form.name.trim() || phoneDigits.length < 11) return
 
-    const expiresAt = new Date()
-    expiresAt.setMonth(expiresAt.getMonth() + 1)
+    // If no subscription date set, default to 1 month from now
+    let subExpires = form.subscriptionExpiresAt
+    if (!subExpires) {
+      const d = new Date()
+      d.setMonth(d.getMonth() + 1)
+      subExpires = d.toISOString()
+    }
 
     addStudent({
       trainerId: auth.userId,
@@ -46,7 +54,8 @@ export default function AddStudent() {
       belt: form.belt,
       birthDate: form.birthDate,
       avatar: null,
-      subscriptionExpiresAt: expiresAt.toISOString(),
+      subscriptionExpiresAt: subExpires,
+      trainingStartDate: form.trainingStartDate || null,
       password: form.password,
     })
     navigate(-1)
@@ -59,6 +68,8 @@ export default function AddStudent() {
       : 'bg-black/[0.03] border border-black/[0.08] text-gray-900 placeholder-gray-400 focus:border-accent'
     }
   `
+
+  const dateLabelCls = `text-[11px] uppercase font-semibold mb-1 flex items-center gap-1.5 ${dark ? 'text-white/40' : 'text-gray-400'}`
 
   return (
     <Layout>
@@ -104,13 +115,39 @@ export default function AddStudent() {
               {rankOptions.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
           </div>
-          <input
-            type="date"
-            placeholder="Дата рождения"
-            value={form.birthDate}
-            onChange={e => setForm(f => ({ ...f, birthDate: e.target.value }))}
-            className={inputCls}
-          />
+
+          {/* Dates section */}
+          <div className={`space-y-3 pt-2 ${dark ? 'border-t border-white/10' : 'border-t border-black/[0.08]'}`}>
+            <div>
+              <div className={dateLabelCls}><Calendar size={12} /> Дата рождения</div>
+              <input
+                type="date"
+                value={form.birthDate}
+                onChange={e => setForm(f => ({ ...f, birthDate: e.target.value }))}
+                className={inputCls}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className={dateLabelCls}><Calendar size={12} /> Тренируется с</div>
+                <input
+                  type="date"
+                  value={form.trainingStartDate}
+                  onChange={e => setForm(f => ({ ...f, trainingStartDate: e.target.value }))}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <div className={dateLabelCls}><Calendar size={12} /> Абонемент до</div>
+                <input
+                  type="date"
+                  value={form.subscriptionExpiresAt}
+                  onChange={e => setForm(f => ({ ...f, subscriptionExpiresAt: e.target.value }))}
+                  className={inputCls}
+                />
+              </div>
+            </div>
+          </div>
 
           <div className={`pt-2 ${dark ? 'border-t border-white/10' : 'border-t border-black/[0.08]'}`}>
             <p className={`text-xs mb-2 ${dark ? 'text-white/40' : 'text-gray-400'}`}>Пароль для входа ученика</p>

@@ -20,6 +20,7 @@ function mapStudent(s) {
     weight: s.weight ? parseFloat(s.weight) : null,
     belt: s.belt, birthDate: s.birth_date, avatar: s.avatar,
     subscriptionExpiresAt: s.subscription_expires_at, status: s.status,
+    trainingStartDate: s.training_start_date,
     createdAt: s.created_at, password: '***',
   }
 }
@@ -68,28 +69,28 @@ router.get('/', authMiddleware, async (req, res) => {
 
 // --- Students ---
 router.post('/students', authMiddleware, async (req, res) => {
-  const { name, phone, weight, belt, birthDate, groupId, password, avatar, subscriptionExpiresAt, trainerId } = req.body
+  const { name, phone, weight, belt, birthDate, groupId, password, avatar, subscriptionExpiresAt, trainerId, trainingStartDate } = req.body
   const id = genId()
   const hash = bcrypt.hashSync(password || 'student123', 10)
   const tid = trainerId || req.user.userId
   await pool.query(
-    `INSERT INTO students (id, trainer_id, group_id, name, phone, password_hash, weight, belt, birth_date, avatar, subscription_expires_at, created_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW())`,
-    [id, tid, groupId || null, name, phone, hash, weight || null, belt || null, birthDate || null, avatar || null, subscriptionExpiresAt || null]
+    `INSERT INTO students (id, trainer_id, group_id, name, phone, password_hash, weight, belt, birth_date, avatar, subscription_expires_at, training_start_date, created_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW())`,
+    [id, tid, groupId || null, name, phone, hash, weight || null, belt || null, birthDate || null, avatar || null, subscriptionExpiresAt || null, trainingStartDate || null]
   )
   const { rows: [s] } = await pool.query('SELECT * FROM students WHERE id = $1', [id])
   res.json(mapStudent(s))
 })
 
 router.put('/students/:id', authMiddleware, async (req, res) => {
-  const { name, phone, weight, belt, birthDate, avatar, subscriptionExpiresAt, status, groupId, password } = req.body
+  const { name, phone, weight, belt, birthDate, avatar, subscriptionExpiresAt, status, groupId, password, trainingStartDate } = req.body
   const sets = []
   const vals = []
   let i = 1
   const add = (col, val) => { if (val !== undefined) { sets.push(`${col} = $${i++}`); vals.push(val) } }
   add('name', name); add('phone', phone); add('weight', weight); add('belt', belt)
   add('birth_date', birthDate); add('avatar', avatar); add('subscription_expires_at', subscriptionExpiresAt)
-  add('status', status); add('group_id', groupId)
+  add('status', status); add('group_id', groupId); add('training_start_date', trainingStartDate)
   if (password) { add('password_hash', bcrypt.hashSync(password, 10)) }
   if (sets.length === 0) return res.json({ ok: true })
   vals.push(req.params.id)

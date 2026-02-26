@@ -9,7 +9,7 @@ import { SPORT_TYPES } from '../utils/sports'
 
 export default function AddTrainer() {
   const navigate = useNavigate()
-  const { addTrainer } = useData()
+  const { data, addTrainer } = useData()
   const { dark } = useTheme()
 
   const [form, setForm] = useState({
@@ -65,13 +65,21 @@ export default function AddTrainer() {
             onChange={e => setForm(f => ({ ...f, clubName: e.target.value }))}
             className={inputCls}
           />
-          <input
-            type="text"
-            placeholder="Город"
-            value={form.city}
-            onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
-            className={inputCls}
-          />
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Город"
+              value={form.city}
+              onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
+              className={inputCls}
+              list="city-list"
+            />
+            <datalist id="city-list">
+              {[...new Set(data.users.filter(u => u.city).map(u => u.city))].map(c =>
+                <option key={c} value={c} />
+              )}
+            </datalist>
+          </div>
           <select
             value={form.sportType}
             onChange={e => setForm(f => ({ ...f, sportType: e.target.value }))}

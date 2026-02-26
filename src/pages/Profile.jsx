@@ -1,4 +1,4 @@
-import { Camera, LogOut, RotateCcw, Newspaper, Plus, Bell } from 'lucide-react'
+import { Camera, LogOut, Newspaper, Plus, Bell } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -13,7 +13,7 @@ import Modal from '../components/Modal'
 
 export default function Profile() {
   const { auth, logout } = useAuth()
-  const { data, resetAll, updateStudent, updateTrainer, addNews, deleteNews } = useData()
+  const { data, updateStudent, updateTrainer, addNews, deleteNews } = useData()
   const { dark } = useTheme()
   const navigate = useNavigate()
   const [showNews, setShowNews] = useState(false)
@@ -57,13 +57,6 @@ export default function Profile() {
     })
     setNewsForm({ title: '', content: '', groupId: myGroups[0]?.id || '' })
     setShowNews(false)
-  }
-
-  const handleReset = () => {
-    if (confirm('Сбросить все данные? Это очистит всё приложение.')) {
-      resetAll()
-      logout()
-    }
   }
 
   const handleLogout = () => {
@@ -165,13 +158,6 @@ export default function Profile() {
           >
             <LogOut size={18} />
             Выйти
-          </button>
-          <button
-            onClick={handleReset}
-            className="w-full py-3.5 rounded-[16px] font-bold text-base press-scale flex items-center justify-center gap-2 bg-red-500/10 text-red-400"
-          >
-            <RotateCcw size={18} />
-            Сброс данных
           </button>
         </div>
       </div>

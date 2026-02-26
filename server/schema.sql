@@ -92,6 +92,12 @@ CREATE TABLE IF NOT EXISTS notification_settings (
   UNIQUE(user_id, student_id)
 );
 
+-- Training start date for students
+DO $$ BEGIN
+  ALTER TABLE students ADD COLUMN training_start_date DATE;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
 -- Sport type for trainers
 DO $$ BEGIN
   ALTER TABLE users ADD COLUMN sport_type VARCHAR(50);

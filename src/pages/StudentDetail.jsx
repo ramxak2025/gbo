@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Phone, Calendar, Scale, Award, Trash2, Edit3, Camera } from 'lucide-react'
+import { Phone, Calendar, Scale, Award, Trash2, Edit3, Camera, Dumbbell, CreditCard } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -65,6 +65,8 @@ export default function StudentDetail() {
       weight: parseFloat(form.weight) || 0,
       belt: form.belt,
       birthDate: form.birthDate,
+      trainingStartDate: form.trainingStartDate || null,
+      subscriptionExpiresAt: form.subscriptionExpiresAt || null,
     })
     setEditing(false)
   }
@@ -174,15 +176,21 @@ export default function StudentDetail() {
 
         <GlassCard>
           <div className="flex items-center justify-between">
-            <span className={`text-sm ${dark ? 'text-white/40' : 'text-gray-400'}`}>Абонемент до</span>
-            <span className="font-bold">{formatDate(student.subscriptionExpiresAt)}</span>
+            <div className="flex items-center gap-2">
+              <CreditCard size={14} className={expired ? 'text-red-400' : 'text-green-400'} />
+              <span className={`text-sm ${dark ? 'text-white/40' : 'text-gray-400'}`}>Абонемент до</span>
+            </div>
+            <span className={`font-bold ${expired ? 'text-red-400' : ''}`}>{formatDate(student.subscriptionExpiresAt)}</span>
           </div>
         </GlassCard>
 
         <GlassCard>
           <div className="flex items-center justify-between">
-            <span className={`text-sm ${dark ? 'text-white/40' : 'text-gray-400'}`}>В клубе с</span>
-            <span className="font-bold">{formatDate(student.createdAt)}</span>
+            <div className="flex items-center gap-2">
+              <Dumbbell size={14} className="text-accent" />
+              <span className={`text-sm ${dark ? 'text-white/40' : 'text-gray-400'}`}>Тренируется с</span>
+            </div>
+            <span className="font-bold">{formatDate(student.trainingStartDate || student.createdAt)}</span>
           </div>
         </GlassCard>
       </div>
@@ -219,13 +227,23 @@ export default function StudentDetail() {
               <option value="">— {rankLabel} —</option>
               {rankOptions.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
-            <input
-              type="date"
-              placeholder="Дата рождения"
-              value={form.birthDate}
-              onChange={e => setForm(f => ({ ...f, birthDate: e.target.value }))}
-              className={inputCls}
-            />
+            <div className={`space-y-2 pt-2 ${dark ? 'border-t border-white/5' : 'border-t border-black/5'}`}>
+              <p className={`text-[11px] uppercase font-semibold ${dark ? 'text-white/30' : 'text-gray-400'}`}>Даты</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className={`text-[10px] mb-1 ${dark ? 'text-white/30' : 'text-gray-400'}`}>Рождение</p>
+                  <input type="date" value={form.birthDate || ''} onChange={e => setForm(f => ({ ...f, birthDate: e.target.value }))} className={inputCls} />
+                </div>
+                <div>
+                  <p className={`text-[10px] mb-1 ${dark ? 'text-white/30' : 'text-gray-400'}`}>Тренируется с</p>
+                  <input type="date" value={form.trainingStartDate || ''} onChange={e => setForm(f => ({ ...f, trainingStartDate: e.target.value }))} className={inputCls} />
+                </div>
+              </div>
+              <div>
+                <p className={`text-[10px] mb-1 ${dark ? 'text-white/30' : 'text-gray-400'}`}>Абонемент до</p>
+                <input type="date" value={form.subscriptionExpiresAt ? new Date(form.subscriptionExpiresAt).toISOString().split('T')[0] : ''} onChange={e => setForm(f => ({ ...f, subscriptionExpiresAt: e.target.value }))} className={inputCls} />
+              </div>
+            </div>
             <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale">
               Сохранить
             </button>

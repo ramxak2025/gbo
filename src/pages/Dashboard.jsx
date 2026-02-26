@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords } from 'lucide-react'
+import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords, MapPin } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -64,13 +64,57 @@ export default function Dashboard() {
 }
 
 function SuperAdminDash({ data, dark, navigate }) {
-  const trainers = data.users.filter(u => u.role === 'trainer')
-  const totalStudents = data.students.length
+  const allTrainers = data.users.filter(u => u.role === 'trainer')
+  const [cityFilter, setCityFilter] = useState('')
+
+  // Get unique cities
+  const cities = [...new Set(allTrainers.filter(t => t.city).map(t => t.city))].sort()
+
+  // Filter by city
+  const trainers = cityFilter
+    ? allTrainers.filter(t => t.city === cityFilter)
+    : allTrainers
+  const trainerIds = new Set(trainers.map(t => t.id))
+  const filteredStudents = cityFilter
+    ? data.students.filter(s => trainerIds.has(s.trainerId))
+    : data.students
 
   return (
     <Layout>
       <PageHeader title="iBorcuha" logo gradient />
       <div className="px-4 space-y-4 slide-in stagger">
+        {/* City filter */}
+        {cities.length > 0 && (
+          <div className="overflow-x-auto -mx-4 px-4 pb-1">
+            <div className="flex gap-2" style={{ minWidth: 'max-content' }}>
+              <button
+                onClick={() => setCityFilter('')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold press-scale whitespace-nowrap flex items-center gap-1.5 transition-all ${
+                  !cityFilter
+                    ? 'bg-accent text-white'
+                    : dark ? 'bg-white/5 text-white/60' : 'bg-black/5 text-gray-500'
+                }`}
+              >
+                Все города
+              </button>
+              {cities.map(city => (
+                <button
+                  key={city}
+                  onClick={() => setCityFilter(cityFilter === city ? '' : city)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold press-scale whitespace-nowrap flex items-center gap-1.5 transition-all ${
+                    cityFilter === city
+                      ? 'bg-accent text-white'
+                      : dark ? 'bg-white/5 text-white/60' : 'bg-black/5 text-gray-500'
+                  }`}
+                >
+                  <MapPin size={11} />
+                  {city}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-3">
           <GlassCard>
             <div className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-400'}`}>Тренеры</div>
@@ -78,7 +122,7 @@ function SuperAdminDash({ data, dark, navigate }) {
           </GlassCard>
           <GlassCard>
             <div className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-400'}`}>Спортсмены</div>
-            <div className="text-3xl font-black mt-1">{totalStudents}</div>
+            <div className="text-3xl font-black mt-1">{filteredStudents.length}</div>
           </GlassCard>
         </div>
         <div>
@@ -87,12 +131,15 @@ function SuperAdminDash({ data, dark, navigate }) {
             {trainers.map(t => {
               const count = data.students.filter(s => s.trainerId === t.id).length
               return (
-                <GlassCard key={t.id} className="flex items-center justify-between">
-                  <div>
-                    <div className="font-bold">{t.clubName}</div>
-                    <div className={`text-sm ${dark ? 'text-white/40' : 'text-gray-400'}`}>{t.name}</div>
+                <GlassCard key={t.id} onClick={() => navigate(`/trainer/${t.id}`)} className="flex items-center justify-between">
+                  <div className="min-w-0">
+                    <div className="font-bold truncate">{t.clubName || t.name}</div>
+                    <div className={`text-sm ${dark ? 'text-white/40' : 'text-gray-400'} flex items-center gap-1`}>
+                      {t.name}
+                      {t.city && <><span className="mx-1">•</span><MapPin size={11} />{t.city}</>}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 text-sm"><Users size={14} /><span>{count}</span></div>
+                  <div className="flex items-center gap-1 text-sm shrink-0 ml-2"><Users size={14} /><span>{count}</span></div>
                 </GlassCard>
               )
             })}

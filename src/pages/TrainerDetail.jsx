@@ -150,7 +150,12 @@ export default function TrainerDetail() {
           <form onSubmit={saveEdit} className="space-y-3">
             <input type="text" placeholder="ФИО" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} />
             <input type="text" placeholder="Клуб" value={form.clubName} onChange={e => setForm(f => ({ ...f, clubName: e.target.value }))} className={inputCls} />
-            <input type="text" placeholder="Город" value={form.city || ''} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} className={inputCls} />
+            <div className="relative">
+              <input type="text" placeholder="Город" value={form.city || ''} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} className={inputCls} list="city-edit-list" />
+              <datalist id="city-edit-list">
+                {[...new Set(data.users.filter(u => u.city).map(u => u.city))].map(c => <option key={c} value={c} />)}
+              </datalist>
+            </div>
             <select value={form.sportType || ''} onChange={e => setForm(f => ({ ...f, sportType: e.target.value }))} className={inputCls}>
               <option value="">— Вид спорта —</option>
               {SPORT_TYPES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
