@@ -70,7 +70,7 @@ export default function AddStudent() {
   `
 
   const dateInputCls = `
-    w-full px-3 py-2 rounded-xl text-sm outline-none
+    w-full px-2 py-1.5 rounded-lg text-xs outline-none
     ${dark
       ? 'bg-white/5 border border-white/10 text-white focus:border-accent'
       : 'bg-black/[0.03] border border-black/[0.08] text-gray-900 focus:border-accent'
