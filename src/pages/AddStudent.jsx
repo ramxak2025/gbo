@@ -69,6 +69,14 @@ export default function AddStudent() {
     }
   `
 
+  const dateInputCls = `
+    w-full px-3 py-2 rounded-xl text-sm outline-none
+    ${dark
+      ? 'bg-white/5 border border-white/10 text-white focus:border-accent'
+      : 'bg-black/[0.03] border border-black/[0.08] text-gray-900 focus:border-accent'
+    }
+  `
+
   const dateLabelCls = `text-[11px] uppercase font-semibold mb-1 flex items-center gap-1.5 ${dark ? 'text-white/40' : 'text-gray-400'}`
 
   return (
@@ -117,34 +125,19 @@ export default function AddStudent() {
           </div>
 
           {/* Dates section */}
-          <div className={`space-y-3 pt-2 ${dark ? 'border-t border-white/10' : 'border-t border-black/[0.08]'}`}>
+          <div className={`space-y-2.5 pt-2 ${dark ? 'border-t border-white/10' : 'border-t border-black/[0.08]'}`}>
             <div>
-              <div className={dateLabelCls}><Calendar size={12} /> Дата рождения</div>
-              <input
-                type="date"
-                value={form.birthDate}
-                onChange={e => setForm(f => ({ ...f, birthDate: e.target.value }))}
-                className={inputCls}
-              />
+              <div className={dateLabelCls}><Calendar size={11} /> Дата рождения</div>
+              <input type="date" value={form.birthDate} onChange={e => setForm(f => ({ ...f, birthDate: e.target.value }))} className={dateInputCls} />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <div>
-                <div className={dateLabelCls}><Calendar size={12} /> Тренируется с</div>
-                <input
-                  type="date"
-                  value={form.trainingStartDate}
-                  onChange={e => setForm(f => ({ ...f, trainingStartDate: e.target.value }))}
-                  className={inputCls}
-                />
+                <div className={dateLabelCls}><Calendar size={11} /> Тренируется с</div>
+                <input type="date" value={form.trainingStartDate} onChange={e => setForm(f => ({ ...f, trainingStartDate: e.target.value }))} className={dateInputCls} />
               </div>
               <div>
-                <div className={dateLabelCls}><Calendar size={12} /> Абонемент до</div>
-                <input
-                  type="date"
-                  value={form.subscriptionExpiresAt}
-                  onChange={e => setForm(f => ({ ...f, subscriptionExpiresAt: e.target.value }))}
-                  className={inputCls}
-                />
+                <div className={dateLabelCls}><Calendar size={11} /> Абонемент до</div>
+                <input type="date" value={form.subscriptionExpiresAt} onChange={e => setForm(f => ({ ...f, subscriptionExpiresAt: e.target.value }))} className={dateInputCls} />
               </div>
             </div>
           </div>

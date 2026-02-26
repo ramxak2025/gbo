@@ -104,6 +104,14 @@ export default function CreateInternalTournament() {
     }
   `
 
+  const dateInputCls = `
+    w-full px-3 py-2 rounded-xl text-sm outline-none
+    ${dark
+      ? 'bg-white/5 border border-white/10 text-white focus:border-accent'
+      : 'bg-black/[0.03] border border-black/[0.08] text-gray-900 focus:border-accent'
+    }
+  `
+
   return (
     <Layout>
       <PageHeader title="Свой турнир" back />
@@ -123,7 +131,7 @@ export default function CreateInternalTournament() {
               type="date"
               value={form.date}
               onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-              className={inputCls}
+              className={dateInputCls}
             />
             <button
               onClick={() => setStep(2)}

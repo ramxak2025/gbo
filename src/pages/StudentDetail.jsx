@@ -97,6 +97,14 @@ export default function StudentDetail() {
     }
   `
 
+  const dateInputCls = `
+    w-full px-3 py-2 rounded-xl text-sm outline-none
+    ${dark
+      ? 'bg-white/5 border border-white/10 text-white focus:border-accent'
+      : 'bg-black/[0.03] border border-black/[0.08] text-gray-900 focus:border-accent'
+    }
+  `
+
   return (
     <Layout>
       <PageHeader title="Досье" back>
@@ -232,16 +240,16 @@ export default function StudentDetail() {
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <p className={`text-[10px] mb-1 ${dark ? 'text-white/30' : 'text-gray-400'}`}>Рождение</p>
-                  <input type="date" value={form.birthDate || ''} onChange={e => setForm(f => ({ ...f, birthDate: e.target.value }))} className={inputCls} />
+                  <input type="date" value={form.birthDate || ''} onChange={e => setForm(f => ({ ...f, birthDate: e.target.value }))} className={dateInputCls} />
                 </div>
                 <div>
                   <p className={`text-[10px] mb-1 ${dark ? 'text-white/30' : 'text-gray-400'}`}>Тренируется с</p>
-                  <input type="date" value={form.trainingStartDate || ''} onChange={e => setForm(f => ({ ...f, trainingStartDate: e.target.value }))} className={inputCls} />
+                  <input type="date" value={form.trainingStartDate || ''} onChange={e => setForm(f => ({ ...f, trainingStartDate: e.target.value }))} className={dateInputCls} />
                 </div>
               </div>
               <div>
                 <p className={`text-[10px] mb-1 ${dark ? 'text-white/30' : 'text-gray-400'}`}>Абонемент до</p>
-                <input type="date" value={form.subscriptionExpiresAt ? new Date(form.subscriptionExpiresAt).toISOString().split('T')[0] : ''} onChange={e => setForm(f => ({ ...f, subscriptionExpiresAt: e.target.value }))} className={inputCls} />
+                <input type="date" value={form.subscriptionExpiresAt ? new Date(form.subscriptionExpiresAt).toISOString().split('T')[0] : ''} onChange={e => setForm(f => ({ ...f, subscriptionExpiresAt: e.target.value }))} className={dateInputCls} />
               </div>
             </div>
             <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale">
