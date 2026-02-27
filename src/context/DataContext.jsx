@@ -6,7 +6,7 @@ const DataContext = createContext()
 const EMPTY_DATA = {
   users: [], groups: [], students: [], transactions: [],
   tournaments: [], news: [], tournamentRegistrations: [], authorInfo: {},
-  internalTournaments: [],
+  internalTournaments: [], attendance: [],
 }
 
 export function DataProvider({ children }) {
@@ -203,6 +203,16 @@ export function DataProvider({ children }) {
     setData(d => ({ ...d, internalTournaments: d.internalTournaments.filter(t => t.id !== id) }))
   }, [])
 
+  const saveAttendanceBulk = useCallback(async (groupId, date, records) => {
+    await api.saveAttendanceBulk({ groupId, date, records })
+    // Update local: remove old records for this group+date, add new ones
+    setData(d => {
+      const filtered = d.attendance.filter(a => !(a.groupId === groupId && a.date === date))
+      const newRecords = records.map(r => ({ id: '', groupId, studentId: r.studentId, date, present: r.present }))
+      return { ...d, attendance: [...filtered, ...newRecords] }
+    })
+  }, [])
+
   const resetAll = useCallback(() => {
     // Not implemented for DB version — would need admin API
   }, [])
@@ -217,6 +227,7 @@ export function DataProvider({ children }) {
       addNews, deleteNews,
       addTrainer, updateTrainer, deleteTrainer,
       addInternalTournament, updateInternalTournament, deleteInternalTournament,
+      saveAttendanceBulk,
     }}>
       {children}
     </DataContext.Provider>

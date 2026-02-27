@@ -97,6 +97,9 @@ export const api = {
   updateInternalTournament: (id, data) => request(`/data/internal-tournaments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteInternalTournament: (id) => request(`/data/internal-tournaments/${id}`, { method: 'DELETE' }),
 
+  // Attendance
+  saveAttendanceBulk: (data) => request('/data/attendance/bulk', { method: 'POST', body: JSON.stringify(data) }),
+
   // Push notifications
   getVapidKey: () => request('/push/vapid-key'),
   subscribePush: (subscription) => request('/push/subscribe', { method: 'POST', body: JSON.stringify({ subscription }) }),

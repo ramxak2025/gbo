@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Phone, Calendar, Scale, Award, Trash2, Edit3, Camera, Dumbbell, CreditCard } from 'lucide-react'
+import { Phone, Calendar, Scale, Award, Trash2, Edit3, Camera, Dumbbell, CreditCard, ClipboardList } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -13,6 +13,53 @@ import Avatar from '../components/Avatar'
 import Modal from '../components/Modal'
 import DateButton from '../components/DateButton'
 import { getRankOptions, getRankLabel } from '../utils/sports'
+
+function AttendanceStats({ studentId, groupId, data, dark }) {
+  const group = data.groups.find(g => g.id === groupId)
+  if (!group?.attendanceEnabled) return null
+
+  const now = new Date()
+  const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
+  const monthRecords = useMemo(() =>
+    data.attendance.filter(a => a.studentId === studentId && a.groupId === groupId && a.date.startsWith(monthPrefix)),
+    [data.attendance, studentId, groupId, monthPrefix]
+  )
+
+  const present = monthRecords.filter(a => a.present).length
+  const total = monthRecords.length
+  const pct = total > 0 ? Math.round((present / total) * 100) : 0
+  const monthName = now.toLocaleDateString('ru-RU', { month: 'long' })
+
+  if (total === 0) return null
+
+  return (
+    <GlassCard>
+      <div className="flex items-center gap-2 mb-2">
+        <ClipboardList size={14} className="text-accent" />
+        <span className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+          Посещаемость за {monthName}
+        </span>
+      </div>
+      <div className="flex items-center gap-3">
+        <div className={`h-2 rounded-full flex-1 ${dark ? 'bg-white/10' : 'bg-black/5'}`}>
+          <div
+            className={`h-full rounded-full transition-all ${
+              pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+            }`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <span className={`font-black text-lg ${
+          pct >= 80 ? 'text-green-500' : pct >= 50 ? 'text-yellow-500' : 'text-red-500'
+        }`}>{pct}%</span>
+      </div>
+      <div className={`text-xs mt-1 ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+        {present} из {total} тренировок
+      </div>
+    </GlassCard>
+  )
+}
 
 function isExpired(dateStr) {
   if (!dateStr) return true
@@ -195,6 +242,9 @@ export default function StudentDetail() {
             <span className="font-bold">{formatDate(student.trainingStartDate || student.createdAt)}</span>
           </div>
         </GlassCard>
+
+        {/* Attendance stats */}
+        <AttendanceStats studentId={student.id} groupId={student.groupId} data={data} dark={dark} />
       </div>
 
       {/* Edit Modal */}

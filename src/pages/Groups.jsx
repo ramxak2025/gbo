@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Plus, Trash2, Edit3 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Trash2, Edit3, ClipboardList } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -12,6 +13,7 @@ export default function Groups() {
   const { auth } = useAuth()
   const { data, addGroup, updateGroup, deleteGroup } = useData()
   const { dark } = useTheme()
+  const navigate = useNavigate()
   const [showAdd, setShowAdd] = useState(false)
   const [editGroup, setEditGroup] = useState(null)
   const [form, setForm] = useState({ name: '', schedule: '', subscriptionCost: '' })
@@ -70,20 +72,41 @@ export default function Groups() {
         {myGroups.map(g => {
           const count = data.students.filter(s => s.groupId === g.id).length
           return (
-            <GlassCard key={g.id} className="flex items-center justify-between">
-              <div className="min-w-0">
-                <div className="font-bold">{g.name}</div>
-                <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>{g.schedule}</div>
-                <div className={`text-xs mt-0.5 ${dark ? 'text-white/30' : 'text-gray-400'}`}>
-                  {count} чел. — {g.subscriptionCost?.toLocaleString('ru-RU')} ₽/мес
+            <GlassCard key={g.id}>
+              <div className="flex items-center justify-between">
+                <div className="min-w-0">
+                  <div className="font-bold">{g.name}</div>
+                  <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>{g.schedule}</div>
+                  <div className={`text-xs mt-0.5 ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+                    {count} чел. — {g.subscriptionCost?.toLocaleString('ru-RU')} ₽/мес
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {g.attendanceEnabled && (
+                    <button onClick={() => navigate(`/attendance/${g.id}`)} className="press-scale p-2">
+                      <ClipboardList size={16} className="text-green-400" />
+                    </button>
+                  )}
+                  <button onClick={() => setEditGroup({ ...g })} className="press-scale p-2">
+                    <Edit3 size={16} className={dark ? 'text-white/40' : 'text-gray-400'} />
+                  </button>
+                  <button onClick={() => handleDelete(g.id)} className="press-scale p-2">
+                    <Trash2 size={16} className="text-red-400" />
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => setEditGroup({ ...g })} className="press-scale p-2">
-                  <Edit3 size={16} className={dark ? 'text-white/40' : 'text-gray-400'} />
-                </button>
-                <button onClick={() => handleDelete(g.id)} className="press-scale p-2">
-                  <Trash2 size={16} className="text-red-400" />
+              {/* Attendance toggle */}
+              <div className={`flex items-center justify-between mt-2 pt-2 ${dark ? 'border-t border-white/5' : 'border-t border-black/5'}`}>
+                <span className={`text-xs font-medium ${dark ? 'text-white/40' : 'text-gray-400'}`}>Учёт посещаемости</span>
+                <button
+                  onClick={() => updateGroup(g.id, { attendanceEnabled: !g.attendanceEnabled })}
+                  className={`relative w-10 h-5.5 rounded-full transition-colors press-scale ${
+                    g.attendanceEnabled ? 'bg-green-500' : dark ? 'bg-white/10' : 'bg-black/10'
+                  }`}
+                >
+                  <div className={`absolute top-0.5 w-4.5 h-4.5 rounded-full bg-white shadow transition-transform ${
+                    g.attendanceEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                  }`} />
                 </button>
               </div>
             </GlassCard>

@@ -25,7 +25,10 @@ function mapStudent(s) {
   }
 }
 function mapGroup(g) {
-  return { id: g.id, trainerId: g.trainer_id, name: g.name, schedule: g.schedule, subscriptionCost: g.subscription_cost }
+  return { id: g.id, trainerId: g.trainer_id, name: g.name, schedule: g.schedule, subscriptionCost: g.subscription_cost, attendanceEnabled: !!g.attendance_enabled }
+}
+function mapAttendance(a) {
+  return { id: a.id, groupId: a.group_id, studentId: a.student_id, date: a.date, present: a.present }
 }
 function mapTx(t) {
   return { id: t.id, trainerId: t.trainer_id, type: t.type, amount: t.amount, category: t.category, description: t.description, studentId: t.student_id, date: t.date }
@@ -43,7 +46,7 @@ function mapAuthor(a) {
 // GET all data (role-aware)
 router.get('/', authMiddleware, async (req, res) => {
   const { userId, role, studentId } = req.user
-  const [users, groups, students, transactions, tournaments, news, regs, author, intTournaments] = await Promise.all([
+  const [users, groups, students, transactions, tournaments, news, regs, author, intTournaments, attendance] = await Promise.all([
     pool.query('SELECT * FROM users'),
     pool.query('SELECT * FROM groups'),
     pool.query('SELECT * FROM students'),
@@ -53,6 +56,7 @@ router.get('/', authMiddleware, async (req, res) => {
     pool.query('SELECT * FROM tournament_registrations'),
     pool.query('SELECT * FROM author_info WHERE id = 1'),
     pool.query('SELECT * FROM internal_tournaments ORDER BY created_at DESC'),
+    pool.query('SELECT * FROM attendance ORDER BY date DESC'),
   ])
   res.json({
     users: users.rows.map(mapUser),
@@ -64,6 +68,7 @@ router.get('/', authMiddleware, async (req, res) => {
     tournamentRegistrations: regs.rows.map(r => ({ tournamentId: r.tournament_id, studentId: r.student_id })),
     authorInfo: mapAuthor(author.rows[0]),
     internalTournaments: intTournaments.rows.map(mapInternalTournament),
+    attendance: attendance.rows.map(mapAttendance),
   })
 })
 
@@ -116,9 +121,15 @@ router.post('/groups', authMiddleware, async (req, res) => {
 })
 
 router.put('/groups/:id', authMiddleware, async (req, res) => {
-  const { name, schedule, subscriptionCost } = req.body
-  await pool.query('UPDATE groups SET name = COALESCE($1, name), schedule = COALESCE($2, schedule), subscription_cost = COALESCE($3, subscription_cost) WHERE id = $4',
-    [name, schedule, subscriptionCost, req.params.id])
+  const { name, schedule, subscriptionCost, attendanceEnabled } = req.body
+  const sets = ['name = COALESCE($1, name)', 'schedule = COALESCE($2, schedule)', 'subscription_cost = COALESCE($3, subscription_cost)']
+  const vals = [name, schedule, subscriptionCost]
+  if (attendanceEnabled !== undefined) {
+    sets.push(`attendance_enabled = $${vals.length + 1}`)
+    vals.push(attendanceEnabled)
+  }
+  vals.push(req.params.id)
+  await pool.query(`UPDATE groups SET ${sets.join(', ')} WHERE id = $${vals.length}`, vals)
   res.json({ ok: true })
 })
 
@@ -184,6 +195,43 @@ router.delete('/tournament-registrations', authMiddleware, async (req, res) => {
   const { tournamentId, studentId } = req.body
   await pool.query('DELETE FROM tournament_registrations WHERE tournament_id = $1 AND student_id = $2',
     [tournamentId, studentId])
+  res.json({ ok: true })
+})
+
+// --- Attendance ---
+router.post('/attendance', authMiddleware, async (req, res) => {
+  const { groupId, studentId, date, present } = req.body
+  const id = genId()
+  await pool.query(
+    `INSERT INTO attendance (id, group_id, student_id, date, present)
+     VALUES ($1,$2,$3,$4,$5)
+     ON CONFLICT (group_id, student_id, date)
+     DO UPDATE SET present = $5`,
+    [id, groupId, studentId, date, present !== false]
+  )
+  res.json({ id, groupId, studentId, date, present: present !== false })
+})
+
+router.post('/attendance/bulk', authMiddleware, async (req, res) => {
+  const { groupId, date, records } = req.body
+  // records: [{ studentId, present }]
+  for (const r of records) {
+    const id = genId()
+    await pool.query(
+      `INSERT INTO attendance (id, group_id, student_id, date, present)
+       VALUES ($1,$2,$3,$4,$5)
+       ON CONFLICT (group_id, student_id, date)
+       DO UPDATE SET present = $5`,
+      [id, groupId, r.studentId, date, r.present !== false]
+    )
+  }
+  res.json({ ok: true })
+})
+
+router.delete('/attendance', authMiddleware, async (req, res) => {
+  const { groupId, studentId, date } = req.body
+  await pool.query('DELETE FROM attendance WHERE group_id = $1 AND student_id = $2 AND date = $3',
+    [groupId, studentId, date])
   res.json({ ok: true })
 })
 

@@ -128,3 +128,19 @@ CREATE TABLE IF NOT EXISTS author_info (
   description TEXT,
   phone VARCHAR(50)
 );
+
+-- Attendance tracking
+DO $$ BEGIN
+  ALTER TABLE groups ADD COLUMN attendance_enabled BOOLEAN DEFAULT false;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS attendance (
+  id TEXT PRIMARY KEY,
+  group_id TEXT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  student_id TEXT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  present BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(group_id, student_id, date)
+);

@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords, MapPin, Megaphone, Plus } from 'lucide-react'
+import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords, MapPin, Megaphone, Plus, ClipboardList } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -289,6 +289,11 @@ function TrainerDash({ auth, data, dark, navigate }) {
                     <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>{g.schedule}</div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {g.attendanceEnabled && (
+                      <button onClick={() => navigate(`/attendance/${g.id}`)} className="press-scale p-1.5 rounded-full bg-green-500/15">
+                        <ClipboardList size={14} className="text-green-400" />
+                      </button>
+                    )}
                     <span className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>{count} чел.</span>
                     <span className="text-xs text-accent font-semibold">{g.subscriptionCost?.toLocaleString('ru-RU')} ₽</span>
                   </div>
