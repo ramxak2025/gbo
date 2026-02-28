@@ -16,10 +16,10 @@ export async function seedDatabase() {
 
   // Users
   await pool.query(`
-    INSERT INTO users (id, name, phone, password_hash, role, club_name) VALUES
-    ('u1', 'Администратор', '89000000000', $1, 'superadmin', 'iBorcuha HQ'),
-    ('u2', 'Рустам Хабилов', '89001111111', $2, 'trainer', 'Ахмат Fight Club'),
-    ('u3', 'Камил Гаджиев', '89002222222', $3, 'trainer', 'Eagle MMA')
+    INSERT INTO users (id, name, phone, password_hash, role, club_name, plain_password) VALUES
+    ('u1', 'Администратор', '89000000000', $1, 'superadmin', 'iBorcuha HQ', 'admin123'),
+    ('u2', 'Рустам Хабилов', '89001111111', $2, 'trainer', 'Ахмат Fight Club', 'trainer123'),
+    ('u3', 'Камил Гаджиев', '89002222222', $3, 'trainer', 'Eagle MMA', 'trainer123')
   `, [hash('admin123'), hash('trainer123'), hash('trainer123')])
 
   // Groups
@@ -33,12 +33,12 @@ export async function seedDatabase() {
   // Students
   const studentHash = hash('student123')
   await pool.query(`
-    INSERT INTO students (id, trainer_id, group_id, name, phone, password_hash, weight, belt, birth_date, subscription_expires_at, status, created_at) VALUES
-    ('s1', 'u2', 'g1', 'Алихан Магомедов', '89003010101', $1, 77, 'Синий', '2000-03-15', $2, NULL, $4),
-    ('s2', 'u2', 'g1', 'Тимур Валиев', '89003020202', $1, 84, 'Фиолетовый', '1998-07-22', $3, 'injury', $4),
-    ('s3', 'u2', 'g2', 'Заур Рахманов', '89003030303', $1, 93, 'Белый', '2002-11-01', $2, NULL, $4),
-    ('s4', 'u3', 'g3', 'Магомед Исмаилов', '89003040404', $1, 93, 'Коричневый', '1995-01-10', $2, NULL, $4),
-    ('s5', 'u3', 'g3', 'Ислам Махачев', '89003050505', $1, 70, 'Черный', '1991-09-27', $3, 'sick', $4)
+    INSERT INTO students (id, trainer_id, group_id, name, phone, password_hash, weight, belt, birth_date, subscription_expires_at, status, plain_password, created_at) VALUES
+    ('s1', 'u2', 'g1', 'Алихан Магомедов', '89003010101', $1, 77, 'Синий', '2000-03-15', $2, NULL, 'student123', $4),
+    ('s2', 'u2', 'g1', 'Тимур Валиев', '89003020202', $1, 84, 'Фиолетовый', '1998-07-22', $3, 'injury', 'student123', $4),
+    ('s3', 'u2', 'g2', 'Заур Рахманов', '89003030303', $1, 93, 'Белый', '2002-11-01', $2, NULL, 'student123', $4),
+    ('s4', 'u3', 'g3', 'Магомед Исмаилов', '89003040404', $1, 93, 'Коричневый', '1995-01-10', $2, NULL, 'student123', $4),
+    ('s5', 'u3', 'g3', 'Ислам Махачев', '89003050505', $1, 70, 'Черный', '1991-09-27', $3, 'sick', 'student123', $4)
   `, [studentHash, inMonth, expired, now])
 
   // Transactions

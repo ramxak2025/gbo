@@ -34,6 +34,20 @@ export default function Login({ onLogin }) {
   const [errorType, setErrorType] = useState(null)
   const [loading, setLoading] = useState(false)
 
+  const handleDemoLogin = async (demoPhone, demoPassword) => {
+    setError('')
+    setErrorType(null)
+    setLoading(true)
+    try {
+      await login(demoPhone, demoPassword)
+      if (onLogin) onLogin()
+    } catch (err) {
+      setError(err.message || 'Ошибка демо-входа')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handlePhoneChange = (e) => {
     const formatted = formatPhone(e.target.value)
     setPhone(formatted)
@@ -175,8 +189,39 @@ export default function Login({ onLogin }) {
             </button>
           </form>
 
+          {/* Demo access */}
+          <div className="mt-8">
+            <div className={`text-center text-[10px] uppercase tracking-widest font-semibold mb-3 ${dark ? 'text-white/20' : 'text-gray-300'}`}>
+              Попробовать демо
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleDemoLogin('89999999999', 'demo123')}
+                disabled={loading}
+                className={`py-2.5 rounded-[14px] text-xs font-bold press-scale flex items-center justify-center gap-1.5 transition-all ${
+                  dark ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-blue-50 text-blue-600 border border-blue-100'
+                }`}
+              >
+                <span className="text-base">🥋</span>
+                Тренер
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDemoLogin('89990000001', 'demo123')}
+                disabled={loading}
+                className={`py-2.5 rounded-[14px] text-xs font-bold press-scale flex items-center justify-center gap-1.5 transition-all ${
+                  dark ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-green-50 text-green-600 border border-green-100'
+                }`}
+              >
+                <span className="text-base">🤼</span>
+                Спортсмен
+              </button>
+            </div>
+          </div>
+
           {/* Footer */}
-          <div className={`mt-10 text-center text-[11px] ${dark ? 'text-white/15' : 'text-gray-300'}`}>
+          <div className={`mt-8 text-center text-[11px] ${dark ? 'text-white/15' : 'text-gray-300'}`}>
             BJJ / MMA / Grappling
           </div>
         </div>

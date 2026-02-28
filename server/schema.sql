@@ -144,3 +144,24 @@ CREATE TABLE IF NOT EXISTS attendance (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(group_id, student_id, date)
 );
+
+-- Demo flag and plain passwords for admin
+DO $$ BEGIN
+  ALTER TABLE users ADD COLUMN is_demo BOOLEAN DEFAULT false;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE users ADD COLUMN plain_password VARCHAR(255);
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE students ADD COLUMN plain_password VARCHAR(255);
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE students ADD COLUMN is_demo BOOLEAN DEFAULT false;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;

@@ -9,7 +9,7 @@ import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
 import Avatar from '../components/Avatar'
 import Modal from '../components/Modal'
-import { getRankLabel } from '../utils/sports'
+import { getRankLabel, getSportLabel, SPORT_TYPES } from '../utils/sports'
 
 const STATUS_CONFIG = {
   sick: { label: 'Болеет', icon: Thermometer, color: 'text-yellow-400', bg: 'bg-yellow-500/15', border: 'border-yellow-500/30' },
@@ -64,54 +64,70 @@ export default function Dashboard() {
 }
 
 function SuperAdminDash({ data, dark, navigate }) {
-  const allTrainers = data.users.filter(u => u.role === 'trainer')
+  const allTrainers = data.users.filter(u => u.role === 'trainer' && !u.isDemo)
   const [cityFilter, setCityFilter] = useState('')
+  const [sportFilter, setSportFilter] = useState('')
 
-  // Get unique cities
+  // Get unique cities and sports
   const cities = [...new Set(allTrainers.filter(t => t.city).map(t => t.city))].sort()
+  const sports = [...new Set(allTrainers.filter(t => t.sportType).map(t => t.sportType))]
 
-  // Filter by city
-  const trainers = cityFilter
-    ? allTrainers.filter(t => t.city === cityFilter)
-    : allTrainers
+  // Filter
+  let trainers = allTrainers
+  if (cityFilter) trainers = trainers.filter(t => t.city === cityFilter)
+  if (sportFilter) trainers = trainers.filter(t => t.sportType === sportFilter)
   const trainerIds = new Set(trainers.map(t => t.id))
-  const filteredStudents = cityFilter
-    ? data.students.filter(s => trainerIds.has(s.trainerId))
-    : data.students
+  const filteredStudents = data.students.filter(s => !s.isDemo && trainerIds.has(s.trainerId))
 
   return (
     <Layout>
       <PageHeader title="iBorcuha" logo gradient />
       <div className="px-4 space-y-4 slide-in stagger">
-        {/* City filter */}
-        {cities.length > 0 && (
-          <div className="overflow-x-auto -mx-4 px-4 pb-1">
-            <div className="flex gap-2" style={{ minWidth: 'max-content' }}>
-              <button
-                onClick={() => setCityFilter('')}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold press-scale whitespace-nowrap flex items-center gap-1.5 transition-all ${
-                  !cityFilter
-                    ? 'bg-accent text-white'
-                    : dark ? 'bg-white/5 text-white/60' : 'bg-black/5 text-gray-500'
-                }`}
-              >
-                Все города
-              </button>
-              {cities.map(city => (
+        {/* Filters */}
+        {(cities.length > 0 || sports.length > 0) && (
+          <div className="space-y-2">
+            {/* City filter */}
+            <div className="overflow-x-auto -mx-4 px-4 pb-1">
+              <div className="flex gap-2" style={{ minWidth: 'max-content' }}>
                 <button
-                  key={city}
-                  onClick={() => setCityFilter(cityFilter === city ? '' : city)}
+                  onClick={() => setCityFilter('')}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-bold press-scale whitespace-nowrap flex items-center gap-1.5 transition-all ${
-                    cityFilter === city
-                      ? 'bg-accent text-white'
-                      : dark ? 'bg-white/5 text-white/60' : 'bg-black/5 text-gray-500'
+                    !cityFilter ? 'bg-accent text-white' : dark ? 'bg-white/5 text-white/60' : 'bg-black/5 text-gray-500'
                   }`}
-                >
-                  <MapPin size={11} />
-                  {city}
-                </button>
-              ))}
+                >Все города</button>
+                {cities.map(city => (
+                  <button
+                    key={city}
+                    onClick={() => setCityFilter(cityFilter === city ? '' : city)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold press-scale whitespace-nowrap flex items-center gap-1.5 transition-all ${
+                      cityFilter === city ? 'bg-accent text-white' : dark ? 'bg-white/5 text-white/60' : 'bg-black/5 text-gray-500'
+                    }`}
+                  ><MapPin size={11} />{city}</button>
+                ))}
+              </div>
             </div>
+            {/* Sport filter */}
+            {sports.length > 0 && (
+              <div className="overflow-x-auto -mx-4 px-4 pb-1">
+                <div className="flex gap-2" style={{ minWidth: 'max-content' }}>
+                  <button
+                    onClick={() => setSportFilter('')}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-bold press-scale whitespace-nowrap transition-all ${
+                      !sportFilter ? 'bg-purple-500 text-white' : dark ? 'bg-white/5 text-white/60' : 'bg-black/5 text-gray-500'
+                    }`}
+                  >Все виды</button>
+                  {sports.map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setSportFilter(sportFilter === s ? '' : s)}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-bold press-scale whitespace-nowrap transition-all ${
+                        sportFilter === s ? 'bg-purple-500 text-white' : dark ? 'bg-white/5 text-white/60' : 'bg-black/5 text-gray-500'
+                      }`}
+                    >{getSportLabel(s)}</button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -129,17 +145,27 @@ function SuperAdminDash({ data, dark, navigate }) {
           <h2 className={`text-sm uppercase font-bold mb-3 ${dark ? 'text-white/50' : 'text-gray-500'}`}>Клубы</h2>
           <div className="space-y-2">
             {trainers.map(t => {
-              const count = data.students.filter(s => s.trainerId === t.id).length
+              const count = data.students.filter(s => s.trainerId === t.id && !s.isDemo).length
               return (
-                <GlassCard key={t.id} onClick={() => navigate(`/trainer/${t.id}`)} className="flex items-center justify-between">
-                  <div className="min-w-0">
-                    <div className="font-bold truncate">{t.clubName || t.name}</div>
-                    <div className={`text-sm ${dark ? 'text-white/40' : 'text-gray-400'} flex items-center gap-1`}>
-                      {t.name}
-                      {t.city && <><span className="mx-1">•</span><MapPin size={11} />{t.city}</>}
+                <GlassCard key={t.id} onClick={() => navigate(`/trainer/${t.id}`)}>
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0">
+                      <div className="font-bold truncate">{t.clubName || t.name}</div>
+                      <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'} flex items-center gap-1 flex-wrap`}>
+                        {t.name}
+                        {t.city && <><span>•</span><MapPin size={10} />{t.city}</>}
+                        {t.sportType && <><span>•</span>{getSportLabel(t.sportType)}</>}
+                      </div>
                     </div>
+                    <div className="flex items-center gap-1 text-sm shrink-0 ml-2"><Users size={14} /><span>{count}</span></div>
                   </div>
-                  <div className="flex items-center gap-1 text-sm shrink-0 ml-2"><Users size={14} /><span>{count}</span></div>
+                  {t.plainPassword && (
+                    <div className={`mt-1.5 pt-1.5 text-[10px] flex items-center gap-2 ${dark ? 'border-t border-white/5 text-white/25' : 'border-t border-black/5 text-gray-300'}`}>
+                      <span>Тел: {t.phone}</span>
+                      <span>•</span>
+                      <span>Пароль: {t.plainPassword}</span>
+                    </div>
+                  )}
                 </GlassCard>
               )
             })}

@@ -7,22 +7,26 @@ import crypto from 'crypto'
 const router = Router()
 const genId = () => Date.now().toString(36) + crypto.randomBytes(4).toString('hex')
 
-function mapUser(u) {
-  return { id: u.id, name: u.name, phone: u.phone, role: u.role, avatar: u.avatar, clubName: u.club_name, sportType: u.sport_type, city: u.city }
+function mapUser(u, includeSecrets = false) {
+  const base = { id: u.id, name: u.name, phone: u.phone, role: u.role, avatar: u.avatar, clubName: u.club_name, sportType: u.sport_type, city: u.city, isDemo: !!u.is_demo }
+  if (includeSecrets) base.plainPassword = u.plain_password || ''
+  return base
 }
 function mapInternalTournament(t) {
   return { id: t.id, trainerId: t.trainer_id, title: t.title, date: t.date, status: t.status, brackets: t.brackets, createdAt: t.created_at }
 }
-function mapStudent(s) {
-  return {
+function mapStudent(s, includeSecrets = false) {
+  const base = {
     id: s.id, trainerId: s.trainer_id, groupId: s.group_id,
     name: s.name, phone: s.phone,
     weight: s.weight ? parseFloat(s.weight) : null,
     belt: s.belt, birthDate: s.birth_date, avatar: s.avatar,
     subscriptionExpiresAt: s.subscription_expires_at, status: s.status,
     trainingStartDate: s.training_start_date,
-    createdAt: s.created_at, password: '***',
+    createdAt: s.created_at, isDemo: !!s.is_demo,
   }
+  if (includeSecrets) base.plainPassword = s.plain_password || ''
+  return base
 }
 function mapGroup(g) {
   return { id: g.id, trainerId: g.trainer_id, name: g.name, schedule: g.schedule, subscriptionCost: g.subscription_cost, attendanceEnabled: !!g.attendance_enabled }
@@ -58,16 +62,27 @@ router.get('/', authMiddleware, async (req, res) => {
     pool.query('SELECT * FROM internal_tournaments ORDER BY created_at DESC'),
     pool.query('SELECT * FROM attendance ORDER BY date DESC'),
   ])
+
+  const isSuperadmin = role === 'superadmin'
+  // Superadmin sees passwords + no demo data; demo users see only their demo data
+  const filteredUsers = isSuperadmin ? users.rows.filter(u => !u.is_demo) : users.rows
+  const filteredStudents = isSuperadmin ? students.rows.filter(s => !s.is_demo) : students.rows
+  const demoTrainerIds = new Set(users.rows.filter(u => u.is_demo && u.role === 'trainer').map(u => u.id))
+  const filteredGroups = isSuperadmin ? groups.rows.filter(g => !demoTrainerIds.has(g.trainer_id)) : groups.rows
+  const filteredTx = isSuperadmin ? transactions.rows.filter(t => !demoTrainerIds.has(t.trainer_id)) : transactions.rows
+  const filteredNews = isSuperadmin ? news.rows.filter(n => !demoTrainerIds.has(n.trainer_id)) : news.rows
+  const filteredIntTournaments = isSuperadmin ? intTournaments.rows.filter(t => !demoTrainerIds.has(t.trainer_id)) : intTournaments.rows
+
   res.json({
-    users: users.rows.map(mapUser),
-    groups: groups.rows.map(mapGroup),
-    students: students.rows.map(mapStudent),
-    transactions: transactions.rows.map(mapTx),
+    users: filteredUsers.map(u => mapUser(u, isSuperadmin)),
+    groups: filteredGroups.map(mapGroup),
+    students: filteredStudents.map(s => mapStudent(s, isSuperadmin)),
+    transactions: filteredTx.map(mapTx),
     tournaments: tournaments.rows.map(mapTournament),
-    news: news.rows.map(mapNews),
+    news: filteredNews.map(mapNews),
     tournamentRegistrations: regs.rows.map(r => ({ tournamentId: r.tournament_id, studentId: r.student_id })),
     authorInfo: mapAuthor(author.rows[0]),
-    internalTournaments: intTournaments.rows.map(mapInternalTournament),
+    internalTournaments: filteredIntTournaments.map(mapInternalTournament),
     attendance: attendance.rows.map(mapAttendance),
   })
 })
@@ -76,12 +91,13 @@ router.get('/', authMiddleware, async (req, res) => {
 router.post('/students', authMiddleware, async (req, res) => {
   const { name, phone, weight, belt, birthDate, groupId, password, avatar, subscriptionExpiresAt, trainerId, trainingStartDate } = req.body
   const id = genId()
-  const hash = bcrypt.hashSync(password || 'student123', 10)
+  const pw = password || 'student123'
+  const hash = bcrypt.hashSync(pw, 10)
   const tid = trainerId || req.user.userId
   await pool.query(
-    `INSERT INTO students (id, trainer_id, group_id, name, phone, password_hash, weight, belt, birth_date, avatar, subscription_expires_at, training_start_date, created_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW())`,
-    [id, tid, groupId || null, name, phone, hash, weight || null, belt || null, birthDate || null, avatar || null, subscriptionExpiresAt || null, trainingStartDate || null]
+    `INSERT INTO students (id, trainer_id, group_id, name, phone, password_hash, weight, belt, birth_date, avatar, subscription_expires_at, training_start_date, plain_password, created_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW())`,
+    [id, tid, groupId || null, name, phone, hash, weight || null, belt || null, birthDate || null, avatar || null, subscriptionExpiresAt || null, trainingStartDate || null, pw]
   )
   const { rows: [s] } = await pool.query('SELECT * FROM students WHERE id = $1', [id])
   res.json(mapStudent(s))
@@ -96,7 +112,7 @@ router.put('/students/:id', authMiddleware, async (req, res) => {
   add('name', name); add('phone', phone); add('weight', weight); add('belt', belt)
   add('birth_date', birthDate); add('avatar', avatar); add('subscription_expires_at', subscriptionExpiresAt)
   add('status', status); add('group_id', groupId); add('training_start_date', trainingStartDate)
-  if (password) { add('password_hash', bcrypt.hashSync(password, 10)) }
+  if (password) { add('password_hash', bcrypt.hashSync(password, 10)); add('plain_password', password) }
   if (sets.length === 0) return res.json({ ok: true })
   vals.push(req.params.id)
   await pool.query(`UPDATE students SET ${sets.join(', ')} WHERE id = $${i}`, vals)
@@ -254,16 +270,23 @@ router.delete('/news/:id', authMiddleware, async (req, res) => {
 router.post('/trainers', authMiddleware, async (req, res) => {
   const { name, phone, password, clubName, avatar, sportType, city } = req.body
   const id = genId()
-  const hash = bcrypt.hashSync(password || 'trainer123', 10)
-  await pool.query('INSERT INTO users (id, name, phone, password_hash, role, club_name, avatar, sport_type, city) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
-    [id, name, phone, hash, 'trainer', clubName || '', avatar || null, sportType || null, city || null])
-  res.json({ id, name, phone, role: 'trainer', clubName, avatar, sportType, city })
+  const pw = password || 'trainer123'
+  const hash = bcrypt.hashSync(pw, 10)
+  await pool.query('INSERT INTO users (id, name, phone, password_hash, role, club_name, avatar, sport_type, city, plain_password) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',
+    [id, name, phone, hash, 'trainer', clubName || '', avatar || null, sportType || null, city || null, pw])
+  res.json({ id, name, phone, role: 'trainer', clubName, avatar, sportType, city, plainPassword: pw })
 })
 
 router.put('/trainers/:id', authMiddleware, async (req, res) => {
-  const { name, phone, clubName, avatar, sportType, city } = req.body
-  await pool.query('UPDATE users SET name=COALESCE($1,name), phone=COALESCE($2,phone), club_name=COALESCE($3,club_name), avatar=COALESCE($4,avatar), sport_type=COALESCE($5,sport_type), city=COALESCE($6,city) WHERE id=$7',
-    [name, phone, clubName, avatar, sportType, city, req.params.id])
+  const { name, phone, clubName, avatar, sportType, city, password } = req.body
+  const sets = ['name=COALESCE($1,name)', 'phone=COALESCE($2,phone)', 'club_name=COALESCE($3,club_name)', 'avatar=COALESCE($4,avatar)', 'sport_type=COALESCE($5,sport_type)', 'city=COALESCE($6,city)']
+  const vals = [name, phone, clubName, avatar, sportType, city]
+  if (password) {
+    sets.push(`password_hash = $${vals.length + 1}`, `plain_password = $${vals.length + 2}`)
+    vals.push(bcrypt.hashSync(password, 10), password)
+  }
+  vals.push(req.params.id)
+  await pool.query(`UPDATE users SET ${sets.join(', ')} WHERE id = $${vals.length}`, vals)
   res.json({ ok: true })
 })
 

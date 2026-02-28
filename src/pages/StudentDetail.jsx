@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Phone, Calendar, Scale, Award, Trash2, Edit3, Camera, Dumbbell, CreditCard, ClipboardList } from 'lucide-react'
+import { Phone, Calendar, Scale, Award, Trash2, Edit3, Camera, Dumbbell, CreditCard, ClipboardList, Key } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -101,13 +101,13 @@ export default function StudentDetail() {
   const rankLabel = getRankLabel(trainer?.sportType)
 
   const startEdit = () => {
-    setForm({ ...student, phone: formatPhone(student.phone || '') })
+    setForm({ ...student, phone: formatPhone(student.phone || ''), newPassword: '' })
     setEditing(true)
   }
 
   const saveEdit = (e) => {
     e.preventDefault()
-    updateStudent(student.id, {
+    const changes = {
       name: form.name,
       phone: cleanPhone(form.phone),
       weight: parseFloat(form.weight) || 0,
@@ -115,7 +115,12 @@ export default function StudentDetail() {
       birthDate: form.birthDate,
       trainingStartDate: form.trainingStartDate || null,
       subscriptionExpiresAt: form.subscriptionExpiresAt || null,
-    })
+    }
+    if (form.newPassword) {
+      changes.password = form.newPassword
+      changes.plainPassword = form.newPassword
+    }
+    updateStudent(student.id, changes)
     setEditing(false)
   }
 
@@ -243,6 +248,13 @@ export default function StudentDetail() {
           </div>
         </GlassCard>
 
+        {auth.role === 'superadmin' && student.plainPassword && (
+          <GlassCard className="flex items-center gap-3">
+            <Key size={14} className="text-yellow-400" />
+            <span className={`text-sm ${dark ? 'text-white/50' : 'text-gray-500'}`}>Пароль: <span className="font-mono font-bold">{student.plainPassword}</span></span>
+          </GlassCard>
+        )}
+
         {/* Attendance stats */}
         <AttendanceStats studentId={student.id} groupId={student.groupId} data={data} dark={dark} />
       </div>
@@ -279,6 +291,15 @@ export default function StudentDetail() {
               <option value="">— {rankLabel} —</option>
               {rankOptions.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
+            {canEditAdmin && (
+              <input
+                type="text"
+                placeholder="Новый пароль (оставьте пустым)"
+                value={form.newPassword || ''}
+                onChange={e => setForm(f => ({ ...f, newPassword: e.target.value }))}
+                className={inputCls}
+              />
+            )}
             <div className={`flex flex-wrap gap-3 pt-3 ${dark ? 'border-t border-white/5' : 'border-t border-black/5'}`}>
               <DateButton label="Рождение" value={form.birthDate || ''} onChange={v => setForm(f => ({ ...f, birthDate: v }))} />
               <DateButton label="Тренируется с" value={form.trainingStartDate || ''} onChange={v => setForm(f => ({ ...f, trainingStartDate: v }))} />

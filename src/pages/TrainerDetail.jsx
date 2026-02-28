@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { Phone, Users, Trash2, Edit3, Dumbbell, MapPin } from 'lucide-react'
+import { Phone, Users, Trash2, Edit3, Dumbbell, MapPin, Key } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
@@ -16,7 +16,7 @@ export default function TrainerDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { auth } = useAuth()
-  const { data, updateTrainer, deleteTrainer } = useData()
+  const { data, updateTrainer, deleteTrainer, updateStudent } = useData()
   const { dark } = useTheme()
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState(null)
@@ -43,13 +43,15 @@ export default function TrainerDetail() {
 
   const saveEdit = (e) => {
     e.preventDefault()
-    updateTrainer(id, {
+    const changes = {
       name: form.name,
       phone: cleanPhone(form.phone),
       clubName: form.clubName,
       city: form.city,
       sportType: form.sportType,
-    })
+    }
+    if (form.newPassword) changes.password = form.newPassword
+    updateTrainer(id, changes)
     setEditing(false)
   }
 
@@ -112,6 +114,12 @@ export default function TrainerDetail() {
           <Users size={16} className="text-accent" />
           <span className="text-sm">{students.length} учеников, {groups.length} групп</span>
         </GlassCard>
+        {auth.role === 'superadmin' && trainer.plainPassword && (
+          <GlassCard className="flex items-center gap-3">
+            <Key size={16} className="text-yellow-400" />
+            <span className={`text-sm ${dark ? 'text-white/50' : 'text-gray-500'}`}>Пароль: <span className="font-mono font-bold">{trainer.plainPassword}</span></span>
+          </GlassCard>
+        )}
 
         {groups.length > 0 && (
           <div>
@@ -132,13 +140,22 @@ export default function TrainerDetail() {
               <GlassCard
                 key={s.id}
                 onClick={() => navigate(`/student/${s.id}`)}
-                className="flex items-center gap-3 mb-2"
+                className="mb-2"
               >
-                <Avatar name={s.name} src={s.avatar} size={36} />
-                <div className="min-w-0">
-                  <div className="font-semibold text-sm truncate">{s.name}</div>
-                  <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-400'}`}>{s.belt || '—'}</div>
+                <div className="flex items-center gap-3">
+                  <Avatar name={s.name} src={s.avatar} size={36} />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-sm truncate">{s.name}</div>
+                    <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-400'}`}>{s.belt || '—'}</div>
+                  </div>
                 </div>
+                {auth.role === 'superadmin' && (
+                  <div className={`mt-1.5 pt-1.5 text-[10px] flex items-center gap-2 ${dark ? 'border-t border-white/5 text-white/25' : 'border-t border-black/5 text-gray-300'}`}>
+                    <span>Тел: {s.phone}</span>
+                    <span>•</span>
+                    <span>Пароль: {s.plainPassword || '—'}</span>
+                  </div>
+                )}
               </GlassCard>
             ))}
           </div>
@@ -161,6 +178,7 @@ export default function TrainerDetail() {
               {SPORT_TYPES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
             </select>
             <PhoneInput value={form.phone} onChange={v => setForm(f => ({ ...f, phone: v }))} className={inputCls} />
+            <input type="text" placeholder="Новый пароль (оставьте пустым)" value={form.newPassword || ''} onChange={e => setForm(f => ({ ...f, newPassword: e.target.value }))} className={inputCls} />
             <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale">Сохранить</button>
           </form>
         )}
