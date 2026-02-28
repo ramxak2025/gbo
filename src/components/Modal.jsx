@@ -13,7 +13,7 @@ export default function Modal({ open, onClose, title, children }) {
         className={`
           relative w-full max-w-lg max-h-[85vh] overflow-y-auto scrollbar-hide
           rounded-t-[32px] p-5 pt-3 modal-sheet
-          ${dark ? 'bg-dark-800 text-white' : 'bg-white text-gray-900'}
+          ${dark ? 'bg-dark-800 text-white' : 'bg-[#f5f5f7] text-gray-900'}
         `}
       >
         <div className={`w-10 h-1 rounded-full mx-auto mb-3 ${dark ? 'bg-white/20' : 'bg-black/15'}`} />

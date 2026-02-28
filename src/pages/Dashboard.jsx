@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords, MapPin, Megaphone, Plus, ClipboardList } from 'lucide-react'
+import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords, MapPin, Megaphone, Plus, ClipboardList, Award, ChevronRight, Dumbbell, CreditCard, Shield } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -52,6 +52,19 @@ function Countdown({ date }) {
   )
 }
 
+function SectionTitle({ dark, children, action, onAction }) {
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <h2 className={`text-xs uppercase font-bold tracking-wider ${dark ? 'text-white/40' : 'text-gray-400'}`}>{children}</h2>
+      {action && (
+        <button onClick={onAction} className="text-accent text-xs font-semibold press-scale flex items-center gap-0.5">
+          {action} <ChevronRight size={12} />
+        </button>
+      )}
+    </div>
+  )
+}
+
 export default function Dashboard() {
   const { auth } = useAuth()
   const { data } = useData()
@@ -63,16 +76,15 @@ export default function Dashboard() {
   return <StudentDash auth={auth} data={data} dark={dark} navigate={navigate} />
 }
 
+/* ======================== SUPER ADMIN ======================== */
 function SuperAdminDash({ data, dark, navigate }) {
   const allTrainers = data.users.filter(u => u.role === 'trainer' && !u.isDemo)
   const [cityFilter, setCityFilter] = useState('')
   const [sportFilter, setSportFilter] = useState('')
 
-  // Get unique cities and sports
   const cities = [...new Set(allTrainers.filter(t => t.city).map(t => t.city))].sort()
   const sports = [...new Set(allTrainers.filter(t => t.sportType).map(t => t.sportType))]
 
-  // Filter
   let trainers = allTrainers
   if (cityFilter) trainers = trainers.filter(t => t.city === cityFilter)
   if (sportFilter) trainers = trainers.filter(t => t.sportType === sportFilter)
@@ -86,13 +98,12 @@ function SuperAdminDash({ data, dark, navigate }) {
         {/* Filters */}
         {(cities.length > 0 || sports.length > 0) && (
           <div className="space-y-2">
-            {/* City filter */}
             <div className="overflow-x-auto -mx-4 px-4 pb-1">
               <div className="flex gap-2" style={{ minWidth: 'max-content' }}>
                 <button
                   onClick={() => setCityFilter('')}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-bold press-scale whitespace-nowrap flex items-center gap-1.5 transition-all ${
-                    !cityFilter ? 'bg-accent text-white' : dark ? 'bg-white/5 text-white/60' : 'bg-black/5 text-gray-500'
+                    !cityFilter ? 'bg-accent text-white' : dark ? 'bg-white/5 text-white/60' : 'bg-white text-gray-500 shadow-sm'
                   }`}
                 >Все города</button>
                 {cities.map(city => (
@@ -100,20 +111,19 @@ function SuperAdminDash({ data, dark, navigate }) {
                     key={city}
                     onClick={() => setCityFilter(cityFilter === city ? '' : city)}
                     className={`px-3.5 py-1.5 rounded-full text-xs font-bold press-scale whitespace-nowrap flex items-center gap-1.5 transition-all ${
-                      cityFilter === city ? 'bg-accent text-white' : dark ? 'bg-white/5 text-white/60' : 'bg-black/5 text-gray-500'
+                      cityFilter === city ? 'bg-accent text-white' : dark ? 'bg-white/5 text-white/60' : 'bg-white text-gray-500 shadow-sm'
                     }`}
                   ><MapPin size={11} />{city}</button>
                 ))}
               </div>
             </div>
-            {/* Sport filter */}
             {sports.length > 0 && (
               <div className="overflow-x-auto -mx-4 px-4 pb-1">
                 <div className="flex gap-2" style={{ minWidth: 'max-content' }}>
                   <button
                     onClick={() => setSportFilter('')}
                     className={`px-3.5 py-1.5 rounded-full text-xs font-bold press-scale whitespace-nowrap transition-all ${
-                      !sportFilter ? 'bg-purple-500 text-white' : dark ? 'bg-white/5 text-white/60' : 'bg-black/5 text-gray-500'
+                      !sportFilter ? 'bg-purple-500 text-white' : dark ? 'bg-white/5 text-white/60' : 'bg-white text-gray-500 shadow-sm'
                     }`}
                   >Все виды</button>
                   {sports.map(s => (
@@ -121,7 +131,7 @@ function SuperAdminDash({ data, dark, navigate }) {
                       key={s}
                       onClick={() => setSportFilter(sportFilter === s ? '' : s)}
                       className={`px-3.5 py-1.5 rounded-full text-xs font-bold press-scale whitespace-nowrap transition-all ${
-                        sportFilter === s ? 'bg-purple-500 text-white' : dark ? 'bg-white/5 text-white/60' : 'bg-black/5 text-gray-500'
+                        sportFilter === s ? 'bg-purple-500 text-white' : dark ? 'bg-white/5 text-white/60' : 'bg-white text-gray-500 shadow-sm'
                       }`}
                     >{getSportLabel(s)}</button>
                   ))}
@@ -142,7 +152,7 @@ function SuperAdminDash({ data, dark, navigate }) {
           </GlassCard>
         </div>
         <div>
-          <h2 className={`text-sm uppercase font-bold mb-3 ${dark ? 'text-white/50' : 'text-gray-500'}`}>Клубы</h2>
+          <SectionTitle dark={dark}>Клубы</SectionTitle>
           <div className="space-y-2">
             {trainers.map(t => {
               const count = data.students.filter(s => s.trainerId === t.id && !s.isDemo).length
@@ -172,7 +182,7 @@ function SuperAdminDash({ data, dark, navigate }) {
           </div>
         </div>
         <div>
-          <h2 className={`text-sm uppercase font-bold mb-3 ${dark ? 'text-white/50' : 'text-gray-500'}`}>Ближайшие турниры</h2>
+          <SectionTitle dark={dark}>Ближайшие турниры</SectionTitle>
           <div className="space-y-2">
             {data.tournaments.sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 3).map(t => (
               <GlassCard key={t.id} onClick={() => navigate(`/tournaments/${t.id}`)}>
@@ -189,8 +199,10 @@ function SuperAdminDash({ data, dark, navigate }) {
   )
 }
 
+/* ======================== TRAINER ======================== */
 function TrainerDash({ auth, data, dark, navigate }) {
   const { addNews } = useData()
+  const trainer = auth.user
   const myStudents = data.students.filter(s => s.trainerId === auth.userId)
   const myGroups = data.groups.filter(g => g.trainerId === auth.userId)
   const myTx = data.transactions.filter(t => t.trainerId === auth.userId)
@@ -225,15 +237,45 @@ function TrainerDash({ auth, data, dark, navigate }) {
     w-full px-4 py-3 rounded-[16px] text-base outline-none
     ${dark
       ? 'bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-accent'
-      : 'bg-black/[0.03] border border-black/[0.08] text-gray-900 placeholder-gray-400 focus:border-accent'
+      : 'bg-white border border-black/[0.06] text-gray-900 placeholder-gray-400 focus:border-accent shadow-sm'
     }
   `
 
+  const sportLabel = getSportLabel(trainer?.sportType)
+
   return (
     <Layout>
-      <PageHeader title={auth.user?.clubName || 'Мой клуб'} logo />
+      <PageHeader title={trainer?.clubName || 'Мой клуб'} logo />
       <div className="px-4 space-y-4 slide-in stagger">
-        {/* Add news button — prominent */}
+
+        {/* Hero — Club identity */}
+        <div className={`rounded-[28px] p-5 relative overflow-hidden ${
+          dark
+            ? 'bg-gradient-to-br from-accent/20 via-dark-700 to-purple-900/20 border border-white/10'
+            : 'bg-gradient-to-br from-red-50 via-white to-purple-50 border border-black/[0.05] shadow-sm'
+        }`}>
+          <div className="flex items-center gap-4">
+            <Avatar name={trainer?.name || 'T'} src={trainer?.avatar} size={56} />
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-black truncate">{trainer?.clubName || 'Мой клуб'}</h2>
+              <p className={`text-sm truncate ${dark ? 'text-white/50' : 'text-gray-500'}`}>{trainer?.name}</p>
+              <div className="flex items-center gap-2 mt-1">
+                {trainer?.sportType && (
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                    dark ? 'bg-accent/20 text-accent-light' : 'bg-red-100 text-red-600'
+                  }`}>{sportLabel}</span>
+                )}
+                {trainer?.city && (
+                  <span className={`text-[10px] font-medium flex items-center gap-0.5 ${dark ? 'text-white/35' : 'text-gray-400'}`}>
+                    <MapPin size={9} />{trainer.city}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Add news button */}
         <button
           onClick={() => { setNewsForm({ title: '', content: '', groupId: '__all__' }); setShowNews(true) }}
           className="w-full py-3.5 rounded-[20px] bg-gradient-to-r from-accent to-purple-600 text-white font-bold press-scale flex items-center justify-center gap-2.5 shadow-lg shadow-accent/25"
@@ -242,6 +284,7 @@ function TrainerDash({ auth, data, dark, navigate }) {
           Новая новость
         </button>
 
+        {/* Stats grid */}
         <div className="grid grid-cols-3 gap-2">
           <GlassCard className="text-center">
             <Users size={18} className="mx-auto mb-1 text-accent" />
@@ -260,6 +303,7 @@ function TrainerDash({ auth, data, dark, navigate }) {
           </GlassCard>
         </div>
 
+        {/* Balance */}
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
@@ -278,7 +322,7 @@ function TrainerDash({ auth, data, dark, navigate }) {
         {/* Student statuses */}
         {studentsWithStatus.length > 0 && (
           <div>
-            <h2 className={`text-sm uppercase font-bold mb-2 ${dark ? 'text-white/50' : 'text-gray-500'}`}>Статусы учеников</h2>
+            <SectionTitle dark={dark}>Статусы учеников</SectionTitle>
             <div className="space-y-2">
               {studentsWithStatus.map(s => {
                 const cfg = STATUS_CONFIG[s.status]
@@ -300,11 +344,9 @@ function TrainerDash({ auth, data, dark, navigate }) {
           </div>
         )}
 
+        {/* Groups */}
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className={`text-sm uppercase font-bold ${dark ? 'text-white/50' : 'text-gray-500'}`}>Группы</h2>
-            <button onClick={() => navigate('/groups')} className="text-accent text-xs font-semibold press-scale">Управление</button>
-          </div>
+          <SectionTitle dark={dark} action="Все" onAction={() => navigate('/groups')}>Группы</SectionTitle>
           <div className="space-y-2">
             {myGroups.map(g => {
               const count = myStudents.filter(s => s.groupId === g.id).length
@@ -330,9 +372,10 @@ function TrainerDash({ auth, data, dark, navigate }) {
           </div>
         </div>
 
+        {/* Recent news */}
         {myNews.length > 0 && (
           <div>
-            <h2 className={`text-sm uppercase font-bold mb-3 ${dark ? 'text-white/50' : 'text-gray-500'}`}>Последние новости</h2>
+            <SectionTitle dark={dark}>Последние новости</SectionTitle>
             <div className="space-y-2">
               {myNews.slice(-3).reverse().map(n => {
                 const g = myGroups.find(g => g.id === n.groupId)
@@ -389,6 +432,7 @@ function TrainerDash({ auth, data, dark, navigate }) {
   )
 }
 
+/* ======================== STUDENT ======================== */
 function StudentDash({ auth, data, dark, navigate }) {
   const student = data.students.find(s => s.id === auth.studentId)
   const group = student ? data.groups.find(g => g.id === student.groupId) : null
@@ -398,21 +442,18 @@ function StudentDash({ auth, data, dark, navigate }) {
   const { updateStudent } = useData()
   const [showStatus, setShowStatus] = useState(false)
 
-  // Tournaments student registered for
   const myRegs = (data.tournamentRegistrations || []).filter(r => r.studentId === auth.studentId)
   const registeredTournaments = myRegs
     .map(r => data.tournaments.find(t => t.id === r.tournamentId))
     .filter(t => t && new Date(t.date) >= new Date())
     .sort((a, b) => new Date(a.date) - new Date(b.date))
 
-  // Find next opponent in active internal tournaments (supports multi-category)
   const myInternalMatches = useMemo(() => {
     const matches = []
     const internalTournaments = (data.internalTournaments || []).filter(t => t.status === 'active')
     for (const tournament of internalTournaments) {
       const brackets = tournament.brackets || {}
       const cats = brackets.categories || []
-      // Multi-category format
       if (cats.length > 0) {
         for (const cat of cats) {
           if (!cat.participants?.includes(auth.studentId)) continue
@@ -428,7 +469,6 @@ function StudentDash({ auth, data, dark, navigate }) {
           }
         }
       } else if (brackets.rounds && brackets.participants?.includes(auth.studentId)) {
-        // Legacy single bracket
         const rounds = brackets.rounds || []
         for (let ri = 0; ri < rounds.length; ri++) {
           for (const match of rounds[ri]) {
@@ -445,6 +485,8 @@ function StudentDash({ auth, data, dark, navigate }) {
   }, [data.internalTournaments, data.students, auth.studentId])
 
   const statusCfg = student?.status ? STATUS_CONFIG[student.status] : null
+  const sportLabel = getSportLabel(trainer?.sportType)
+  const rankLabel = getRankLabel(trainer?.sportType)
 
   const setStatus = (status) => {
     updateStudent(auth.studentId, { status })
@@ -455,69 +497,93 @@ function StudentDash({ auth, data, dark, navigate }) {
     <Layout>
       <PageHeader title="Мой кабинет" logo />
       <div className="px-4 space-y-4 slide-in stagger">
-        <GlassCard>
-          <div className="text-center">
-            <div className="text-lg font-bold">{student?.name}</div>
-            <div className={`text-sm ${dark ? 'text-white/40' : 'text-gray-400'}`}>
-              {trainer?.clubName} — {group?.name || 'Без группы'}
+
+        {/* Hero — Student identity + Club info */}
+        <div className={`rounded-[28px] p-5 relative overflow-hidden ${
+          dark
+            ? 'bg-gradient-to-br from-accent/15 via-dark-700 to-purple-900/20 border border-white/10'
+            : 'bg-gradient-to-br from-red-50 via-white to-purple-50 border border-black/[0.05] shadow-sm'
+        }`}>
+          <div className="flex items-center gap-4">
+            <Avatar name={student?.name || '?'} src={student?.avatar} size={60} />
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-black truncate">{student?.name}</h2>
+              <p className={`text-sm truncate ${dark ? 'text-white/50' : 'text-gray-500'}`}>
+                {trainer?.clubName} — {group?.name || 'Без группы'}
+              </p>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                {trainer?.sportType && (
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                    dark ? 'bg-accent/20 text-accent-light' : 'bg-red-100 text-red-600'
+                  }`}>{sportLabel}</span>
+                )}
+                {student?.belt && (
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                    dark ? 'bg-purple-500/20 text-purple-300' : 'bg-purple-100 text-purple-600'
+                  }`}>{student.belt}</span>
+                )}
+                {trainer?.city && (
+                  <span className={`text-[10px] font-medium flex items-center gap-0.5 ${dark ? 'text-white/35' : 'text-gray-400'}`}>
+                    <MapPin size={9} />{trainer.city}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </GlassCard>
+          {/* Trainer info */}
+          {trainer && (
+            <div className={`mt-3 pt-3 flex items-center gap-2 ${dark ? 'border-t border-white/5' : 'border-t border-black/[0.05]'}`}>
+              <Shield size={12} className={dark ? 'text-white/30' : 'text-gray-400'} />
+              <span className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+                Тренер: <span className="font-semibold">{trainer.name}</span>
+              </span>
+            </div>
+          )}
+        </div>
 
-        {/* Status badge + setter */}
-        <GlassCard onClick={() => setShowStatus(true)} className="cursor-pointer">
-          <div className="flex items-center justify-between">
-            <span className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-400'}`}>Мой статус</span>
+        {/* Status + Subscription row */}
+        <div className="grid grid-cols-2 gap-2">
+          <GlassCard onClick={() => setShowStatus(true)} className="cursor-pointer">
+            <div className={`text-[10px] uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-400'}`}>Статус</div>
             {statusCfg ? (
-              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${statusCfg.bg} border ${statusCfg.border}`}>
-                <statusCfg.icon size={14} className={statusCfg.color} />
-                <span className={`text-xs font-bold uppercase ${statusCfg.color}`}>{statusCfg.label}</span>
+              <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full ${statusCfg.bg} border ${statusCfg.border} w-fit`}>
+                <statusCfg.icon size={12} className={statusCfg.color} />
+                <span className={`text-xs font-bold ${statusCfg.color}`}>{statusCfg.label}</span>
               </div>
             ) : (
-              <span className="text-xs text-green-400 font-bold uppercase bg-green-500/15 px-3 py-1.5 rounded-full">
+              <span className="text-xs text-green-400 font-bold bg-green-500/15 px-2 py-1 rounded-full">
                 В строю
               </span>
             )}
-          </div>
-        </GlassCard>
-
-        <GlassCard>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-400'}`}>Абонемент</div>
-              <span className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-bold uppercase ${
+          </GlassCard>
+          <GlassCard>
+            <div className={`text-[10px] uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+              Абонемент
+            </div>
+            <div className="flex items-center justify-between">
+              <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
                 expired ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
               }`}>
                 {expired ? 'Долг' : 'Активен'}
               </span>
             </div>
-            <div className="text-right">
-              <div className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-400'}`}>
-                {expired ? 'Истек' : 'До'}
-              </div>
-              <div className="font-bold mt-1">{formatDate(student?.subscriptionExpiresAt)}</div>
+            <div className={`text-[10px] mt-1.5 ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+              {expired ? 'Истек' : 'До'}: <span className="font-semibold">{formatDate(student?.subscriptionExpiresAt)}</span>
             </div>
-          </div>
-        </GlassCard>
-
-        {student?.belt && (
-          <GlassCard className="flex items-center justify-between">
-            <span className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-400'}`}>{getRankLabel(trainer?.sportType)}</span>
-            <span className="font-bold">{student.belt}</span>
           </GlassCard>
-        )}
+        </div>
 
         {/* Next opponent in internal tournaments */}
         {myInternalMatches.length > 0 && (
           <div>
-            <h2 className={`text-sm uppercase font-bold mb-3 flex items-center gap-2 ${dark ? 'text-white/50' : 'text-gray-500'}`}>
-              <Swords size={14} className="text-accent" /> Следующий бой
-            </h2>
+            <SectionTitle dark={dark}>
+              <span className="flex items-center gap-1.5"><Swords size={12} className="text-accent" /> Следующий бой</span>
+            </SectionTitle>
             {myInternalMatches.map((m, i) => (
               <GlassCard
                 key={i}
                 onClick={() => navigate(`/internal-tournament/${m.tournament.id}`)}
-                className="mb-2 border border-accent/30 bg-gradient-to-r from-accent/5 to-purple-500/5"
+                className={`mb-2 border ${dark ? 'border-accent/30 bg-gradient-to-r from-accent/5 to-purple-500/5' : 'border-red-200 bg-gradient-to-r from-red-50/50 to-purple-50/50'}`}
               >
                 <div className="text-[10px] uppercase font-bold text-accent mb-2">
                   {m.tournament.title}{m.weightClass ? ` • ${m.weightClass}` : ''} — Раунд {m.roundIdx + 1}
@@ -557,14 +623,14 @@ function StudentDash({ auth, data, dark, navigate }) {
         {/* Tournament countdown */}
         {registeredTournaments.length > 0 && (
           <div>
-            <h2 className={`text-sm uppercase font-bold mb-3 flex items-center gap-1 ${dark ? 'text-white/50' : 'text-gray-500'}`}>
-              <Flame size={14} className="text-orange-400" /> Мои турниры
-            </h2>
+            <SectionTitle dark={dark}>
+              <span className="flex items-center gap-1.5"><Flame size={12} className="text-orange-400" /> Мои турниры</span>
+            </SectionTitle>
             {registeredTournaments.map(t => (
               <GlassCard
                 key={t.id}
                 onClick={() => navigate(`/tournaments/${t.id}`)}
-                className="mb-2 border border-orange-500/20 bg-gradient-to-r from-orange-500/5 to-red-500/5"
+                className={`mb-2 border ${dark ? 'border-orange-500/20 bg-gradient-to-r from-orange-500/5 to-red-500/5' : 'border-orange-200 bg-gradient-to-r from-orange-50/50 to-red-50/50'}`}
               >
                 <div className="flex items-center justify-between">
                   <div className="min-w-0 flex-1">
@@ -582,20 +648,27 @@ function StudentDash({ auth, data, dark, navigate }) {
           </div>
         )}
 
+        {/* News */}
         {myNews.length > 0 && (
           <div>
-            <h2 className={`text-sm uppercase font-bold mb-3 ${dark ? 'text-white/50' : 'text-gray-500'}`}>Новости группы</h2>
+            <SectionTitle dark={dark}>Новости</SectionTitle>
             {myNews.slice(-3).reverse().map(n => (
               <GlassCard key={n.id} className="mb-2">
-                <div className="font-semibold text-sm">{n.title}</div>
-                <div className={`text-xs mt-1 ${dark ? 'text-white/40' : 'text-gray-400'}`}>{n.content}</div>
+                <div className="flex items-start gap-2">
+                  <Newspaper size={16} className="text-accent shrink-0 mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-sm">{n.title}</div>
+                    <div className={`text-xs mt-1 ${dark ? 'text-white/40' : 'text-gray-400'}`}>{n.content}</div>
+                  </div>
+                </div>
               </GlassCard>
             ))}
           </div>
         )}
 
+        {/* Upcoming public tournaments */}
         <div>
-          <h2 className={`text-sm uppercase font-bold mb-3 ${dark ? 'text-white/50' : 'text-gray-500'}`}>Ближайшие турниры</h2>
+          <SectionTitle dark={dark}>Ближайшие турниры</SectionTitle>
           {data.tournaments
             .filter(t => new Date(t.date) >= new Date())
             .sort((a, b) => new Date(a.date) - new Date(b.date))

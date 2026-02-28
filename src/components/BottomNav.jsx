@@ -42,7 +42,7 @@ export default function BottomNav() {
       className={`
         fixed bottom-0 left-0 right-0 z-50
         backdrop-blur-xl border-t
-        ${dark ? 'bg-dark-900/80 border-white/10' : 'bg-white/80 border-black/[0.08]'}
+        ${dark ? 'bg-dark-900/80 border-white/10' : 'bg-white/90 border-black/[0.06] shadow-[0_-1px_12px_rgba(0,0,0,0.04)]'}
         pb-[env(safe-area-inset-bottom)]
       `}
     >

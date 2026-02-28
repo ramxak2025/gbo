@@ -13,6 +13,9 @@
   --color-glass-border-dark: rgba(255, 255, 255, 0.1);
   --color-glass-light: rgba(0, 0, 0, 0.03);
   --color-glass-border-light: rgba(0, 0, 0, 0.08);
+  --color-light-bg: #f5f5f7;
+  --color-light-card: #ffffff;
+  --color-light-border: rgba(0, 0, 0, 0.06);
   --radius-squircle: 24px;
   --radius-squircle-lg: 32px;
 }
@@ -189,11 +192,15 @@ input, select, textarea {
 /* === Card hover glow (desktop) === */
 @media (hover: hover) {
   .glass-hover {
-    transition: background-color 0.2s ease, border-color 0.2s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   }
-  .glass-hover:hover {
+  html.dark .glass-hover:hover {
     background-color: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.15);
+  }
+  html:not(.dark) .glass-hover:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    border-color: rgba(0, 0, 0, 0.08);
   }
 }
 

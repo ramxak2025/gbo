@@ -139,7 +139,7 @@ export default function Attendance() {
           <button
             onClick={() => setTab('mark')}
             className={`px-3 py-1 rounded-full text-xs font-bold press-scale transition-all ${
-              tab === 'mark' ? 'bg-accent text-white' : dark ? 'bg-white/5 text-white/50' : 'bg-black/5 text-gray-400'
+              tab === 'mark' ? 'bg-accent text-white' : dark ? 'bg-white/5 text-white/50' : 'bg-white text-gray-400 shadow-sm'
             }`}
           >
             <Users size={12} className="inline mr-1" />Отметить
@@ -147,7 +147,7 @@ export default function Attendance() {
           <button
             onClick={() => setTab('stats')}
             className={`px-3 py-1 rounded-full text-xs font-bold press-scale transition-all ${
-              tab === 'stats' ? 'bg-accent text-white' : dark ? 'bg-white/5 text-white/50' : 'bg-black/5 text-gray-400'
+              tab === 'stats' ? 'bg-accent text-white' : dark ? 'bg-white/5 text-white/50' : 'bg-white text-gray-400 shadow-sm'
             }`}
           >
             <BarChart3 size={12} className="inline mr-1" />Статистика
@@ -181,7 +181,7 @@ export default function Attendance() {
                 {absentCount} нет
               </span>
               {unmarkedCount > 0 && (
-                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${dark ? 'bg-white/5 text-white/40' : 'bg-black/5 text-gray-400'}`}>
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${dark ? 'bg-white/5 text-white/40' : 'bg-white text-gray-400 shadow-sm'}`}>
                   {unmarkedCount} не отмечено
                 </span>
               )}

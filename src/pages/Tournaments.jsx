@@ -124,7 +124,7 @@ export default function Tournaments() {
                     )}
                     {!t.coverImage && (
                       <div className={`w-full h-28 rounded-[16px] mb-3 flex items-center justify-center ${
-                        dark ? 'bg-white/5' : 'bg-black/[0.03]'
+                        dark ? 'bg-white/5' : 'bg-black/[0.04]'
                       }`}>
                         <span className="text-4xl font-black italic text-accent opacity-30">BJJ</span>
                       </div>

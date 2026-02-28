@@ -112,7 +112,7 @@ export default function Profile() {
           <button
             onClick={() => navigate('/notifications')}
             className={`w-full py-3.5 rounded-[16px] font-bold text-base press-scale flex items-center justify-center gap-2 ${
-              dark ? 'bg-white/5 text-white' : 'bg-black/[0.03] text-gray-900'
+              dark ? 'bg-white/5 text-white' : 'bg-white text-gray-900 shadow-sm border border-black/[0.06]'
             }`}
           >
             <Bell size={18} />
@@ -121,7 +121,7 @@ export default function Profile() {
           <button
             onClick={handleLogout}
             className={`w-full py-3.5 rounded-[16px] font-bold text-base press-scale flex items-center justify-center gap-2 ${
-              dark ? 'bg-white/5 text-white' : 'bg-black/[0.03] text-gray-900'
+              dark ? 'bg-white/5 text-white' : 'bg-white text-gray-900 shadow-sm border border-black/[0.06]'
             }`}
           >
             <LogOut size={18} />

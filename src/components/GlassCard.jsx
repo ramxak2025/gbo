@@ -11,7 +11,7 @@ export default function GlassCard({ children, className = '', onClick }) {
         transition-all duration-200
         ${dark
           ? 'bg-white/5 border border-white/10'
-          : 'bg-black/[0.03] border border-black/[0.08]'
+          : 'bg-white border border-black/[0.05] shadow-sm shadow-black/[0.04]'
         }
         ${onClick ? 'press-scale cursor-pointer' : ''}
         ${className}

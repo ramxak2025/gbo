@@ -84,12 +84,12 @@ export default function Login({ onLogin }) {
     w-full px-4 py-3.5 rounded-[16px] text-base outline-none transition-colors duration-200
     ${dark
       ? 'bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-accent'
-      : 'bg-black/[0.03] border border-black/[0.08] text-gray-900 placeholder-gray-400 focus:border-accent'
+      : 'bg-white border border-black/[0.06] text-gray-900 placeholder-gray-400 focus:border-accent shadow-sm'
     }
   `
 
   return (
-    <div className={`h-full flex flex-col ${dark ? 'bg-dark-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
+    <div className={`h-full flex flex-col ${dark ? 'bg-dark-900 text-white' : 'bg-[#f5f5f7] text-gray-900'}`}>
       <div className="flex justify-end p-4">
         <button onClick={toggle} className="press-scale p-2 rounded-full">
           {dark ? <Sun size={20} /> : <Moon size={20} />}
