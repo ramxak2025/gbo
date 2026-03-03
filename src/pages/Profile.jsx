@@ -63,7 +63,7 @@ export default function Profile() {
             </label>
           </div>
           <h2 className="text-xl font-bold mt-3">{displayName}</h2>
-          <p className={`text-sm ${dark ? 'text-white/40' : 'text-gray-400'}`}>{displaySub}</p>
+          <p className={`text-sm ${dark ? 'text-white/40' : 'text-gray-500'}`}>{displaySub}</p>
           <span className={`mt-2 px-3 py-1 rounded-full text-xs font-bold uppercase ${
             auth.role === 'superadmin'
               ? 'bg-purple-500/20 text-purple-400'
@@ -78,7 +78,7 @@ export default function Profile() {
         {/* Info */}
         {user?.phone && (
           <GlassCard className="flex items-center justify-between">
-            <span className={`text-sm ${dark ? 'text-white/40' : 'text-gray-400'}`}>Телефон</span>
+            <span className={`text-sm ${dark ? 'text-white/40' : 'text-gray-500'}`}>Телефон</span>
             <span className="font-semibold text-sm">{user.phone}</span>
           </GlassCard>
         )}
@@ -93,7 +93,7 @@ export default function Profile() {
                   <GlassCard key={n.id} className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="font-semibold text-sm">{n.title}</div>
-                      <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+                      <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-500'}`}>
                         {n.groupId ? (g?.name || '—') : 'Все группы'} — {n.content?.slice(0, 60)}{n.content?.length > 60 ? '...' : ''}
                       </div>
                     </div>

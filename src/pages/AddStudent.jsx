@@ -122,7 +122,7 @@ export default function AddStudent() {
           </div>
 
           <div className={`pt-2 ${dark ? 'border-t border-white/10' : 'border-t border-black/[0.08]'}`}>
-            <p className={`text-xs mb-2 ${dark ? 'text-white/40' : 'text-gray-400'}`}>Пароль для входа ученика</p>
+            <p className={`text-xs mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Пароль для входа ученика</p>
             <input
               type="text"
               placeholder="Пароль"

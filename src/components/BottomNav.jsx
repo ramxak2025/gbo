@@ -38,47 +38,45 @@ export default function BottomNav() {
   const items = navConfigs[auth.role] || navConfigs.student
 
   return (
-    <nav
-      className={`
-        fixed bottom-0 left-0 right-0 z-50
-        backdrop-blur-2xl border-t
-        ${dark
-          ? 'bg-dark-900/70 border-white/[0.06]'
-          : 'bg-white/60 border-white/40 shadow-[0_-4px_24px_rgba(0,0,0,0.06)]'
-        }
-        pb-[env(safe-area-inset-bottom)]
-      `}
-    >
-      <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
-        {items.map(({ path, icon: Icon, label }) => {
-          const active = location.pathname === path ||
-            (path !== '/' && location.pathname.startsWith(path))
-          return (
-            <button
-              key={path}
-              onClick={() => navigate(path)}
-              className={`
-                flex flex-col items-center gap-0.5 px-2 py-1 press-scale relative
-                transition-all duration-200
-                ${active
-                  ? 'text-purple-500'
-                  : dark ? 'text-white/30' : 'text-black/30'
-                }
-              `}
-            >
-              {active && (
-                <div className={`absolute -top-1 w-6 h-0.5 rounded-full ${
-                  dark ? 'bg-purple-400' : 'bg-purple-500'
-                }`} />
-              )}
-              <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
-              <span className={`text-[10px] leading-tight ${active ? 'font-bold' : 'font-medium'}`}>
-                {label}
-              </span>
-            </button>
-          )
-        })}
-      </div>
-    </nav>
+    <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-[max(env(safe-area-inset-bottom),8px)]">
+      <nav
+        className={`
+          rounded-[22px] mx-auto max-w-lg
+          backdrop-blur-3xl backdrop-saturate-[1.8]
+          ${dark
+            ? 'bg-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_0.5px_0_rgba(255,255,255,0.1)]'
+            : 'bg-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.04),inset_0_0.5px_0_rgba(255,255,255,0.8)]'
+          }
+        `}
+      >
+        <div className="flex items-center justify-around h-[60px]">
+          {items.map(({ path, icon: Icon, label }) => {
+            const active = location.pathname === path ||
+              (path !== '/' && location.pathname.startsWith(path))
+            return (
+              <button
+                key={path}
+                onClick={() => navigate(path)}
+                className={`
+                  flex flex-col items-center gap-0.5 px-3 py-1.5 press-scale relative
+                  transition-all duration-300 rounded-2xl
+                  ${active
+                    ? dark
+                      ? 'text-white bg-white/[0.12]'
+                      : 'text-gray-900 bg-black/[0.06]'
+                    : dark ? 'text-white/35' : 'text-gray-500'
+                  }
+                `}
+              >
+                <Icon size={21} strokeWidth={active ? 2.4 : 1.7} />
+                <span className={`text-[9px] leading-tight tracking-wide ${active ? 'font-bold' : 'font-medium'}`}>
+                  {label}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </nav>
+    </div>
   )
 }

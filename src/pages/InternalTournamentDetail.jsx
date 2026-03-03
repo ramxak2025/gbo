@@ -31,7 +31,7 @@ export default function InternalTournamentDetail() {
       <Layout>
         <PageHeader title="Турнир" back />
         <div className="px-4 py-12 text-center">
-          <p className={dark ? 'text-white/40' : 'text-gray-400'}>Турнир не найден</p>
+          <p className={dark ? 'text-white/40' : 'text-gray-500'}>Турнир не найден</p>
         </div>
       </Layout>
     )
@@ -136,7 +136,7 @@ export default function InternalTournamentDetail() {
         {/* Header */}
         <div className="text-center">
           <h1 className="text-xl font-black">{tournament.title}</h1>
-          <div className={`text-sm mt-1 flex items-center justify-center gap-2 ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+          <div className={`text-sm mt-1 flex items-center justify-center gap-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
             <Calendar size={14} />
             <span>{formatDate(tournament.date)}</span>
             <span>•</span>
@@ -169,7 +169,7 @@ export default function InternalTournamentDetail() {
                   >
                     {catChampion && <Trophy size={11} className={idx === activeCatIdx ? 'text-yellow-200' : 'text-yellow-400'} />}
                     {cat.weightClass}
-                    <span className={`${idx === activeCatIdx ? 'text-white/60' : dark ? 'text-white/30' : 'text-gray-400'}`}>
+                    <span className={`${idx === activeCatIdx ? 'text-white/60' : dark ? 'text-white/30' : 'text-gray-500'}`}>
                       ({cat.participants?.length || 0})
                     </span>
                   </button>
@@ -240,7 +240,7 @@ export default function InternalTournamentDetail() {
                     <div className="min-w-0 flex-1">
                       <div className="font-semibold text-sm truncate">{s.name}</div>
                     </div>
-                    <span className={`text-xs ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+                    <span className={`text-xs ${dark ? 'text-white/30' : 'text-gray-500'}`}>
                       {s.weight ? s.weight + ' кг' : '—'}
                     </span>
                     {isChampion && <Trophy size={14} className="text-yellow-400 shrink-0" />}

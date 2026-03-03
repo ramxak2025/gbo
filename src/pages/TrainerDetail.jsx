@@ -27,7 +27,7 @@ export default function TrainerDetail() {
       <Layout>
         <PageHeader title="Тренер" back />
         <div className="px-4 py-12 text-center">
-          <p className={dark ? 'text-white/40' : 'text-gray-400'}>Тренер не найден</p>
+          <p className={dark ? 'text-white/40' : 'text-gray-500'}>Тренер не найден</p>
         </div>
       </Layout>
     )
@@ -89,7 +89,7 @@ export default function TrainerDetail() {
         <div className="flex flex-col items-center text-center">
           <Avatar name={trainer.name} src={trainer.avatar} size={72} />
           <h2 className="text-xl font-bold mt-3">{trainer.name}</h2>
-          <p className={`text-sm ${dark ? 'text-white/40' : 'text-gray-400'}`}>{trainer.clubName}</p>
+          <p className={`text-sm ${dark ? 'text-white/40' : 'text-gray-500'}`}>{trainer.clubName}</p>
         </div>
 
         {trainer.phone && (
@@ -127,7 +127,7 @@ export default function TrainerDetail() {
             {groups.map(g => (
               <GlassCard key={g.id} className="mb-2">
                 <div className="font-semibold text-sm">{g.name}</div>
-                <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-400'}`}>{g.schedule}</div>
+                <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-500'}`}>{g.schedule}</div>
               </GlassCard>
             ))}
           </div>
@@ -146,11 +146,11 @@ export default function TrainerDetail() {
                   <Avatar name={s.name} src={s.avatar} size={36} />
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold text-sm truncate">{s.name}</div>
-                    <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-400'}`}>{s.belt || '—'}</div>
+                    <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-500'}`}>{s.belt || '—'}</div>
                   </div>
                 </div>
                 {auth.role === 'superadmin' && (
-                  <div className={`mt-1.5 pt-1.5 text-[10px] flex items-center gap-2 ${dark ? 'border-t border-white/[0.06] text-white/25' : 'border-t border-black/[0.05] text-gray-300'}`}>
+                  <div className={`mt-1.5 pt-1.5 text-[10px] flex items-center gap-2 ${dark ? 'border-t border-white/[0.06] text-white/25' : 'border-t border-black/[0.05] text-gray-500'}`}>
                     <span>Тел: {s.phone}</span>
                     <span>•</span>
                     <span>Пароль: {s.plainPassword || '—'}</span>

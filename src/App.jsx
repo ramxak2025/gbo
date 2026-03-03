@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
 import { ThemeProvider } from './context/ThemeContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { DataProvider, useData } from './context/DataContext'
@@ -26,6 +27,17 @@ import Attendance from './pages/Attendance'
 function AppRoutes() {
   const { auth } = useAuth()
   const { reload } = useData()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const prevAuth = useRef(null)
+
+  // After login, navigate to home page
+  useEffect(() => {
+    if (!prevAuth.current && auth && location.pathname !== '/') {
+      navigate('/', { replace: true })
+    }
+    prevAuth.current = auth
+  }, [auth])
 
   if (!auth) return <Login onLogin={reload} />
 

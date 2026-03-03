@@ -32,7 +32,7 @@ export default function TournamentDetail() {
       <Layout>
         <PageHeader title="Турнир" back />
         <div className="px-4 py-12 text-center">
-          <p className={dark ? 'text-white/40' : 'text-gray-400'}>Турнир не найден</p>
+          <p className={dark ? 'text-white/40' : 'text-gray-500'}>Турнир не найден</p>
         </div>
       </Layout>
     )
@@ -159,7 +159,7 @@ export default function TournamentDetail() {
         {/* Trainer sees registered students — right after location */}
         {auth.role === 'trainer' && trainerRegs.length > 0 && (
           <div>
-            <h3 className={`text-xs uppercase font-bold mb-2 flex items-center gap-1 ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+            <h3 className={`text-xs uppercase font-bold mb-2 flex items-center gap-1 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
               <Flame size={14} className="text-orange-400" />
               Хотят участвовать ({trainerRegs.length})
             </h3>
@@ -172,7 +172,7 @@ export default function TournamentDetail() {
                     <Avatar name={s.name} src={s.avatar} size={36} />
                     <div className="min-w-0">
                       <div className="font-semibold text-sm truncate">{s.name}</div>
-                      <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-400'}`}>{s.belt || '—'} — {s.weight ? s.weight + ' кг' : ''}</div>
+                      <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-500'}`}>{s.belt || '—'} — {s.weight ? s.weight + ' кг' : ''}</div>
                     </div>
                   </GlassCard>
                 )
@@ -192,7 +192,7 @@ export default function TournamentDetail() {
         {/* Description — below registration */}
         {tournament.description && (
           <GlassCard>
-            <h3 className={`text-xs uppercase font-bold mb-2 ${dark ? 'text-white/40' : 'text-gray-400'}`}>Описание</h3>
+            <h3 className={`text-xs uppercase font-bold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Описание</h3>
             <p className={`text-sm leading-relaxed whitespace-pre-line ${dark ? 'text-white/70' : 'text-gray-600'}`}>
               {tournament.description}
             </p>
@@ -206,7 +206,7 @@ export default function TournamentDetail() {
             <label className={`block w-full h-32 rounded-[16px] cursor-pointer press-scale flex items-center justify-center overflow-hidden ${dark ? 'bg-white/[0.05] border border-dashed border-white/[0.15]' : 'bg-white/50 border border-dashed border-black/[0.1]'}`}>
               {form.coverImage
                 ? <img src={form.coverImage} alt="Cover" className="w-full h-full object-cover" />
-                : <div className="flex flex-col items-center gap-1"><Camera size={24} className={dark ? 'text-white/30' : 'text-gray-400'} /><span className={`text-xs ${dark ? 'text-white/30' : 'text-gray-400'}`}>Обложка</span></div>
+                : <div className="flex flex-col items-center gap-1"><Camera size={24} className={dark ? 'text-white/30' : 'text-gray-500'} /><span className={`text-xs ${dark ? 'text-white/30' : 'text-gray-500'}`}>Обложка</span></div>
               }
               <input type="file" accept="image/*" className="hidden" onChange={handleEditImage} />
             </label>

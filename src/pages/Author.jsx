@@ -88,7 +88,7 @@ export default function Author() {
                 </div>
                 <div>
                   <div className="font-semibold text-sm">Instagram</div>
-                  <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>@{info.instagram}</div>
+                  <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>@{info.instagram}</div>
                 </div>
               </GlassCard>
             </a>
@@ -107,7 +107,7 @@ export default function Author() {
                 </div>
                 <div>
                   <div className="font-semibold text-sm">Веб-сайт</div>
-                  <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>{info.website}</div>
+                  <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>{info.website}</div>
                 </div>
               </GlassCard>
             </a>
@@ -126,7 +126,7 @@ export default function Author() {
                 </div>
                 <div>
                   <div className="font-semibold text-sm">WhatsApp</div>
-                  <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>{info.phone}</div>
+                  <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>{info.phone}</div>
                 </div>
               </GlassCard>
             </a>
@@ -135,7 +135,7 @@ export default function Author() {
 
         {/* Branding footer */}
         <div className="text-center pt-4 pb-2">
-          <p className={`text-xs ${dark ? 'text-white/20' : 'text-gray-300'}`}>
+          <p className={`text-xs ${dark ? 'text-white/20' : 'text-gray-500'}`}>
             <span>i</span><span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">Borcuha</span> — Web-Kultura Edition
           </p>
         </div>

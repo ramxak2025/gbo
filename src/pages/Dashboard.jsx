@@ -56,7 +56,7 @@ function Countdown({ date }) {
 function SectionTitle({ dark, children, action, onAction }) {
   return (
     <div className="flex items-center justify-between mb-3">
-      <h2 className={`text-xs uppercase font-bold tracking-wider ${dark ? 'text-white/40' : 'text-gray-400'}`}>{children}</h2>
+      <h2 className={`text-xs uppercase font-bold tracking-wider ${dark ? 'text-white/40' : 'text-gray-600'}`}>{children}</h2>
       {action && (
         <button onClick={onAction} className="text-accent text-xs font-semibold press-scale flex items-center gap-0.5">
           {action} <ChevronRight size={12} />
@@ -174,11 +174,11 @@ function SuperAdminDash({ data, dark, navigate }) {
 
         <div className="grid grid-cols-2 gap-3">
           <GlassCard>
-            <div className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-400'}`}>Тренеры</div>
+            <div className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-600'}`}>Тренеры</div>
             <div className="text-3xl font-black mt-1">{trainers.length}</div>
           </GlassCard>
           <GlassCard>
-            <div className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-400'}`}>Спортсмены</div>
+            <div className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-600'}`}>Спортсмены</div>
             <div className="text-3xl font-black mt-1">{filteredStudents.length}</div>
           </GlassCard>
         </div>
@@ -198,16 +198,16 @@ function SuperAdminDash({ data, dark, navigate }) {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="font-bold truncate">{r.name}</div>
-                      <div className={`text-xs ${dark ? 'text-white/50' : 'text-gray-500'}`}>
+                      <div className={`text-xs ${dark ? 'text-white/50' : 'text-gray-600'}`}>
                         {r.clubName || 'Без названия'}
                       </div>
-                      <div className={`text-xs mt-1 flex flex-wrap gap-x-2 gap-y-0.5 ${dark ? 'text-white/35' : 'text-gray-400'}`}>
+                      <div className={`text-xs mt-1 flex flex-wrap gap-x-2 gap-y-0.5 ${dark ? 'text-white/35' : 'text-gray-600'}`}>
                         <span>{r.phone}</span>
                         {r.sportType && <span>{getSportLabel(r.sportType)}</span>}
                         {r.city && <span className="flex items-center gap-0.5"><MapPin size={9} />{r.city}</span>}
                       </div>
                       {r.plainPassword && (
-                        <div className={`text-[10px] mt-1 ${dark ? 'text-white/25' : 'text-gray-300'}`}>
+                        <div className={`text-[10px] mt-1 ${dark ? 'text-white/25' : 'text-gray-400'}`}>
                           Пароль: {r.plainPassword}
                         </div>
                       )}
@@ -245,7 +245,7 @@ function SuperAdminDash({ data, dark, navigate }) {
                   <div className="flex items-center justify-between">
                     <div className="min-w-0">
                       <div className="font-bold truncate">{t.clubName || t.name}</div>
-                      <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'} flex items-center gap-1 flex-wrap`}>
+                      <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-600'} flex items-center gap-1 flex-wrap`}>
                         {t.name}
                         {t.city && <><span>•</span><MapPin size={10} />{t.city}</>}
                         {t.sportType && <><span>•</span>{getSportLabel(t.sportType)}</>}
@@ -271,7 +271,7 @@ function SuperAdminDash({ data, dark, navigate }) {
             {data.tournaments.sort((a, b) => new Date(a.date) - new Date(b.date)).slice(0, 3).map(t => (
               <GlassCard key={t.id} onClick={() => navigate(`/tournaments/${t.id}`)}>
                 <div className="font-bold">{t.title}</div>
-                <div className={`text-sm mt-1 flex items-center gap-1 ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+                <div className={`text-sm mt-1 flex items-center gap-1 ${dark ? 'text-white/40' : 'text-gray-600'}`}>
                   <Calendar size={13} />{formatDate(t.date)} — {t.location}
                 </div>
               </GlassCard>
@@ -342,7 +342,7 @@ function TrainerDash({ auth, data, dark, navigate }) {
             <Avatar name={trainer?.name || 'T'} src={trainer?.avatar} size={56} />
             <div className="min-w-0 flex-1">
               <h2 className="text-lg font-black truncate">{trainer?.clubName || 'Мой клуб'}</h2>
-              <p className={`text-sm truncate ${dark ? 'text-white/50' : 'text-gray-500'}`}>{trainer?.name}</p>
+              <p className={`text-sm truncate ${dark ? 'text-white/50' : 'text-gray-600'}`}>{trainer?.name}</p>
               <div className="flex items-center gap-2 mt-1">
                 {trainer?.sportType && (
                   <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
@@ -350,7 +350,7 @@ function TrainerDash({ auth, data, dark, navigate }) {
                   }`}>{sportLabel}</span>
                 )}
                 {trainer?.city && (
-                  <span className={`text-[10px] font-medium flex items-center gap-0.5 ${dark ? 'text-white/35' : 'text-gray-400'}`}>
+                  <span className={`text-[10px] font-medium flex items-center gap-0.5 ${dark ? 'text-white/35' : 'text-gray-600'}`}>
                     <MapPin size={9} />{trainer.city}
                   </span>
                 )}
@@ -373,17 +373,17 @@ function TrainerDash({ auth, data, dark, navigate }) {
           <GlassCard className="text-center">
             <Users size={18} className="mx-auto mb-1 text-accent" />
             <div className="text-2xl font-black">{stats.total}</div>
-            <div className={`text-[10px] uppercase ${dark ? 'text-white/40' : 'text-gray-400'}`}>Всего</div>
+            <div className={`text-[10px] uppercase ${dark ? 'text-white/40' : 'text-gray-600'}`}>Всего</div>
           </GlassCard>
           <GlassCard className="text-center">
             <TrendingUp size={18} className="mx-auto mb-1 text-green-500" />
             <div className="text-2xl font-black">{stats.active}</div>
-            <div className={`text-[10px] uppercase ${dark ? 'text-white/40' : 'text-gray-400'}`}>Активных</div>
+            <div className={`text-[10px] uppercase ${dark ? 'text-white/40' : 'text-gray-600'}`}>Активных</div>
           </GlassCard>
           <GlassCard className="text-center">
             <AlertCircle size={18} className="mx-auto mb-1 text-accent" />
             <div className="text-2xl font-black">{stats.debtors}</div>
-            <div className={`text-[10px] uppercase ${dark ? 'text-white/40' : 'text-gray-400'}`}>Должников</div>
+            <div className={`text-[10px] uppercase ${dark ? 'text-white/40' : 'text-gray-600'}`}>Должников</div>
           </GlassCard>
         </div>
 
@@ -391,7 +391,7 @@ function TrainerDash({ auth, data, dark, navigate }) {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div>
-              <div className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-400'}`}>Баланс</div>
+              <div className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-600'}`}>Баланс</div>
               <div className={`text-2xl font-black ${stats.balance >= 0 ? 'text-green-500' : 'text-accent'}`}>
                 {stats.balance.toLocaleString('ru-RU')} ₽
               </div>
@@ -438,7 +438,7 @@ function TrainerDash({ auth, data, dark, navigate }) {
                 <GlassCard key={g.id} className="flex items-center justify-between">
                   <div>
                     <div className="font-bold">{g.name}</div>
-                    <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>{g.schedule}</div>
+                    <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-600'}`}>{g.schedule}</div>
                   </div>
                   <div className="flex items-center gap-2">
                     {g.attendanceEnabled && (
@@ -446,13 +446,13 @@ function TrainerDash({ auth, data, dark, navigate }) {
                         <ClipboardList size={14} className="text-green-400" />
                       </button>
                     )}
-                    <span className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>{count} чел.</span>
+                    <span className={`text-xs ${dark ? 'text-white/40' : 'text-gray-600'}`}>{count} чел.</span>
                     <span className="text-xs text-accent font-semibold">{g.subscriptionCost?.toLocaleString('ru-RU')} ₽</span>
                   </div>
                 </GlassCard>
               )
             })}
-            {myGroups.length === 0 && <p className={`text-center py-4 text-sm ${dark ? 'text-white/30' : 'text-gray-400'}`}>Нет групп. Создайте первую!</p>}
+            {myGroups.length === 0 && <p className={`text-center py-4 text-sm ${dark ? 'text-white/30' : 'text-gray-600'}`}>Нет групп. Создайте первую!</p>}
           </div>
         </div>
 
@@ -469,7 +469,7 @@ function TrainerDash({ auth, data, dark, navigate }) {
                       <Newspaper size={16} className="text-accent shrink-0 mt-0.5" />
                       <div className="min-w-0 flex-1">
                         <div className="font-semibold text-sm">{n.title}</div>
-                        <div className={`text-xs mt-0.5 ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+                        <div className={`text-xs mt-0.5 ${dark ? 'text-white/40' : 'text-gray-600'}`}>
                           {n.groupId ? g?.name || '—' : 'Все группы'} — {n.content?.slice(0, 50)}{n.content?.length > 50 ? '...' : ''}
                         </div>
                       </div>
@@ -592,7 +592,7 @@ function StudentDash({ auth, data, dark, navigate }) {
             <Avatar name={student?.name || '?'} src={student?.avatar} size={60} />
             <div className="min-w-0 flex-1">
               <h2 className="text-lg font-black truncate">{student?.name}</h2>
-              <p className={`text-sm truncate ${dark ? 'text-white/50' : 'text-gray-500'}`}>
+              <p className={`text-sm truncate ${dark ? 'text-white/50' : 'text-gray-600'}`}>
                 {trainer?.clubName} — {group?.name || 'Без группы'}
               </p>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
@@ -607,7 +607,7 @@ function StudentDash({ auth, data, dark, navigate }) {
                   }`}>{student.belt}</span>
                 )}
                 {trainer?.city && (
-                  <span className={`text-[10px] font-medium flex items-center gap-0.5 ${dark ? 'text-white/35' : 'text-gray-400'}`}>
+                  <span className={`text-[10px] font-medium flex items-center gap-0.5 ${dark ? 'text-white/35' : 'text-gray-600'}`}>
                     <MapPin size={9} />{trainer.city}
                   </span>
                 )}
@@ -617,8 +617,8 @@ function StudentDash({ auth, data, dark, navigate }) {
           {/* Trainer info */}
           {trainer && (
             <div className={`mt-3 pt-3 flex items-center gap-2 ${dark ? 'border-t border-white/[0.06]' : 'border-t border-black/[0.05]'}`}>
-              <Shield size={12} className={dark ? 'text-white/30' : 'text-gray-400'} />
-              <span className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+              <Shield size={12} className={dark ? 'text-white/30' : 'text-gray-600'} />
+              <span className={`text-xs ${dark ? 'text-white/40' : 'text-gray-600'}`}>
                 Тренер: <span className="font-semibold">{trainer.name}</span>
               </span>
             </div>
@@ -628,7 +628,7 @@ function StudentDash({ auth, data, dark, navigate }) {
         {/* Status + Subscription row */}
         <div className="grid grid-cols-2 gap-2">
           <GlassCard onClick={() => setShowStatus(true)} className="cursor-pointer">
-            <div className={`text-[10px] uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-400'}`}>Статус</div>
+            <div className={`text-[10px] uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-600'}`}>Статус</div>
             {statusCfg ? (
               <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full ${statusCfg.bg} border ${statusCfg.border} w-fit`}>
                 <statusCfg.icon size={12} className={statusCfg.color} />
@@ -641,7 +641,7 @@ function StudentDash({ auth, data, dark, navigate }) {
             )}
           </GlassCard>
           <GlassCard>
-            <div className={`text-[10px] uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+            <div className={`text-[10px] uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-600'}`}>
               Абонемент
             </div>
             <div className="flex items-center justify-between">
@@ -651,7 +651,7 @@ function StudentDash({ auth, data, dark, navigate }) {
                 {expired ? 'Долг' : 'Активен'}
               </span>
             </div>
-            <div className={`text-[10px] mt-1.5 ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+            <div className={`text-[10px] mt-1.5 ${dark ? 'text-white/30' : 'text-gray-600'}`}>
               {expired ? 'Истек' : 'До'}: <span className="font-semibold">{formatDate(student?.subscriptionExpiresAt)}</span>
             </div>
           </GlassCard>
@@ -678,7 +678,7 @@ function StudentDash({ auth, data, dark, navigate }) {
                       <Avatar name={student?.name || '?'} src={student?.avatar} size={36} />
                       <div className="min-w-0">
                         <div className="font-bold text-sm truncate">{student?.name}</div>
-                        <div className={`text-[10px] ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+                        <div className={`text-[10px] ${dark ? 'text-white/30' : 'text-gray-600'}`}>
                           {student?.weight ? student.weight + ' кг' : ''}
                         </div>
                       </div>
@@ -687,7 +687,7 @@ function StudentDash({ auth, data, dark, navigate }) {
                     <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
                       <div className="min-w-0 text-right">
                         <div className="font-bold text-sm truncate">{m.opponent.name}</div>
-                        <div className={`text-[10px] ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+                        <div className={`text-[10px] ${dark ? 'text-white/30' : 'text-gray-600'}`}>
                           {m.opponent.weight ? m.opponent.weight + ' кг' : ''}
                         </div>
                       </div>
@@ -695,7 +695,7 @@ function StudentDash({ auth, data, dark, navigate }) {
                     </div>
                   </div>
                 ) : (
-                  <div className={`text-sm text-center py-1 ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+                  <div className={`text-sm text-center py-1 ${dark ? 'text-white/40' : 'text-gray-600'}`}>
                     Ожидание соперника...
                   </div>
                 )}
@@ -719,7 +719,7 @@ function StudentDash({ auth, data, dark, navigate }) {
                 <div className="flex items-center justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="font-bold text-sm truncate">{t.title}</div>
-                    <div className={`text-xs mt-0.5 flex items-center gap-1 ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+                    <div className={`text-xs mt-0.5 flex items-center gap-1 ${dark ? 'text-white/40' : 'text-gray-600'}`}>
                       <Calendar size={11} /> {formatDate(t.date)}
                     </div>
                   </div>
@@ -742,7 +742,7 @@ function StudentDash({ auth, data, dark, navigate }) {
                   <Newspaper size={16} className="text-accent shrink-0 mt-0.5" />
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold text-sm">{n.title}</div>
-                    <div className={`text-xs mt-1 ${dark ? 'text-white/40' : 'text-gray-400'}`}>{n.content}</div>
+                    <div className={`text-xs mt-1 ${dark ? 'text-white/40' : 'text-gray-600'}`}>{n.content}</div>
                   </div>
                 </div>
               </GlassCard>
@@ -760,7 +760,7 @@ function StudentDash({ auth, data, dark, navigate }) {
             .map(t => (
               <GlassCard key={t.id} onClick={() => navigate(`/tournaments/${t.id}`)} className="mb-2">
                 <div className="font-bold">{t.title}</div>
-                <div className={`text-sm mt-1 flex items-center gap-1 ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+                <div className={`text-sm mt-1 flex items-center gap-1 ${dark ? 'text-white/40' : 'text-gray-600'}`}>
                   <Calendar size={13} /> {formatDate(t.date)} — {t.location}
                 </div>
               </GlassCard>

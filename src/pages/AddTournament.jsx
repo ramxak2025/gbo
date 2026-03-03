@@ -72,8 +72,8 @@ export default function AddTournament() {
               <img src={form.coverImage} alt="Cover" className="w-full h-full object-cover" />
             ) : (
               <div className="flex flex-col items-center gap-2">
-                <Camera size={28} className={dark ? 'text-white/30' : 'text-gray-400'} />
-                <span className={`text-xs ${dark ? 'text-white/30' : 'text-gray-400'}`}>Загрузить обложку</span>
+                <Camera size={28} className={dark ? 'text-white/30' : 'text-gray-500'} />
+                <span className={`text-xs ${dark ? 'text-white/30' : 'text-gray-500'}`}>Загрузить обложку</span>
               </div>
             )}
             <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />

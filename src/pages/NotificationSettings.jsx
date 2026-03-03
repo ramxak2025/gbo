@@ -135,11 +135,11 @@ export default function NotificationSettings() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${pushEnabled ? 'bg-accent/20' : dark ? 'bg-white/[0.06]' : 'bg-white/60'}`}>
-                {pushEnabled ? <Bell size={20} className="text-accent" /> : <BellOff size={20} className={dark ? 'text-white/30' : 'text-gray-400'} />}
+                {pushEnabled ? <Bell size={20} className="text-accent" /> : <BellOff size={20} className={dark ? 'text-white/30' : 'text-gray-500'} />}
               </div>
               <div>
                 <div className="font-bold text-sm">Push-уведомления</div>
-                <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+                <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>
                   {pushEnabled ? 'Включены' : 'Выключены'}
                 </div>
               </div>
@@ -162,7 +162,7 @@ export default function NotificationSettings() {
                       <Icon size={18} className="text-accent" />
                       <div>
                         <div className="font-semibold text-sm">{label}</div>
-                        <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-400'}`}>{desc}</div>
+                        <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-500'}`}>{desc}</div>
                       </div>
                     </div>
                     <Toggle value={settings[key]} onChange={(v) => updateSetting(key, v)} />
@@ -174,7 +174,7 @@ export default function NotificationSettings() {
         )}
 
         {!('PushManager' in window) && (
-          <p className={`text-center text-sm py-4 ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+          <p className={`text-center text-sm py-4 ${dark ? 'text-white/30' : 'text-gray-500'}`}>
             Push-уведомления не поддерживаются в этом браузере
           </p>
         )}

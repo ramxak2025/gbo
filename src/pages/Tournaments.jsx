@@ -81,7 +81,7 @@ export default function Tournaments() {
                             </span>
                           )}
                         </div>
-                        <div className={`flex items-center gap-2 mt-1 text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+                        <div className={`flex items-center gap-2 mt-1 text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>
                           <Calendar size={11} />
                           <span>{formatDate(t.date)}</span>
                           <span>•</span>
@@ -132,11 +132,11 @@ export default function Tournaments() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <h3 className="font-bold text-base truncate">{t.title}</h3>
-                        <div className={`flex items-center gap-1 mt-1 text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+                        <div className={`flex items-center gap-1 mt-1 text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>
                           <Calendar size={12} />
                           <span>{formatDate(t.date)}</span>
                         </div>
-                        <div className={`flex items-center gap-1 mt-0.5 text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+                        <div className={`flex items-center gap-1 mt-0.5 text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>
                           <MapPin size={12} />
                           <span className="truncate">{t.location}</span>
                         </div>
@@ -159,7 +159,7 @@ export default function Tournaments() {
         {sorted.length === 0 && myInternalTournaments.length === 0 && (
           <div className="text-center py-12">
             <Swords size={48} className={`mx-auto mb-3 ${dark ? 'text-white/10' : 'text-gray-200'}`} />
-            <p className={`text-sm ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+            <p className={`text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>
               Нет турниров
             </p>
             {auth.role === 'trainer' && (

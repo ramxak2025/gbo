@@ -29,11 +29,11 @@ function MatchCard({ match, students, canEdit, onSelectWinner, dark }) {
               {student.name}
             </span>
             {student.weight && (
-              <span className={`text-[10px] ${dark ? 'text-white/30' : 'text-gray-400'}`}>{student.weight}кг</span>
+              <span className={`text-[10px] ${dark ? 'text-white/30' : 'text-gray-500'}`}>{student.weight}кг</span>
             )}
           </>
         ) : (
-          <span className={`text-xs italic ${dark ? 'text-white/20' : 'text-gray-300'}`}>Ожидание...</span>
+          <span className={`text-xs italic ${dark ? 'text-white/20' : 'text-gray-500'}`}>Ожидание...</span>
         )}
       </button>
     )
@@ -80,7 +80,7 @@ export default function BracketView({ brackets, students, canEdit, onSelectWinne
       <div className="flex gap-4" style={{ minWidth: visibleRounds.length * 184 }}>
         {visibleRounds.map(({ matches, index }) => (
           <div key={index} className="flex flex-col gap-3 min-w-[176px]">
-            <div className={`text-[10px] uppercase font-bold text-center tracking-wider mb-1 ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+            <div className={`text-[10px] uppercase font-bold text-center tracking-wider mb-1 ${dark ? 'text-white/30' : 'text-gray-500'}`}>
               {names[index]}
             </div>
             <div className="flex flex-col justify-around flex-1 gap-3">

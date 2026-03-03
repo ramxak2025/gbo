@@ -76,8 +76,8 @@ export default function Groups() {
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
                   <div className="font-bold">{g.name}</div>
-                  <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>{g.schedule}</div>
-                  <div className={`text-xs mt-0.5 ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+                  <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>{g.schedule}</div>
+                  <div className={`text-xs mt-0.5 ${dark ? 'text-white/30' : 'text-gray-500'}`}>
                     {count} чел. — {g.subscriptionCost?.toLocaleString('ru-RU')} ₽/мес
                   </div>
                 </div>
@@ -88,7 +88,7 @@ export default function Groups() {
                     </button>
                   )}
                   <button onClick={() => setEditGroup({ ...g })} className="press-scale p-2">
-                    <Edit3 size={16} className={dark ? 'text-white/40' : 'text-gray-400'} />
+                    <Edit3 size={16} className={dark ? 'text-white/40' : 'text-gray-500'} />
                   </button>
                   <button onClick={() => handleDelete(g.id)} className="press-scale p-2">
                     <Trash2 size={16} className="text-red-400" />
@@ -97,7 +97,7 @@ export default function Groups() {
               </div>
               {/* Attendance toggle */}
               <div className={`flex items-center justify-between mt-2 pt-2 ${dark ? 'border-t border-white/[0.06]' : 'border-t border-black/[0.05]'}`}>
-                <span className={`text-xs font-medium ${dark ? 'text-white/40' : 'text-gray-400'}`}>Учёт посещаемости</span>
+                <span className={`text-xs font-medium ${dark ? 'text-white/40' : 'text-gray-500'}`}>Учёт посещаемости</span>
                 <button
                   onClick={() => updateGroup(g.id, { attendanceEnabled: !g.attendanceEnabled })}
                   className={`relative w-10 h-5.5 rounded-full transition-colors press-scale ${
@@ -113,7 +113,7 @@ export default function Groups() {
           )
         })}
         {myGroups.length === 0 && (
-          <p className={`text-center py-12 text-sm ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+          <p className={`text-center py-12 text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>
             Нет групп. Нажмите + чтобы создать.
           </p>
         )}

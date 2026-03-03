@@ -45,7 +45,7 @@ function StudentCard({ person, dark, onClick, showClub }) {
           <span className="font-bold text-sm truncate">{person.name}</span>
           {person.status && <StatusBadge status={person.status} />}
         </div>
-        <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+        <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>
           {showClub || (person.belt || '—')}
         </div>
       </div>
@@ -94,13 +94,13 @@ export default function Team() {
       </PageHeader>
       <div className="px-4 space-y-4 slide-in">
         <div className="relative">
-          <Search size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 ${dark ? 'text-white/30' : 'text-gray-400'}`} />
+          <Search size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 ${dark ? 'text-white/30' : 'text-gray-500'}`} />
           <input type="text" placeholder="Поиск по имени..." value={search} onChange={e => setSearch(e.target.value)} className={inputCls} />
         </div>
         {isAdmin && (
           <div className={`flex rounded-[16px] p-1 ${dark ? 'bg-white/[0.06] border border-white/[0.06]' : 'bg-white/50 border border-white/60'}`}>
             {[{ key: 'students', label: `Спортсмены (${filteredStudents.length})` }, { key: 'trainers', label: `Тренеры (${filteredTrainers.length})` }].map(({ key, label }) => (
-              <button key={key} onClick={() => setTab(key)} className={`flex-1 py-2 rounded-[12px] text-xs font-semibold transition-all ${tab === key ? (dark ? 'bg-white/[0.12] text-white' : 'bg-white text-gray-900 shadow-sm') : (dark ? 'text-white/40' : 'text-gray-400')}`}>{label}</button>
+              <button key={key} onClick={() => setTab(key)} className={`flex-1 py-2 rounded-[12px] text-xs font-semibold transition-all ${tab === key ? (dark ? 'bg-white/[0.12] text-white' : 'bg-white text-gray-900 shadow-sm') : (dark ? 'text-white/40' : 'text-gray-500')}`}>{label}</button>
             ))}
           </div>
         )}
@@ -115,14 +115,14 @@ export default function Team() {
                   <Avatar name={person.name} src={person.avatar} size={44} />
                   <div className="min-w-0 flex-1">
                     <div className="font-bold text-sm truncate">{person.name}</div>
-                    <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>{person.clubName}</div>
+                    <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>{person.clubName}</div>
                   </div>
-                  <span className={`text-xs ${dark ? 'text-white/30' : 'text-gray-400'}`}>{count} чел.</span>
+                  <span className={`text-xs ${dark ? 'text-white/30' : 'text-gray-500'}`}>{count} чел.</span>
                 </GlassCard>
               )
             })}
             {filteredTrainers.length === 0 && (
-              <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-400'}`}>{search ? 'Никого не найдено' : 'Список пуст'}</p>
+              <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>{search ? 'Никого не найдено' : 'Список пуст'}</p>
             )}
           </div>
         )}
@@ -135,7 +135,7 @@ export default function Team() {
               return <StudentCard key={person.id} person={person} dark={dark} onClick={() => navigate(`/student/${person.id}`)} showClub={trainerName} />
             })}
             {filteredStudents.length === 0 && (
-              <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-400'}`}>{search ? 'Никого не найдено' : 'Список пуст'}</p>
+              <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>{search ? 'Никого не найдено' : 'Список пуст'}</p>
             )}
           </div>
         )}
@@ -149,7 +149,7 @@ export default function Team() {
                 <div key={group.id}>
                   <div className="flex items-center justify-between mb-2">
                     <h3 className={`text-xs uppercase font-bold ${dark ? 'text-white/50' : 'text-gray-500'}`}>{group.name}</h3>
-                    <span className={`text-[10px] font-medium ${dark ? 'text-white/30' : 'text-gray-400'}`}>{group.schedule}</span>
+                    <span className={`text-[10px] font-medium ${dark ? 'text-white/30' : 'text-gray-500'}`}>{group.schedule}</span>
                   </div>
                   <div className="space-y-2">
                     {groupStudents.map(person => (
@@ -170,7 +170,7 @@ export default function Team() {
               </div>
             )}
             {filteredStudents.length === 0 && (
-              <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-400'}`}>{search ? 'Никого не найдено' : 'Нет спортсменов'}</p>
+              <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>{search ? 'Никого не найдено' : 'Нет спортсменов'}</p>
             )}
           </div>
         )}
@@ -198,11 +198,11 @@ function StudentTeam({ auth, data, dark, navigate, search, setSearch }) {
         {group && (
           <GlassCard>
             <div className="font-bold">{group.name}</div>
-            <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>{group.schedule}</div>
+            <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>{group.schedule}</div>
           </GlassCard>
         )}
         <div className="relative">
-          <Search size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 ${dark ? 'text-white/30' : 'text-gray-400'}`} />
+          <Search size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 ${dark ? 'text-white/30' : 'text-gray-500'}`} />
           <input type="text" placeholder="Поиск..." value={search} onChange={e => setSearch(e.target.value)} className={inputCls} />
         </div>
         <div className="space-y-2">
@@ -213,7 +213,7 @@ function StudentTeam({ auth, data, dark, navigate, search, setSearch }) {
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-sm truncate">{s.name}</span>
                 </div>
-                <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>{s.belt || '—'}</div>
+                <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>{s.belt || '—'}</div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {s.status && <StatusBadge status={s.status} />}
@@ -221,7 +221,7 @@ function StudentTeam({ auth, data, dark, navigate, search, setSearch }) {
             </GlassCard>
           ))}
           {filtered.length === 0 && (
-            <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-400'}`}>Нет одногруппников</p>
+            <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>Нет одногруппников</p>
           )}
         </div>
       </div>
@@ -240,7 +240,7 @@ function StudentTeam({ auth, data, dark, navigate, search, setSearch }) {
             <div className="px-5 pb-5 text-center space-y-3">
               <div>
                 <h2 className="text-xl font-bold">{selected.name}</h2>
-                <p className={`text-sm ${dark ? 'text-white/40' : 'text-gray-400'}`}>{selected.belt || '—'}</p>
+                <p className={`text-sm ${dark ? 'text-white/40' : 'text-gray-500'}`}>{selected.belt || '—'}</p>
               </div>
 
               {selected.status && (

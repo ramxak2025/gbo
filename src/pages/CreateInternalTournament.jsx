@@ -136,7 +136,7 @@ export default function CreateInternalTournament() {
           <div className="space-y-4">
             <div className="text-center mb-2">
               <h2 className="text-lg font-bold">{form.title || 'Клубный турнир'}</h2>
-              <p className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+              <p className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>
                 Добавьте весовые категории и выберите участников
               </p>
             </div>
@@ -180,7 +180,7 @@ export default function CreateInternalTournament() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-sm">{cat.weightClass}</div>
-                      <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+                      <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>
                         {cat.participants.length > 0
                           ? `${cat.participants.length} участников`
                           : 'Нажмите чтобы выбрать участников'
@@ -188,7 +188,7 @@ export default function CreateInternalTournament() {
                         {cat.participants.length === 1 && ' (мин. 2)'}
                       </div>
                     </div>
-                    <ChevronRight size={18} className={dark ? 'text-white/20' : 'text-gray-300'} />
+                    <ChevronRight size={18} className={dark ? 'text-white/20' : 'text-gray-500'} />
                   </div>
                   {cat.participants.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-3">
@@ -211,7 +211,7 @@ export default function CreateInternalTournament() {
             </div>
 
             {categories.length === 0 && (
-              <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+              <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>
                 Добавьте хотя бы одну весовую категорию
               </p>
             )}
@@ -259,7 +259,7 @@ export default function CreateInternalTournament() {
             </div>
 
             {getFilteredStudents(categories[editingCatIdx].weightClass).length === 0 && (
-              <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+              <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>
                 Нет учеников в этой весовой
               </p>
             )}
@@ -281,7 +281,7 @@ export default function CreateInternalTournament() {
                   <Avatar name={s.name} src={s.avatar} size={36} />
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold text-sm truncate">{s.name}</div>
-                    <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+                    <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-500'}`}>
                       {s.weight ? s.weight + ' кг' : '—'} • {s.belt || '—'}
                     </div>
                   </div>

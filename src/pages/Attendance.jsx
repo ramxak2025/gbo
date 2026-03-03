@@ -126,7 +126,7 @@ export default function Attendance() {
       <Layout>
         <PageHeader title="Посещаемость" back />
         <div className="px-4 py-12 text-center">
-          <p className={dark ? 'text-white/40' : 'text-gray-400'}>Группа не найдена</p>
+          <p className={dark ? 'text-white/40' : 'text-gray-500'}>Группа не найдена</p>
         </div>
       </Layout>
     )
@@ -208,7 +208,7 @@ export default function Attendance() {
                     <Avatar name={s.name} src={s.avatar} size={36} />
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-sm truncate">{s.name}</div>
-                      <div className={`text-[10px] ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+                      <div className={`text-[10px] ${dark ? 'text-white/30' : 'text-gray-500'}`}>
                         {s.belt || ''} {s.weight ? `• ${s.weight} кг` : ''}
                       </div>
                     </div>
@@ -217,7 +217,7 @@ export default function Attendance() {
                         ? 'bg-green-500 text-white'
                         : present === false
                           ? 'bg-red-500/20 text-red-400'
-                          : dark ? 'bg-white/[0.08] text-white/20' : 'bg-white/60 text-gray-300'
+                          : dark ? 'bg-white/[0.08] text-white/20' : 'bg-white/60 text-gray-400'
                     }`}>
                       {present === true ? <Check size={16} strokeWidth={3} /> : present === false ? <X size={16} strokeWidth={3} /> : <div className="w-2 h-2 rounded-full bg-current" />}
                     </div>
@@ -227,7 +227,7 @@ export default function Attendance() {
             </div>
 
             {students.length === 0 && (
-              <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+              <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>
                 В группе пока нет учеников
               </p>
             )}
@@ -255,11 +255,11 @@ export default function Attendance() {
         {tab === 'stats' && (
           <>
             <GlassCard className="text-center">
-              <div className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+              <div className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-500'}`}>
                 {formatMonthYear(statsDate)}
               </div>
               <div className="text-3xl font-black mt-1">{totalDaysTracked}</div>
-              <div className={`text-[10px] uppercase ${dark ? 'text-white/30' : 'text-gray-400'}`}>тренировок отмечено</div>
+              <div className={`text-[10px] uppercase ${dark ? 'text-white/30' : 'text-gray-500'}`}>тренировок отмечено</div>
             </GlassCard>
 
             <div className="space-y-1.5">
@@ -287,7 +287,7 @@ export default function Attendance() {
                       <div className={`text-lg font-black ${
                         pct >= 80 ? 'text-green-500' : pct >= 50 ? 'text-yellow-500' : 'text-red-500'
                       }`}>{pct}%</div>
-                      <div className={`text-[9px] ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+                      <div className={`text-[9px] ${dark ? 'text-white/30' : 'text-gray-500'}`}>
                         {st.present}/{total}
                       </div>
                     </div>

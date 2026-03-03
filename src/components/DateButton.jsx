@@ -15,7 +15,7 @@ export default function DateButton({ label, value, onChange, className = '' }) {
   return (
     <div className={className}>
       {label && (
-        <div className={`text-[10px] uppercase font-semibold mb-1 ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+        <div className={`text-[10px] uppercase font-semibold mb-1 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
           {label}
         </div>
       )}

@@ -133,12 +133,12 @@ export default function Login({ onLogin }) {
                     />
                   </div>
                   <h1 className="text-3xl font-black tracking-tight mt-5">
-                    <span className={dark ? 'text-white/60' : 'text-gray-400'}>i</span>
+                    <span className={dark ? 'text-white/60' : 'text-gray-500'}>i</span>
                     <span className="bg-gradient-to-r from-purple-400 via-violet-500 to-indigo-500 bg-clip-text text-transparent">
                       Borcuha
                     </span>
                   </h1>
-                  <p className={`text-[11px] mt-1 font-medium tracking-[0.2em] uppercase ${dark ? 'text-white/20' : 'text-gray-300'}`}>
+                  <p className={`text-[11px] mt-1 font-medium tracking-[0.2em] uppercase ${dark ? 'text-white/20' : 'text-gray-500'}`}>
                     Платформа для единоборств
                   </p>
                 </div>
@@ -149,7 +149,7 @@ export default function Login({ onLogin }) {
                 }`}>
                   <form onSubmit={handleSubmit} className="space-y-3">
                     <div className="relative">
-                      <Phone size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-300'}`} />
+                      <Phone size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-500'}`} />
                       <input
                         type="tel"
                         placeholder="8 (900) 123-45-67"
@@ -161,7 +161,7 @@ export default function Login({ onLogin }) {
                       />
                     </div>
                     <div className="relative">
-                      <Lock size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-300'}`} />
+                      <Lock size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-500'}`} />
                       <input
                         type={showPw ? 'text' : 'password'}
                         placeholder="Пароль"
@@ -173,7 +173,7 @@ export default function Login({ onLogin }) {
                       <button
                         type="button"
                         onClick={() => setShowPw(!showPw)}
-                        className={`absolute right-3 top-1/2 -translate-y-1/2 p-0.5 ${dark ? 'text-white/25' : 'text-gray-300'}`}
+                        className={`absolute right-3 top-1/2 -translate-y-1/2 p-0.5 ${dark ? 'text-white/25' : 'text-gray-500'}`}
                       >
                         {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
@@ -183,13 +183,13 @@ export default function Login({ onLogin }) {
                     {error && errorType === 'student' && (
                       <div className="text-center space-y-1.5 py-1">
                         <p className="text-accent text-sm font-medium">{error}</p>
-                        <p className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>Обратитесь к тренеру за паролем</p>
+                        <p className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>Обратитесь к тренеру за паролем</p>
                       </div>
                     )}
                     {error && errorType === 'trainer' && (
                       <div className="text-center space-y-2 py-1">
                         <p className="text-accent text-sm font-medium">{error}</p>
-                        <p className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>Свяжитесь с администратором:</p>
+                        <p className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>Свяжитесь с администратором:</p>
                         <a href="https://wa.me/89884444436" target="_blank" rel="noopener noreferrer"
                           className="inline-flex items-center gap-2 px-4 py-2 rounded-[12px] bg-green-600 text-white text-sm font-bold press-scale">
                           <MessageCircle size={16} /> 8-988-444-44-36
@@ -229,7 +229,7 @@ export default function Login({ onLogin }) {
                 <div className="mt-5">
                   <button
                     onClick={() => setShowDemo(!showDemo)}
-                    className={`w-full flex items-center justify-center gap-2 py-2 text-[11px] uppercase tracking-widest font-semibold press-scale ${dark ? 'text-white/20' : 'text-gray-300'}`}
+                    className={`w-full flex items-center justify-center gap-2 py-2 text-[11px] uppercase tracking-widest font-semibold press-scale ${dark ? 'text-white/20' : 'text-gray-500'}`}
                   >
                     Демо-доступ
                     {showDemo ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -266,7 +266,7 @@ export default function Login({ onLogin }) {
                 <div className="flex flex-wrap items-center justify-center gap-1.5 mt-5">
                   {['BJJ', 'MMA', 'Самбо', 'Дзюдо', 'Грэпплинг'].map(s => (
                     <span key={s} className={`text-[10px] font-semibold px-2.5 py-1 rounded-full ${
-                      dark ? 'bg-white/[0.04] text-white/20' : 'bg-black/[0.03] text-gray-300'
+                      dark ? 'bg-white/[0.04] text-white/20' : 'bg-black/[0.04] text-gray-500'
                     }`}>{s}</span>
                   ))}
                 </div>
@@ -283,7 +283,7 @@ export default function Login({ onLogin }) {
                     <UserPlus size={26} className={dark ? 'text-purple-400' : 'text-purple-600'} />
                   </div>
                   <h2 className="text-xl font-bold">Регистрация тренера</h2>
-                  <p className={`text-xs mt-1 ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+                  <p className={`text-xs mt-1 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
                     Заполните данные для подачи заявки
                   </p>
                 </div>
@@ -293,26 +293,26 @@ export default function Login({ onLogin }) {
                 }`}>
                   <form onSubmit={handleRegister} className="space-y-3">
                     <div className="relative">
-                      <User size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-300'}`} />
+                      <User size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-500'}`} />
                       <input type="text" placeholder="ФИО *" value={reg.name}
                         onChange={e => setReg(r => ({ ...r, name: e.target.value }))}
                         className={iconInputCls()} />
                     </div>
 
                     <div className="relative">
-                      <Phone size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-300'}`} />
+                      <Phone size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-500'}`} />
                       <input type="tel" placeholder="Телефон *" value={reg.phone}
                         onChange={e => setReg(r => ({ ...r, phone: formatPhone(e.target.value) }))}
                         className={iconInputCls()} maxLength={18} />
                     </div>
 
                     <div className="relative">
-                      <Lock size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-300'}`} />
+                      <Lock size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-500'}`} />
                       <input type={regShowPw ? 'text' : 'password'} placeholder="Пароль *" value={reg.password}
                         onChange={e => setReg(r => ({ ...r, password: e.target.value }))}
                         className={iconInputCls()} />
                       <button type="button" onClick={() => setRegShowPw(!regShowPw)}
-                        className={`absolute right-3 top-1/2 -translate-y-1/2 p-0.5 ${dark ? 'text-white/25' : 'text-gray-300'}`}>
+                        className={`absolute right-3 top-1/2 -translate-y-1/2 p-0.5 ${dark ? 'text-white/25' : 'text-gray-500'}`}>
                         {regShowPw ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
@@ -320,14 +320,14 @@ export default function Login({ onLogin }) {
                     <div className={`h-px ${dark ? 'bg-white/[0.06]' : 'bg-black/[0.04]'}`} />
 
                     <div className="relative">
-                      <Building2 size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-300'}`} />
+                      <Building2 size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-500'}`} />
                       <input type="text" placeholder="Название клуба *" value={reg.clubName}
                         onChange={e => setReg(r => ({ ...r, clubName: e.target.value }))}
                         className={iconInputCls()} />
                     </div>
 
                     <div className="relative">
-                      <Dumbbell size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-300'} pointer-events-none`} />
+                      <Dumbbell size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-500'} pointer-events-none`} />
                       <select value={reg.sportType}
                         onChange={e => setReg(r => ({ ...r, sportType: e.target.value }))}
                         className={iconInputCls()}>
@@ -337,7 +337,7 @@ export default function Login({ onLogin }) {
                     </div>
 
                     <div className="relative">
-                      <MapPin size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-300'}`} />
+                      <MapPin size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-500'}`} />
                       <input type="text" placeholder="Город" value={reg.city}
                         onChange={e => setReg(r => ({ ...r, city: e.target.value }))}
                         className={iconInputCls()} />
@@ -354,7 +354,7 @@ export default function Login({ onLogin }) {
                       }`}>
                       {reg.consent
                         ? <CheckSquare size={18} className="text-green-500 shrink-0 mt-0.5" />
-                        : <Square size={18} className={`shrink-0 mt-0.5 ${dark ? 'text-white/20' : 'text-gray-300'}`} />
+                        : <Square size={18} className={`shrink-0 mt-0.5 ${dark ? 'text-white/20' : 'text-gray-500'}`} />
                       }
                       <span className={`text-[11px] leading-relaxed ${dark ? 'text-white/50' : 'text-gray-500'}`}>
                         Даю согласие на обработку персональных данных в соответствии с ФЗ №152 «О персональных данных» *

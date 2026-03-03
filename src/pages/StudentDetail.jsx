@@ -37,7 +37,7 @@ function AttendanceStats({ studentId, groupId, data, dark }) {
     <GlassCard>
       <div className="flex items-center gap-2 mb-2">
         <ClipboardList size={14} className="text-accent" />
-        <span className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+        <span className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-500'}`}>
           Посещаемость за {monthName}
         </span>
       </div>
@@ -54,7 +54,7 @@ function AttendanceStats({ studentId, groupId, data, dark }) {
           pct >= 80 ? 'text-green-500' : pct >= 50 ? 'text-yellow-500' : 'text-red-500'
         }`}>{pct}%</span>
       </div>
-      <div className={`text-xs mt-1 ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+      <div className={`text-xs mt-1 ${dark ? 'text-white/30' : 'text-gray-500'}`}>
         {present} из {total} тренировок
       </div>
     </GlassCard>
@@ -86,7 +86,7 @@ export default function StudentDetail() {
       <Layout>
         <PageHeader title="Ученик" back />
         <div className="px-4 py-12 text-center">
-          <p className={dark ? 'text-white/40' : 'text-gray-400'}>Ученик не найден</p>
+          <p className={dark ? 'text-white/40' : 'text-gray-500'}>Ученик не найден</p>
         </div>
       </Layout>
     )
@@ -181,7 +181,7 @@ export default function StudentDetail() {
             )}
           </div>
           <h2 className="text-xl font-bold mt-3">{student.name}</h2>
-          <p className={`text-sm ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+          <p className={`text-sm ${dark ? 'text-white/40' : 'text-gray-500'}`}>
             {trainer?.clubName} — {group?.name || 'Без группы'}
           </p>
         </div>
@@ -201,28 +201,28 @@ export default function StudentDetail() {
           <GlassCard>
             <div className="flex items-center gap-2 mb-1">
               <Award size={14} className="text-accent" />
-              <span className={`text-xs uppercase ${dark ? 'text-white/40' : 'text-gray-400'}`}>{rankLabel}</span>
+              <span className={`text-xs uppercase ${dark ? 'text-white/40' : 'text-gray-500'}`}>{rankLabel}</span>
             </div>
             <div className="font-bold">{student.belt || '—'}</div>
           </GlassCard>
           <GlassCard>
             <div className="flex items-center gap-2 mb-1">
               <Scale size={14} className="text-accent" />
-              <span className={`text-xs uppercase ${dark ? 'text-white/40' : 'text-gray-400'}`}>Вес</span>
+              <span className={`text-xs uppercase ${dark ? 'text-white/40' : 'text-gray-500'}`}>Вес</span>
             </div>
             <div className="font-bold">{student.weight ? `${student.weight} кг` : '—'}</div>
           </GlassCard>
           <GlassCard>
             <div className="flex items-center gap-2 mb-1">
               <Calendar size={14} className="text-accent" />
-              <span className={`text-xs uppercase ${dark ? 'text-white/40' : 'text-gray-400'}`}>Рождение</span>
+              <span className={`text-xs uppercase ${dark ? 'text-white/40' : 'text-gray-500'}`}>Рождение</span>
             </div>
             <div className="font-bold text-sm">{formatDate(student.birthDate)}</div>
           </GlassCard>
           <GlassCard>
             <div className="flex items-center gap-2 mb-1">
               <Phone size={14} className="text-accent" />
-              <span className={`text-xs uppercase ${dark ? 'text-white/40' : 'text-gray-400'}`}>Телефон</span>
+              <span className={`text-xs uppercase ${dark ? 'text-white/40' : 'text-gray-500'}`}>Телефон</span>
             </div>
             <div className="font-bold text-sm">{student.phone || '—'}</div>
           </GlassCard>
@@ -232,7 +232,7 @@ export default function StudentDetail() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CreditCard size={14} className={expired ? 'text-red-400' : 'text-green-400'} />
-              <span className={`text-sm ${dark ? 'text-white/40' : 'text-gray-400'}`}>Абонемент до</span>
+              <span className={`text-sm ${dark ? 'text-white/40' : 'text-gray-500'}`}>Абонемент до</span>
             </div>
             <span className={`font-bold ${expired ? 'text-red-400' : ''}`}>{formatDate(student.subscriptionExpiresAt)}</span>
           </div>
@@ -242,7 +242,7 @@ export default function StudentDetail() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Dumbbell size={14} className="text-accent" />
-              <span className={`text-sm ${dark ? 'text-white/40' : 'text-gray-400'}`}>Тренируется с</span>
+              <span className={`text-sm ${dark ? 'text-white/40' : 'text-gray-500'}`}>Тренируется с</span>
             </div>
             <span className="font-bold">{formatDate(student.trainingStartDate || student.createdAt)}</span>
           </div>

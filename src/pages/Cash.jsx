@@ -116,7 +116,7 @@ export default function Cash() {
       <div className="px-4 space-y-4 slide-in">
         {/* Balance */}
         <GlassCard>
-          <div className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-400'}`}>Текущий баланс</div>
+          <div className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-500'}`}>Текущий баланс</div>
           <div className={`text-3xl font-black mt-1 ${stats.balance >= 0 ? 'text-green-500' : 'text-accent'}`}>
             {stats.balance.toLocaleString('ru-RU')} ₽
           </div>
@@ -161,7 +161,7 @@ export default function Cash() {
                   </div>
                   <div className="min-w-0">
                     <div className="font-semibold text-sm truncate">{tx.description}</div>
-                    <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+                    <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-500'}`}>
                       {tx.category} — {formatDate(tx.date)}
                     </div>
                   </div>
@@ -171,7 +171,7 @@ export default function Cash() {
                     {tx.type === 'income' ? '+' : '-'}{tx.amount.toLocaleString('ru-RU')} ₽
                   </span>
                   <button onClick={() => setEditTx({ ...tx })} className="press-scale p-1">
-                    <Edit3 size={14} className={dark ? 'text-white/30' : 'text-gray-400'} />
+                    <Edit3 size={14} className={dark ? 'text-white/30' : 'text-gray-500'} />
                   </button>
                   <button onClick={() => deleteTransaction(tx.id)} className="press-scale p-1">
                     <Trash2 size={14} className="text-red-400" />
@@ -180,7 +180,7 @@ export default function Cash() {
               </GlassCard>
             ))}
             {myTx.length === 0 && (
-              <p className={`text-center py-6 text-sm ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+              <p className={`text-center py-6 text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>
                 Нет транзакций
               </p>
             )}
@@ -202,7 +202,7 @@ export default function Cash() {
               >
                 <div>
                   <div className="font-semibold text-sm">{s.name}</div>
-                  <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>
+                  <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>
                     {group?.name || 'Без группы'}
                   </div>
                 </div>
@@ -220,7 +220,7 @@ export default function Cash() {
             )
           })}
           {sortedStudents.length === 0 && (
-            <p className={`text-center py-6 text-sm ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+            <p className={`text-center py-6 text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>
               Нет учеников
             </p>
           )}
