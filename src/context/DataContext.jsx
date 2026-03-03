@@ -7,6 +7,7 @@ const EMPTY_DATA = {
   users: [], groups: [], students: [], transactions: [],
   tournaments: [], news: [], tournamentRegistrations: [], authorInfo: {},
   internalTournaments: [], attendance: [], pendingRegistrations: [],
+  materials: [],
 }
 
 export function DataProvider({ children }) {
@@ -213,6 +214,25 @@ export function DataProvider({ children }) {
     })
   }, [])
 
+  const addMaterial = useCallback(async (material) => {
+    const m = await api.addMaterial(material)
+    setData(d => ({ ...d, materials: [m, ...d.materials] }))
+    return m.id
+  }, [])
+
+  const updateMaterial = useCallback(async (id, changes) => {
+    await api.updateMaterial(id, changes)
+    setData(d => ({
+      ...d,
+      materials: d.materials.map(m => m.id === id ? { ...m, ...changes } : m)
+    }))
+  }, [])
+
+  const deleteMaterial = useCallback(async (id) => {
+    await api.deleteMaterial(id)
+    setData(d => ({ ...d, materials: d.materials.filter(m => m.id !== id) }))
+  }, [])
+
   const resetAll = useCallback(() => {
     // Not implemented for DB version — would need admin API
   }, [])
@@ -228,6 +248,7 @@ export function DataProvider({ children }) {
       addTrainer, updateTrainer, deleteTrainer,
       addInternalTournament, updateInternalTournament, deleteInternalTournament,
       saveAttendanceBulk,
+      addMaterial, updateMaterial, deleteMaterial,
     }}>
       {children}
     </DataContext.Provider>

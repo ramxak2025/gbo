@@ -43,6 +43,9 @@ function mapTournament(t) {
 function mapNews(n) {
   return { id: n.id, trainerId: n.trainer_id, groupId: n.group_id, title: n.title, content: n.content, date: n.date }
 }
+function mapMaterial(m) {
+  return { id: m.id, trainerId: m.trainer_id, title: m.title, description: m.description, videoUrl: m.video_url, groupIds: m.group_ids || [], createdAt: m.created_at }
+}
 function mapAuthor(a) {
   return a ? { name: a.name, instagram: a.instagram, website: a.website, description: a.description, phone: a.phone } : {}
 }
@@ -61,11 +64,12 @@ router.get('/', authMiddleware, async (req, res) => {
     pool.query('SELECT * FROM author_info WHERE id = 1'),
     pool.query('SELECT * FROM internal_tournaments ORDER BY created_at DESC'),
     pool.query('SELECT * FROM attendance ORDER BY date DESC'),
+    pool.query('SELECT * FROM materials ORDER BY created_at DESC'),
   ]
   if (role === 'superadmin') queries.push(pool.query("SELECT * FROM pending_registrations WHERE status = 'pending' ORDER BY created_at DESC"))
   const results = await Promise.all(queries)
-  const [users, groups, students, transactions, tournaments, news, regs, author, intTournaments, attendance] = results
-  const pendingRegs = results[10] || { rows: [] }
+  const [users, groups, students, transactions, tournaments, news, regs, author, intTournaments, attendance, materials] = results
+  const pendingRegs = results[11] || { rows: [] }
 
   const isSuperadmin = role === 'superadmin'
   // Superadmin sees passwords + no demo data; demo users see only their demo data
@@ -76,6 +80,7 @@ router.get('/', authMiddleware, async (req, res) => {
   const filteredTx = isSuperadmin ? transactions.rows.filter(t => !demoTrainerIds.has(t.trainer_id)) : transactions.rows
   const filteredNews = isSuperadmin ? news.rows.filter(n => !demoTrainerIds.has(n.trainer_id)) : news.rows
   const filteredIntTournaments = isSuperadmin ? intTournaments.rows.filter(t => !demoTrainerIds.has(t.trainer_id)) : intTournaments.rows
+  const filteredMaterials = isSuperadmin ? materials.rows.filter(m => !demoTrainerIds.has(m.trainer_id)) : materials.rows
 
   res.json({
     users: filteredUsers.map(u => mapUser(u, isSuperadmin)),
@@ -88,6 +93,7 @@ router.get('/', authMiddleware, async (req, res) => {
     authorInfo: mapAuthor(author.rows[0]),
     internalTournaments: filteredIntTournaments.map(mapInternalTournament),
     attendance: attendance.rows.map(mapAttendance),
+    materials: filteredMaterials.map(mapMaterial),
     ...(isSuperadmin ? {
       pendingRegistrations: pendingRegs.rows.map(r => ({
         id: r.id, name: r.name, phone: r.phone, clubName: r.club_name,
@@ -352,6 +358,38 @@ router.put('/internal-tournaments/:id', authMiddleware, async (req, res) => {
 
 router.delete('/internal-tournaments/:id', authMiddleware, async (req, res) => {
   await pool.query('DELETE FROM internal_tournaments WHERE id = $1', [req.params.id])
+  res.json({ ok: true })
+})
+
+// --- Materials ---
+router.post('/materials', authMiddleware, async (req, res) => {
+  const { title, description, videoUrl, groupIds, trainerId } = req.body
+  const id = genId()
+  const tid = trainerId || req.user.userId
+  await pool.query(
+    'INSERT INTO materials (id, trainer_id, title, description, video_url, group_ids, created_at) VALUES ($1,$2,$3,$4,$5,$6,NOW())',
+    [id, tid, title, description || '', videoUrl, JSON.stringify(groupIds || [])]
+  )
+  res.json({ id, trainerId: tid, title, description: description || '', videoUrl, groupIds: groupIds || [], createdAt: new Date().toISOString() })
+})
+
+router.put('/materials/:id', authMiddleware, async (req, res) => {
+  const { title, description, videoUrl, groupIds } = req.body
+  const sets = []
+  const vals = []
+  let i = 1
+  if (title !== undefined) { sets.push(`title = $${i++}`); vals.push(title) }
+  if (description !== undefined) { sets.push(`description = $${i++}`); vals.push(description) }
+  if (videoUrl !== undefined) { sets.push(`video_url = $${i++}`); vals.push(videoUrl) }
+  if (groupIds !== undefined) { sets.push(`group_ids = $${i++}`); vals.push(JSON.stringify(groupIds)) }
+  if (sets.length === 0) return res.json({ ok: true })
+  vals.push(req.params.id)
+  await pool.query(`UPDATE materials SET ${sets.join(', ')} WHERE id = $${i}`, vals)
+  res.json({ ok: true })
+})
+
+router.delete('/materials/:id', authMiddleware, async (req, res) => {
+  await pool.query('DELETE FROM materials WHERE id = $1', [req.params.id])
   res.json({ ok: true })
 })
 

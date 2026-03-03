@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords, MapPin, Megaphone, Plus, ClipboardList, Award, ChevronRight, Dumbbell, CreditCard, Shield, UserPlus, Check, X } from 'lucide-react'
+import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords, MapPin, Megaphone, Plus, ClipboardList, Award, ChevronRight, Dumbbell, CreditCard, Shield, UserPlus, Check, X, Instagram, Globe, MessageCircle, Code } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -332,8 +332,10 @@ function TrainerDash({ auth, data, dark, navigate }) {
       <PageHeader title={trainer?.clubName || 'Мой клуб'} logo />
       <div className="px-4 space-y-4 slide-in stagger">
 
-        {/* Hero — Club identity */}
-        <div className={`rounded-[24px] p-5 relative overflow-hidden backdrop-blur-xl ${
+        {/* Hero — Club identity (tap for profile) */}
+        <div
+          onClick={() => navigate('/profile')}
+          className={`rounded-[24px] p-5 relative overflow-hidden backdrop-blur-xl press-scale cursor-pointer ${
           dark
             ? 'bg-gradient-to-br from-purple-500/10 via-white/[0.04] to-accent/10 border border-white/[0.07]'
             : 'bg-gradient-to-br from-purple-50/80 via-white/70 to-red-50/80 border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
@@ -356,6 +358,7 @@ function TrainerDash({ auth, data, dark, navigate }) {
                 )}
               </div>
             </div>
+            <ChevronRight size={18} className={dark ? 'text-white/20' : 'text-gray-300'} />
           </div>
         </div>
 
@@ -365,7 +368,7 @@ function TrainerDash({ auth, data, dark, navigate }) {
           className="w-full py-3.5 rounded-[20px] bg-gradient-to-r from-accent to-purple-600 text-white font-bold press-scale flex items-center justify-center gap-2.5 shadow-lg shadow-accent/25"
         >
           <Megaphone size={20} />
-          Новая новость
+          Добавить новость
         </button>
 
         {/* Stats grid */}
@@ -480,6 +483,9 @@ function TrainerDash({ auth, data, dark, navigate }) {
             </div>
           </div>
         )}
+
+        {/* Author / About project */}
+        <AuthorBlock data={data} dark={dark} navigate={navigate} />
       </div>
 
       {/* News creation modal */}
@@ -513,6 +519,61 @@ function TrainerDash({ auth, data, dark, navigate }) {
         </form>
       </Modal>
     </Layout>
+  )
+}
+
+/* ======================== AUTHOR BLOCK (for trainer dash) ======================== */
+function AuthorBlock({ data, dark, navigate }) {
+  const info = data.authorInfo || {}
+  if (!info.name) return null
+
+  const cleanPhone = (phone) => phone?.replace(/[^\d]/g, '') || ''
+
+  return (
+    <div className="pt-2">
+      <div className={`rounded-[24px] p-5 text-center relative overflow-hidden ${
+        dark
+          ? 'bg-gradient-to-br from-purple-500/5 via-white/[0.02] to-indigo-500/5 border border-white/[0.06]'
+          : 'bg-gradient-to-br from-purple-50/50 via-white/60 to-indigo-50/50 border border-white/60 shadow-sm'
+      }`}>
+        <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold mb-3 ${
+          dark ? 'bg-accent/15 text-accent' : 'bg-accent/10 text-accent'
+        }`}>
+          <Code size={10} />
+          Проект разработал
+        </div>
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <img src="/logo.png" alt="iBorcuha" className="w-10 h-10 rounded-xl shadow-lg shadow-black/20" />
+          <h3 className="text-base font-black italic">{info.name}</h3>
+        </div>
+        {info.description && (
+          <p className={`text-xs mb-3 ${dark ? 'text-white/40' : 'text-gray-500'}`}>{info.description}</p>
+        )}
+        <div className="flex items-center justify-center gap-3">
+          {info.instagram && (
+            <a href={`https://instagram.com/${info.instagram}`} target="_blank" rel="noopener noreferrer"
+              className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center press-scale">
+              <Instagram size={16} className="text-white" />
+            </a>
+          )}
+          {info.website && (
+            <a href={`https://${info.website}`} target="_blank" rel="noopener noreferrer"
+              className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center press-scale">
+              <Globe size={16} className="text-white" />
+            </a>
+          )}
+          {info.phone && (
+            <a href={`https://wa.me/${cleanPhone(info.phone)}`} target="_blank" rel="noopener noreferrer"
+              className="w-9 h-9 rounded-full bg-green-600 flex items-center justify-center press-scale">
+              <MessageCircle size={16} className="text-white" />
+            </a>
+          )}
+        </div>
+        <div className={`mt-3 text-[10px] ${dark ? 'text-white/15' : 'text-gray-300'}`}>
+          <span>i</span><span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">Borcuha</span>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -582,8 +643,10 @@ function StudentDash({ auth, data, dark, navigate }) {
       <PageHeader title="Мой кабинет" logo />
       <div className="px-4 space-y-4 slide-in stagger">
 
-        {/* Hero — Student identity + Club info */}
-        <div className={`rounded-[24px] p-5 relative overflow-hidden backdrop-blur-xl ${
+        {/* Hero — Student identity + Club info (tap for profile) */}
+        <div
+          onClick={() => navigate('/profile')}
+          className={`rounded-[24px] p-5 relative overflow-hidden backdrop-blur-xl press-scale cursor-pointer ${
           dark
             ? 'bg-gradient-to-br from-purple-500/10 via-white/[0.04] to-accent/10 border border-white/[0.07]'
             : 'bg-gradient-to-br from-purple-50/80 via-white/70 to-red-50/80 border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
@@ -613,6 +676,7 @@ function StudentDash({ auth, data, dark, navigate }) {
                 )}
               </div>
             </div>
+            <ChevronRight size={18} className={dark ? 'text-white/20' : 'text-gray-300'} />
           </div>
           {/* Trainer info */}
           {trainer && (

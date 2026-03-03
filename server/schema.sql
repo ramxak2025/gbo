@@ -166,6 +166,17 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_column THEN NULL;
 END $$;
 
+-- Materials (media library)
+CREATE TABLE IF NOT EXISTS materials (
+  id TEXT PRIMARY KEY,
+  trainer_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  video_url TEXT NOT NULL,
+  group_ids JSONB DEFAULT '[]',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Trainer registration requests
 CREATE TABLE IF NOT EXISTS pending_registrations (
   id TEXT PRIMARY KEY,

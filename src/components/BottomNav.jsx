@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Home, Wallet, Users, Trophy, User, Sparkles } from 'lucide-react'
+import { Home, Wallet, Users, Trophy, User, Sparkles, Film } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 
@@ -14,16 +14,15 @@ const navConfigs = {
     { path: '/', icon: Home, label: 'Главная' },
     { path: '/cash', icon: Wallet, label: 'Касса' },
     { path: '/team', icon: Users, label: 'Команда' },
+    { path: '/materials', icon: Film, label: 'Материалы' },
     { path: '/tournaments', icon: Trophy, label: 'Турниры' },
-    { path: '/author', icon: Sparkles, label: 'Автор' },
-    { path: '/profile', icon: User, label: 'Профиль' },
   ],
   student: [
     { path: '/', icon: Home, label: 'Главная' },
     { path: '/team', icon: Users, label: 'Команда' },
+    { path: '/materials', icon: Film, label: 'Материалы' },
     { path: '/tournaments', icon: Trophy, label: 'Турниры' },
     { path: '/author', icon: Sparkles, label: 'Автор' },
-    { path: '/profile', icon: User, label: 'Профиль' },
   ],
 }
 

@@ -100,6 +100,11 @@ export const api = {
   // Attendance
   saveAttendanceBulk: (data) => request('/data/attendance/bulk', { method: 'POST', body: JSON.stringify(data) }),
 
+  // Materials
+  addMaterial: (data) => request('/data/materials', { method: 'POST', body: JSON.stringify(data) }),
+  updateMaterial: (id, data) => request(`/data/materials/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteMaterial: (id) => request(`/data/materials/${id}`, { method: 'DELETE' }),
+
   // Registration
   register: (data) => {
     const headers = { 'Content-Type': 'application/json' }
