@@ -1,11 +1,12 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
-import { Plus, Trash2, Film, Play, X, Link2, Search, ChevronLeft, Tag, Heart, BookOpen, Video, FolderPlus } from 'lucide-react'
+import { useState, useMemo, useRef, useCallback } from 'react'
+import { Plus, Trash2, Film, Play, X, Link2, Search, Tag, Heart, BookOpen, Video, FolderPlus } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
+import Modal from '../components/Modal'
 
 function getVideoEmbed(url) {
   if (!url) return null
@@ -545,191 +546,169 @@ export default function Materials() {
         </div>
       )}
 
-      {/* Fullscreen add material */}
-      {showAdd && (
-        <div className={`fixed inset-0 z-[110] flex flex-col ${dark ? 'bg-dark-900' : 'bg-[#f5f5f7]'}`}>
-          {/* Header */}
-          <div className={`
-            flex items-center gap-3 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-3
-            ${dark ? 'bg-dark-900/80' : 'bg-[#f5f5f7]/80'} backdrop-blur-xl
-          `}>
-            <button
-              onClick={() => setShowAdd(false)}
-              className={`press-scale p-2 -ml-2 rounded-xl ${dark ? 'text-white' : 'text-gray-900'}`}
-            >
-              <ChevronLeft size={24} />
-            </button>
-            <h2 className={`text-lg font-bold flex-1 ${dark ? 'text-white' : 'text-gray-900'}`}>Новый материал</h2>
+      {/* Add material modal */}
+      <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Новый материал">
+        <form onSubmit={handleAdd} className="space-y-4">
+          <input
+            type="text"
+            placeholder="Название *"
+            value={form.title}
+            onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+            className={inputCls}
+            required
+          />
+          <textarea
+            placeholder="Описание (необязательно)"
+            value={form.description}
+            onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+            className={`${inputCls} min-h-[80px] resize-none`}
+            rows={2}
+          />
+          <div className="relative">
+            <Link2 size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-400'}`} />
+            <input
+              type="url"
+              placeholder="Ссылка на видео (YouTube / VK) *"
+              value={form.videoUrl}
+              onChange={e => setForm(f => ({ ...f, videoUrl: e.target.value }))}
+              className={`${inputCls} pl-10`}
+              required
+            />
           </div>
 
-          {/* Scrollable form */}
-          <div className="flex-1 overflow-y-auto scrollbar-hide px-4 pb-[calc(env(safe-area-inset-bottom)+20px)]">
-            <form onSubmit={handleAdd} className="space-y-4 pt-2">
-              <input
-                type="text"
-                placeholder="Название *"
-                value={form.title}
-                onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                className={inputCls}
-                required
+          {/* Video preview */}
+          {form.videoUrl && getVideoEmbed(form.videoUrl) && (
+            <div className={`rounded-xl overflow-hidden aspect-video ${dark ? 'bg-white/[0.03]' : 'bg-black/[0.02]'}`}>
+              <iframe
+                src={getVideoEmbed(form.videoUrl).src}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                frameBorder="0"
               />
-              <textarea
-                placeholder="Описание (необязательно)"
-                value={form.description}
-                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                className={`${inputCls} min-h-[80px] resize-none`}
-                rows={2}
-              />
-              <div className="relative">
-                <Link2 size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-400'}`} />
+            </div>
+          )}
+
+          {/* Category / Section */}
+          <div>
+            <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+              Раздел
+            </div>
+
+            {form.category && (
+              <div className={`
+                flex items-center gap-2 mb-3 px-3 py-2 rounded-2xl
+                ${dark ? 'bg-purple-500/20 border border-purple-500/30' : 'bg-purple-100 border border-purple-200'}
+              `}>
+                <Tag size={14} className={dark ? 'text-purple-300' : 'text-purple-600'} />
+                <span className={`text-sm font-bold flex-1 ${dark ? 'text-purple-300' : 'text-purple-700'}`}>{form.category}</span>
+                <button type="button" onClick={() => setForm(f => ({ ...f, category: '' }))} className="press-scale">
+                  <X size={16} className={dark ? 'text-purple-300/60' : 'text-purple-400'} />
+                </button>
+              </div>
+            )}
+
+            {existingCategories.length > 0 && !form.category && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {existingCategories.map(cat => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => handleSelectCategory(cat)}
+                    className={`
+                      flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-bold
+                      press-scale transition-all
+                      ${dark
+                        ? 'bg-white/[0.05] text-white/50 border border-white/[0.05]'
+                        : 'bg-white/60 text-gray-600 border border-white/50'
+                      }
+                    `}
+                  >
+                    <Tag size={12} />
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {!form.category && (
+              <div className="flex gap-2">
                 <input
-                  type="url"
-                  placeholder="Ссылка на видео (YouTube / VK) *"
-                  value={form.videoUrl}
-                  onChange={e => setForm(f => ({ ...f, videoUrl: e.target.value }))}
-                  className={`${inputCls} pl-10`}
-                  required
+                  ref={categoryInputRef}
+                  type="text"
+                  placeholder={existingCategories.length > 0 ? 'Или введите новый раздел...' : 'Введите название раздела...'}
+                  value={newCategoryInput}
+                  onChange={e => setNewCategoryInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleNewCategory() } }}
+                  className={`
+                    flex-1 px-4 py-2.5 rounded-2xl text-sm outline-none transition-all
+                    ${dark
+                      ? 'bg-white/[0.07] border border-white/[0.08] text-white placeholder-white/20 focus:border-purple-500/50'
+                      : 'bg-white/70 border border-white/60 text-gray-900 placeholder-gray-400 focus:border-purple-400 shadow-sm'
+                    }
+                  `}
                 />
+                {newCategoryInput.trim() && (
+                  <button
+                    type="button"
+                    onClick={handleNewCategory}
+                    className="px-4 py-2.5 rounded-2xl bg-accent text-white text-sm font-bold press-scale shrink-0"
+                  >
+                    OK
+                  </button>
+                )}
               </div>
+            )}
 
-              {/* Video preview */}
-              {form.videoUrl && getVideoEmbed(form.videoUrl) && (
-                <div className={`rounded-xl overflow-hidden aspect-video ${dark ? 'bg-white/[0.03]' : 'bg-black/[0.02]'}`}>
-                  <iframe
-                    src={getVideoEmbed(form.videoUrl).src}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    frameBorder="0"
-                  />
-                </div>
-              )}
-
-              {/* Category / Section */}
-              <div>
-                <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
-                  Раздел
-                </div>
-
-                {/* Selected category display */}
-                {form.category && (
-                  <div className={`
-                    flex items-center gap-2 mb-3 px-3 py-2 rounded-2xl
-                    ${dark ? 'bg-purple-500/20 border border-purple-500/30' : 'bg-purple-100 border border-purple-200'}
-                  `}>
-                    <Tag size={14} className={dark ? 'text-purple-300' : 'text-purple-600'} />
-                    <span className={`text-sm font-bold flex-1 ${dark ? 'text-purple-300' : 'text-purple-700'}`}>{form.category}</span>
-                    <button type="button" onClick={() => setForm(f => ({ ...f, category: '' }))} className="press-scale">
-                      <X size={16} className={dark ? 'text-purple-300/60' : 'text-purple-400'} />
-                    </button>
-                  </div>
-                )}
-
-                {/* Existing categories as quick-pick */}
-                {existingCategories.length > 0 && !form.category && (
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {existingCategories.map(cat => (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => handleSelectCategory(cat)}
-                        className={`
-                          flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-bold
-                          press-scale transition-all
-                          ${dark
-                            ? 'bg-white/[0.05] text-white/50 border border-white/[0.05]'
-                            : 'bg-white/60 text-gray-600 border border-white/50'
-                          }
-                        `}
-                      >
-                        <Tag size={12} />
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* New category input */}
-                {!form.category && (
-                  <div className="flex gap-2">
-                    <input
-                      ref={categoryInputRef}
-                      type="text"
-                      placeholder={existingCategories.length > 0 ? 'Или введите новый раздел...' : 'Введите название раздела...'}
-                      value={newCategoryInput}
-                      onChange={e => setNewCategoryInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleNewCategory() } }}
-                      className={`
-                        flex-1 px-4 py-2.5 rounded-2xl text-sm outline-none transition-all
-                        ${dark
-                          ? 'bg-white/[0.07] border border-white/[0.08] text-white placeholder-white/20 focus:border-purple-500/50'
-                          : 'bg-white/70 border border-white/60 text-gray-900 placeholder-gray-400 focus:border-purple-400 shadow-sm'
-                        }
-                      `}
-                    />
-                    {newCategoryInput.trim() && (
-                      <button
-                        type="button"
-                        onClick={handleNewCategory}
-                        className="px-4 py-2.5 rounded-2xl bg-accent text-white text-sm font-bold press-scale shrink-0"
-                      >
-                        OK
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                <p className={`text-[10px] mt-1.5 ${dark ? 'text-white/25' : 'text-gray-400'}`}>
-                  Раздел помогает организовать материалы по темам
-                </p>
-              </div>
-
-              {/* Group selection */}
-              {myGroups.length > 0 && (
-                <div>
-                  <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
-                    Доступ по группам
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setForm(f => ({ ...f, groupIds: [] }))}
-                      className={`px-3 py-1.5 rounded-full text-xs font-bold press-scale transition-all ${
-                        form.groupIds.length === 0
-                          ? 'bg-accent text-white'
-                          : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60'
-                      }`}
-                    >
-                      Все группы
-                    </button>
-                    {myGroups.map(g => (
-                      <button
-                        key={g.id}
-                        type="button"
-                        onClick={() => toggleGroup(g.id)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-bold press-scale transition-all ${
-                          form.groupIds.includes(g.id)
-                            ? 'bg-purple-500 text-white'
-                            : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60'
-                        }`}
-                      >
-                        {g.name}
-                      </button>
-                    ))}
-                  </div>
-                  <p className={`text-[10px] mt-1.5 ${dark ? 'text-white/25' : 'text-gray-400'}`}>
-                    {form.groupIds.length === 0 ? 'Материал доступен всем вашим спортсменам' : 'Материал доступен только выбранным группам'}
-                  </p>
-                </div>
-              )}
-
-              <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale text-base">
-                Добавить материал
-              </button>
-            </form>
+            <p className={`text-[10px] mt-1.5 ${dark ? 'text-white/25' : 'text-gray-400'}`}>
+              Раздел помогает организовать материалы по темам
+            </p>
           </div>
-        </div>
-      )}
+
+          {/* Group selection */}
+          {myGroups.length > 0 && (
+            <div>
+              <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+                Доступ по группам
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, groupIds: [] }))}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold press-scale transition-all ${
+                    form.groupIds.length === 0
+                      ? 'bg-accent text-white'
+                      : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60'
+                  }`}
+                >
+                  Все группы
+                </button>
+                {myGroups.map(g => (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => toggleGroup(g.id)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold press-scale transition-all ${
+                      form.groupIds.includes(g.id)
+                        ? 'bg-purple-500 text-white'
+                        : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60'
+                    }`}
+                  >
+                    {g.name}
+                  </button>
+                ))}
+              </div>
+              <p className={`text-[10px] mt-1.5 ${dark ? 'text-white/25' : 'text-gray-400'}`}>
+                {form.groupIds.length === 0 ? 'Материал доступен всем вашим спортсменам' : 'Материал доступен только выбранным группам'}
+              </p>
+            </div>
+          )}
+
+          <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale text-base">
+            Добавить материал
+          </button>
+        </form>
+      </Modal>
     </Layout>
   )
 }
