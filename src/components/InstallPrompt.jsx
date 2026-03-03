@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Share, PlusSquare, MoreVertical, Download } from 'lucide-react'
+import { X, Share, PlusSquare, MoreVertical, Download, Zap, Bell, Wifi } from 'lucide-react'
 
 function detectPlatform() {
   const ua = navigator.userAgent || ''
@@ -14,18 +14,15 @@ export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null)
 
   useEffect(() => {
-    // Already installed as PWA — don't show
     if (window.matchMedia('(display-mode: standalone)').matches) return
     if (window.navigator.standalone) return
 
-    // Dismissed within last 24 hours
     const dismissed = localStorage.getItem('iborcuha_install_dismissed')
     if (dismissed && Date.now() - parseInt(dismissed) < 24 * 60 * 60 * 1000) return
 
     const plat = detectPlatform()
     setPlatform(plat)
 
-    // Listen for native install prompt (Chrome Android/Desktop)
     const handleBeforeInstall = (e) => {
       e.preventDefault()
       setDeferredPrompt(e)
@@ -33,7 +30,6 @@ export default function InstallPrompt() {
     }
     window.addEventListener('beforeinstallprompt', handleBeforeInstall)
 
-    // Show prompt after delay for all platforms
     const timer = setTimeout(() => setShow(true), 1500)
 
     return () => {
@@ -46,9 +42,7 @@ export default function InstallPrompt() {
     if (deferredPrompt) {
       deferredPrompt.prompt()
       const result = await deferredPrompt.userChoice
-      if (result.outcome === 'accepted') {
-        setShow(false)
-      }
+      if (result.outcome === 'accepted') setShow(false)
       setDeferredPrompt(null)
     }
   }
@@ -60,89 +54,126 @@ export default function InstallPrompt() {
 
   if (!show) return null
 
+  const benefits = [
+    { icon: Zap, label: 'Быстрый доступ' },
+    { icon: Bell, label: 'Уведомления' },
+    { icon: Wifi, label: 'Оффлайн' },
+  ]
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[9999]" style={{ animation: 'slideUp 0.4s ease-out' }}>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/40" onClick={handleDismiss} />
+    <div className="fixed inset-0 z-[9999] flex items-end justify-center">
+      {/* Gradient backdrop */}
+      <div
+        className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/20 modal-overlay"
+        onClick={handleDismiss}
+      />
 
-      {/* Popup */}
-      <div className="relative mx-auto max-w-lg bg-dark-800/95 backdrop-blur-2xl border-t border-white/[0.07] rounded-t-3xl px-5 pt-3 pb-6 safe-area-bottom">
-        {/* Drag handle */}
-        <div className="flex justify-center mb-3">
-          <div className="w-10 h-1 rounded-full bg-white/20" />
-        </div>
+      {/* Sheet */}
+      <div className="relative w-full max-w-lg modal-sheet">
+        {/* Gradient accent line */}
+        <div className="h-[2px] rounded-t-full bg-gradient-to-r from-purple-500 via-accent to-purple-500" />
 
-        {/* Close */}
-        <button onClick={handleDismiss} className="absolute top-3 right-4 p-1.5 rounded-full bg-white/[0.08] text-white/50">
-          <X size={16} />
-        </button>
-
-        {/* Icon + Title */}
-        <div className="flex items-center gap-3 mb-4">
-          <img src="/logo.png" alt="iBorcuha" className="w-14 h-14 rounded-2xl" />
-          <div>
-            <h3 className="text-white font-semibold text-base">iBorcuha</h3>
-            <p className="text-white/50 text-sm">Установите приложение</p>
+        <div className="bg-dark-800/98 backdrop-blur-3xl rounded-t-[32px] px-6 pt-2 pb-6 safe-area-bottom">
+          {/* Drag handle */}
+          <div className="flex justify-center mb-5">
+            <div className="w-10 h-1 rounded-full bg-white/20" />
           </div>
-        </div>
 
-        {/* Native install button (Chrome) */}
-        {deferredPrompt ? (
-          <div className="space-y-3">
+          {/* Close */}
+          <button
+            onClick={handleDismiss}
+            className="absolute top-5 right-5 p-2 rounded-full bg-white/[0.06] text-white/40 press-scale"
+          >
+            <X size={16} />
+          </button>
+
+          {/* App branding */}
+          <div className="text-center mb-5">
+            <div className="relative inline-block mb-3">
+              <img src="/logo.png" alt="iBorcuha" className="w-[72px] h-[72px] rounded-[20px] shadow-2xl" />
+              {/* Glow ring */}
+              <div className="absolute -inset-1.5 rounded-[24px] bg-gradient-to-br from-purple-500/25 to-accent/25 -z-10 blur-md" />
+            </div>
+            <h3 className="text-white text-xl font-black tracking-tight">iBorcuha</h3>
+            <p className="text-white/35 text-sm mt-1">Тренировки в одном приложении</p>
+          </div>
+
+          {/* Benefits */}
+          <div className="flex gap-2 justify-center mb-6">
+            {benefits.map(({ icon: Icon, label }) => (
+              <div
+                key={label}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.06]"
+              >
+                <Icon size={12} className="text-purple-400" />
+                <span className="text-[11px] font-semibold text-white/50">{label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Platform-specific content */}
+          {deferredPrompt ? (
+            /* Chrome native install */
             <button
               onClick={handleInstall}
-              className="w-full py-3.5 rounded-2xl bg-accent text-white font-semibold text-base active:scale-[0.97] transition-transform"
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-accent to-purple-600 text-white font-bold text-base press-scale shadow-lg shadow-accent/25 mb-4 flex items-center justify-center gap-2.5"
             >
+              <Download size={20} />
               Установить приложение
             </button>
-          </div>
-        ) : platform === 'ios' ? (
-          /* iOS instructions */
-          <div className="space-y-3">
-            <p className="text-white/70 text-sm">Чтобы установить приложение:</p>
-            <div className="flex items-center gap-3 bg-white/[0.06] rounded-2xl p-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                <Share size={18} className="text-blue-400" />
+          ) : platform === 'ios' ? (
+            /* iOS instructions */
+            <div className="space-y-2.5 mb-5">
+              <div className="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white/[0.04] border border-white/[0.06]">
+                <div className="w-11 h-11 rounded-[14px] bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/25">
+                  <Share size={20} className="text-white" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-white text-sm font-semibold">1. Нажмите «Поделиться»</div>
+                  <div className="text-white/25 text-xs mt-0.5">Кнопка внизу экрана Safari</div>
+                </div>
               </div>
-              <p className="text-white/80 text-sm">
-                <span className="font-medium text-white">1.</span> Нажмите <span className="font-medium text-white">«Поделиться»</span> внизу Safari
-              </p>
-            </div>
-            <div className="flex items-center gap-3 bg-white/[0.06] rounded-2xl p-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                <PlusSquare size={18} className="text-blue-400" />
+              <div className="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white/[0.04] border border-white/[0.06]">
+                <div className="w-11 h-11 rounded-[14px] bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/25">
+                  <PlusSquare size={20} className="text-white" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-white text-sm font-semibold">2. «На экран Домой»</div>
+                  <div className="text-white/25 text-xs mt-0.5">Пролистайте меню и нажмите</div>
+                </div>
               </div>
-              <p className="text-white/80 text-sm">
-                <span className="font-medium text-white">2.</span> Выберите <span className="font-medium text-white">«На экран Домой»</span>
-              </p>
             </div>
-          </div>
-        ) : (
-          /* Android / Other */
-          <div className="space-y-3">
-            <p className="text-white/70 text-sm">Чтобы установить приложение:</p>
-            <div className="flex items-center gap-3 bg-white/[0.06] rounded-2xl p-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                <MoreVertical size={18} className="text-blue-400" />
+          ) : (
+            /* Android / Other */
+            <div className="space-y-2.5 mb-5">
+              <div className="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white/[0.04] border border-white/[0.06]">
+                <div className="w-11 h-11 rounded-[14px] bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shrink-0 shadow-lg shadow-green-500/25">
+                  <MoreVertical size={20} className="text-white" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-white text-sm font-semibold">1. Откройте меню браузера</div>
+                  <div className="text-white/25 text-xs mt-0.5">Кнопка <span className="text-white/50 font-bold">⋮</span> в правом верхнем углу</div>
+                </div>
               </div>
-              <p className="text-white/80 text-sm">
-                <span className="font-medium text-white">1.</span> Нажмите <span className="font-medium text-white">⋮</span> в правом верхнем углу браузера
-              </p>
-            </div>
-            <div className="flex items-center gap-3 bg-white/[0.06] rounded-2xl p-3">
-              <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                <Download size={18} className="text-blue-400" />
+              <div className="flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-white/[0.04] border border-white/[0.06]">
+                <div className="w-11 h-11 rounded-[14px] bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shrink-0 shadow-lg shadow-green-500/25">
+                  <Download size={20} className="text-white" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-white text-sm font-semibold">2. «На главный экран»</div>
+                  <div className="text-white/25 text-xs mt-0.5">Добавить на главный экран</div>
+                </div>
               </div>
-              <p className="text-white/80 text-sm">
-                <span className="font-medium text-white">2.</span> Выберите <span className="font-medium text-white">«Добавить на главный экран»</span>
-              </p>
             </div>
-          </div>
-        )}
+          )}
 
-        <button onClick={handleDismiss} className="w-full mt-3 py-2 text-white/40 text-sm text-center">
-          Не сейчас
-        </button>
+          <button
+            onClick={handleDismiss}
+            className="w-full py-2.5 text-white/25 text-sm font-medium text-center press-scale"
+          >
+            Не сейчас
+          </button>
+        </div>
       </div>
     </div>
   )

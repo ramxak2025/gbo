@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords, MapPin, Megaphone, Plus, ClipboardList, Award, ChevronRight, Dumbbell, CreditCard, Shield, UserPlus, Check, X, Instagram, Globe, MessageCircle, Code } from 'lucide-react'
+import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords, MapPin, Megaphone, Plus, ClipboardList, Award, ChevronRight, Dumbbell, CreditCard, Shield, UserPlus, Check, X, Instagram, Globe, MessageCircle, Code, Play, Film } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -292,7 +292,6 @@ function TrainerDash({ auth, data, dark, navigate }) {
   const myTx = data.transactions.filter(t => t.trainerId === auth.userId)
   const myNews = data.news.filter(n => n.trainerId === auth.userId)
 
-  const studentsWithStatus = myStudents.filter(s => s.status)
   const [showNews, setShowNews] = useState(false)
   const [newsForm, setNewsForm] = useState({ title: '', content: '', groupId: '__all__' })
 
@@ -405,31 +404,6 @@ function TrainerDash({ auth, data, dark, navigate }) {
             </div>
           </div>
         </GlassCard>
-
-        {/* Student statuses */}
-        {studentsWithStatus.length > 0 && (
-          <div>
-            <SectionTitle dark={dark}>Статусы учеников</SectionTitle>
-            <div className="space-y-2">
-              {studentsWithStatus.map(s => {
-                const cfg = STATUS_CONFIG[s.status]
-                if (!cfg) return null
-                const Icon = cfg.icon
-                return (
-                  <GlassCard key={s.id} className={`flex items-center gap-3 border ${cfg.border}`}>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${cfg.bg}`}>
-                      <Icon size={16} className={cfg.color} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-sm truncate">{s.name}</div>
-                    </div>
-                    <span className={`text-xs font-bold uppercase ${cfg.color}`}>{cfg.label}</span>
-                  </GlassCard>
-                )
-              })}
-            </div>
-          </div>
-        )}
 
         {/* Groups */}
         <div>
@@ -628,6 +602,12 @@ function StudentDash({ auth, data, dark, navigate }) {
     return matches
   }, [data.internalTournaments, data.students, auth.studentId])
 
+  // Today's workout — pinned material for student's group
+  const pinnedMaterial = useMemo(() => {
+    if (!group?.pinnedMaterialId) return null
+    return (data.materials || []).find(m => m.id === group.pinnedMaterialId) || null
+  }, [group, data.materials])
+
   const statusCfg = student?.status ? STATUS_CONFIG[student.status] : null
   const sportLabel = getSportLabel(trainer?.sportType)
   const rankLabel = getRankLabel(trainer?.sportType)
@@ -719,6 +699,51 @@ function StudentDash({ auth, data, dark, navigate }) {
             </div>
           </GlassCard>
         </div>
+
+        {/* Today's workout — pinned video */}
+        {pinnedMaterial && (() => {
+          const ytMatch = pinnedMaterial.videoUrl?.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
+          const thumb = pinnedMaterial.customThumb || (ytMatch ? `https://img.youtube.com/vi/${ytMatch[1]}/mqdefault.jpg` : null)
+          return (
+            <div>
+              <SectionTitle dark={dark}>
+                <span className="flex items-center gap-1.5"><Dumbbell size={12} className="text-green-400" /> Отработка дня</span>
+              </SectionTitle>
+              <GlassCard
+                onClick={() => navigate('/materials')}
+                className={`overflow-hidden border ${dark ? 'border-green-500/20 bg-gradient-to-r from-green-500/5 to-emerald-500/5' : 'border-green-200 bg-gradient-to-r from-green-50/50 to-emerald-50/50'}`}
+              >
+                {thumb && (
+                  <div className={`relative -mx-4 -mt-4 mb-3 aspect-video overflow-hidden ${dark ? 'bg-white/[0.03]' : 'bg-black/[0.02]'}`}>
+                    <img src={thumb} alt={pinnedMaterial.title} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                        <Play size={26} className="text-white ml-0.5" fill="white" />
+                      </div>
+                    </div>
+                    <span className="absolute top-2 left-2 flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-green-500 text-white">
+                      <Dumbbell size={10} /> Отработка
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  {!thumb && (
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${dark ? 'bg-green-500/15' : 'bg-green-100'}`}>
+                      <Film size={18} className="text-green-400" />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-sm truncate">{pinnedMaterial.title}</div>
+                    {pinnedMaterial.description && (
+                      <div className={`text-xs mt-0.5 truncate ${dark ? 'text-white/40' : 'text-gray-500'}`}>{pinnedMaterial.description}</div>
+                    )}
+                  </div>
+                  <ChevronRight size={16} className={dark ? 'text-white/20' : 'text-gray-300'} />
+                </div>
+              </GlassCard>
+            </div>
+          )
+        })()}
 
         {/* Next opponent in internal tournaments */}
         {myInternalMatches.length > 0 && (

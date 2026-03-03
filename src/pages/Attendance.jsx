@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Check, X, BarChart3, Users } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, X, BarChart3, Users, Thermometer, HeartCrack, Zap } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -8,6 +8,12 @@ import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
 import Avatar from '../components/Avatar'
+
+const STATUS_CONFIG = {
+  sick: { label: 'Болеет', icon: Thermometer, color: 'text-yellow-400', bg: 'bg-yellow-500/15' },
+  injury: { label: 'Травма', icon: HeartCrack, color: 'text-red-400', bg: 'bg-red-500/15' },
+  skip: { label: 'Сачок', icon: Zap, color: 'text-purple-400', bg: 'bg-purple-500/15' },
+}
 
 function toDateStr(d) {
   return d.toISOString().split('T')[0]
@@ -207,7 +213,18 @@ export default function Attendance() {
                   >
                     <Avatar name={s.name} src={s.avatar} size={36} />
                     <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm truncate">{s.name}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-semibold text-sm truncate">{s.name}</span>
+                        {s.status && STATUS_CONFIG[s.status] && (() => {
+                          const cfg = STATUS_CONFIG[s.status]
+                          const Icon = cfg.icon
+                          return (
+                            <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold ${cfg.bg} ${cfg.color}`}>
+                              <Icon size={9} /> {cfg.label}
+                            </span>
+                          )
+                        })()}
+                      </div>
                       <div className={`text-[10px] ${dark ? 'text-white/30' : 'text-gray-500'}`}>
                         {s.belt || ''} {s.weight ? `• ${s.weight} кг` : ''}
                       </div>
