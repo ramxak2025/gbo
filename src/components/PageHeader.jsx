@@ -6,14 +6,15 @@ import { useTheme } from '../context/ThemeContext'
 export default function PageHeader({ title, back, logo, gradient, children }) {
   const { dark, toggle } = useTheme()
   const navigate = useNavigate()
-  const [scrolled, setScrolled] = useState(false)
+  const [scrollProgress, setScrollProgress] = useState(0) // 0..1
   const headerRef = useRef(null)
 
   useEffect(() => {
     const scrollContainer = headerRef.current?.closest('.overflow-y-auto')
     if (!scrollContainer) return
     const handleScroll = () => {
-      setScrolled(scrollContainer.scrollTop > 8)
+      const progress = Math.min(scrollContainer.scrollTop / 30, 1)
+      setScrollProgress(progress)
     }
     scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
     return () => scrollContainer.removeEventListener('scroll', handleScroll)
@@ -33,14 +34,21 @@ export default function PageHeader({ title, back, logo, gradient, children }) {
     return <h1 className="text-lg font-bold uppercase italic truncate">{title}</h1>
   }
 
+  const bgColor = dark ? `rgba(5,5,5,${0.55 * scrollProgress})` : `rgba(245,245,247,${0.6 * scrollProgress})`
+  const borderOpacity = scrollProgress * (dark ? 0.06 : 0.04)
+  const blurVal = scrollProgress * 16
+
   return (
     <header
       ref={headerRef}
-      className={`flex items-center justify-between px-4 pt-4 pb-3 mb-1 sticky top-0 z-40 transition-all duration-300 ${
-        scrolled
-          ? `backdrop-blur-xl ${dark ? 'bg-dark-900/70 border-b border-white/[0.06]' : 'bg-[#f5f5f7]/75 border-b border-black/[0.04] shadow-sm'}`
-          : 'bg-transparent'
-      }`}
+      className="flex items-center justify-between px-4 pt-4 pb-3 mb-1 sticky top-0 z-40"
+      style={{
+        backgroundColor: bgColor,
+        backdropFilter: `blur(${blurVal}px)`,
+        WebkitBackdropFilter: `blur(${blurVal}px)`,
+        borderBottom: `1px solid rgba(${dark ? '255,255,255' : '0,0,0'},${borderOpacity})`,
+        boxShadow: scrollProgress > 0.5 && !dark ? `0 1px 3px rgba(0,0,0,${0.04 * scrollProgress})` : 'none',
+      }}
     >
       <div className="flex items-center gap-2 min-w-0">
         {back && (

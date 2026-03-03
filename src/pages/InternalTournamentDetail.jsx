@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Trophy, Trash2, Calendar, RotateCcw, Check, Weight } from 'lucide-react'
+import { Trophy, Trash2, Calendar, RotateCcw, Check, Weight, ImagePlus } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -11,6 +11,7 @@ import Modal from '../components/Modal'
 import BracketView from '../components/BracketView'
 import Avatar from '../components/Avatar'
 import { setMatchWinner, generateBracket, getVictoryTypes, getSportLabel } from '../utils/sports'
+import { api } from '../utils/api'
 
 function formatDate(iso) {
   if (!iso) return '—'
@@ -27,6 +28,7 @@ export default function InternalTournamentDetail() {
   const tournament = (data.internalTournaments || []).find(t => t.id === id)
   const [activeCatIdx, setActiveCatIdx] = useState(0)
   const [pendingWinner, setPendingWinner] = useState(null) // { roundIdx, matchIdx, winnerId }
+  const coverInputRef = useRef(null)
 
   if (!tournament) {
     return (
@@ -124,6 +126,19 @@ export default function InternalTournamentDetail() {
     updateInternalTournament(tournament.id, { status: 'completed' })
   }
 
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      const url = await api.uploadFile(file)
+      updateInternalTournament(tournament.id, { coverImage: url })
+    } catch { /* ignore */ }
+  }
+
+  const handleCoverRemove = () => {
+    updateInternalTournament(tournament.id, { coverImage: null })
+  }
+
   // Check if all categories have champions
   const allCats = isLegacy ? [activeCat] : categories
   const allHaveChampion = allCats.every(c => getChampion(c))
@@ -152,31 +167,76 @@ export default function InternalTournamentDetail() {
         )}
       </PageHeader>
 
+      <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
+
       <div className="px-4 space-y-4 slide-in">
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-xl font-black">{tournament.title}</h1>
-          <div className={`text-sm mt-1 flex items-center justify-center gap-2 flex-wrap ${dark ? 'text-white/40' : 'text-gray-500'}`}>
-            <Calendar size={14} />
-            <span>{formatDate(tournament.date)}</span>
-            <span>•</span>
-            <span>{totalParticipants} участников</span>
-            <span>•</span>
-            <span>{allCats.length} {allCats.length === 1 ? 'весовая' : allCats.length < 5 ? 'весовых' : 'весовых'}</span>
+        {/* Cover image */}
+        {tournament.coverImage ? (
+          <div className="relative rounded-[20px] overflow-hidden -mx-0">
+            <img src={tournament.coverImage} alt="" className="w-full h-44 object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
+            <div className="absolute bottom-3 left-4 right-4">
+              <h1 className="text-xl font-black text-white drop-shadow-md">{tournament.title}</h1>
+              <div className="flex items-center gap-2 flex-wrap mt-1 text-white/70 text-xs">
+                <Calendar size={12} />
+                <span>{formatDate(tournament.date)}</span>
+                <span>•</span>
+                <span>{totalParticipants} уч.</span>
+                {sportType && (
+                  <span className="px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-bold uppercase">{getSportLabel(sportType)}</span>
+                )}
+                {tournament.status === 'completed' && (
+                  <span className="px-2 py-0.5 rounded-full bg-green-500/30 text-green-300 text-[10px] font-bold uppercase">Завершён</span>
+                )}
+              </div>
+            </div>
+            {isTrainer && (
+              <div className="absolute top-3 right-3 flex gap-2">
+                <button onClick={() => coverInputRef.current?.click()}
+                  className="p-2 rounded-xl bg-black/30 backdrop-blur-md text-white press-scale">
+                  <ImagePlus size={16} />
+                </button>
+                <button onClick={handleCoverRemove}
+                  className="p-2 rounded-xl bg-red-500/30 backdrop-blur-md text-white press-scale">
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            )}
           </div>
-          {sportType && (
-            <div className="mt-2 flex justify-center">
-              <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
-                dark ? 'bg-accent/15 text-accent-light border border-accent/20' : 'bg-red-50 text-red-600'
-              }`}>{getSportLabel(sportType)}</span>
+        ) : (
+          <div className="text-center">
+            <h1 className="text-xl font-black">{tournament.title}</h1>
+            <div className={`text-sm mt-1 flex items-center justify-center gap-2 flex-wrap ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+              <Calendar size={14} />
+              <span>{formatDate(tournament.date)}</span>
+              <span>•</span>
+              <span>{totalParticipants} участников</span>
+              <span>•</span>
+              <span>{allCats.length} {allCats.length === 1 ? 'весовая' : allCats.length < 5 ? 'весовых' : 'весовых'}</span>
             </div>
-          )}
-          {tournament.status === 'completed' && (
-            <div className="mt-2 inline-block px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-bold uppercase">
-              Завершён
-            </div>
-          )}
-        </div>
+            {sportType && (
+              <div className="mt-2 flex justify-center">
+                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
+                  dark ? 'bg-accent/15 text-accent-light border border-accent/20' : 'bg-red-50 text-red-600'
+                }`}>{getSportLabel(sportType)}</span>
+              </div>
+            )}
+            {tournament.status === 'completed' && (
+              <div className="mt-2 inline-block px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-bold uppercase">
+                Завершён
+              </div>
+            )}
+            {isTrainer && (
+              <button onClick={() => coverInputRef.current?.click()}
+                className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium press-scale ${
+                  dark ? 'bg-white/[0.05] text-white/40' : 'bg-black/[0.04] text-gray-400'
+                }`}
+              >
+                <ImagePlus size={14} /> Добавить обложку
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Category tabs */}
         {!isLegacy && categories.length > 1 && (

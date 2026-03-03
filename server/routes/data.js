@@ -16,7 +16,7 @@ function mapClub(c) {
   return { id: c.id, name: c.name, city: c.city || '', sportTypes: c.sport_types || [], headTrainerId: c.head_trainer_id || null, createdAt: c.created_at }
 }
 function mapInternalTournament(t) {
-  return { id: t.id, trainerId: t.trainer_id, title: t.title, date: t.date, status: t.status, brackets: t.brackets, sportType: t.sport_type || null, createdAt: t.created_at }
+  return { id: t.id, trainerId: t.trainer_id, title: t.title, date: t.date, status: t.status, brackets: t.brackets, sportType: t.sport_type || null, coverImage: t.cover_image || null, createdAt: t.created_at }
 }
 function mapStudent(s, includeSecrets = false) {
   const base = {
@@ -356,16 +356,16 @@ router.put('/author', authMiddleware, async (req, res) => {
 
 // --- Internal Tournaments (trainer brackets) ---
 router.post('/internal-tournaments', authMiddleware, async (req, res) => {
-  const { title, date, brackets, sportType } = req.body
+  const { title, date, brackets, sportType, coverImage } = req.body
   const id = genId()
-  await pool.query('INSERT INTO internal_tournaments (id, trainer_id, title, date, brackets, sport_type) VALUES ($1,$2,$3,$4,$5,$6)',
-    [id, req.user.userId, title, date || null, JSON.stringify(brackets || {}), sportType || null])
+  await pool.query('INSERT INTO internal_tournaments (id, trainer_id, title, date, brackets, sport_type, cover_image) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+    [id, req.user.userId, title, date || null, JSON.stringify(brackets || {}), sportType || null, coverImage || null])
   const { rows: [t] } = await pool.query('SELECT * FROM internal_tournaments WHERE id = $1', [id])
   res.json(mapInternalTournament(t))
 })
 
 router.put('/internal-tournaments/:id', authMiddleware, async (req, res) => {
-  const { title, date, status, brackets, sportType } = req.body
+  const { title, date, status, brackets, sportType, coverImage } = req.body
   const sets = []
   const vals = []
   let i = 1
@@ -374,6 +374,7 @@ router.put('/internal-tournaments/:id', authMiddleware, async (req, res) => {
   if (status !== undefined) { sets.push(`status = $${i++}`); vals.push(status) }
   if (brackets !== undefined) { sets.push(`brackets = $${i++}`); vals.push(JSON.stringify(brackets)) }
   if (sportType !== undefined) { sets.push(`sport_type = $${i++}`); vals.push(sportType) }
+  if (coverImage !== undefined) { sets.push(`cover_image = $${i++}`); vals.push(coverImage) }
   if (sets.length === 0) return res.json({ ok: true })
   vals.push(req.params.id)
   await pool.query(`UPDATE internal_tournaments SET ${sets.join(', ')} WHERE id = $${i}`, vals)

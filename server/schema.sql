@@ -213,6 +213,12 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_column THEN NULL;
 END $$;
 
+-- Cover image for internal tournaments
+DO $$ BEGIN
+  ALTER TABLE internal_tournaments ADD COLUMN cover_image TEXT;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
 -- Trainer categories (stored on server, not localStorage)
 DO $$ BEGIN
   ALTER TABLE users ADD COLUMN material_categories JSONB DEFAULT '[]';

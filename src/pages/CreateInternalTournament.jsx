@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, X, ChevronRight, Users, Weight } from 'lucide-react'
+import { Plus, X, ChevronRight, Users, Weight, ImagePlus, Check } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -9,7 +9,8 @@ import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
 import Avatar from '../components/Avatar'
 import DateButton from '../components/DateButton'
-import { WEIGHT_CLASSES, generateBracket, getSportLabel } from '../utils/sports'
+import { SPORT_TYPES, WEIGHT_CLASSES, generateBracket, getSportLabel } from '../utils/sports'
+import { api } from '../utils/api'
 
 export default function CreateInternalTournament() {
   const navigate = useNavigate()
@@ -23,12 +24,17 @@ export default function CreateInternalTournament() {
     ? trainerUser.sportTypes
     : trainerUser?.sportType ? [trainerUser.sportType] : []
 
+  const allSports = SPORT_TYPES
+  const fileInputRef = useRef(null)
+
   const [step, setStep] = useState(1) // 1=info, 2=add categories, 3=select participants
   const [form, setForm] = useState({
     title: '',
     date: new Date().toISOString().split('T')[0],
     sportType: trainerSports[0] || '',
+    coverImage: '',
   })
+  const [uploading, setUploading] = useState(false)
   // Each category: { weightClass, participants: Set }
   const [categories, setCategories] = useState([])
   const [editingCatIdx, setEditingCatIdx] = useState(null)
@@ -82,6 +88,17 @@ export default function CreateInternalTournament() {
     })
   }
 
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const url = await api.uploadFile(file)
+      setForm(f => ({ ...f, coverImage: url }))
+    } catch { /* ignore */ }
+    finally { setUploading(false) }
+  }
+
   const handleCreate = async () => {
     const validCategories = categories.filter(c => c.participants.length >= 2)
     if (validCategories.length === 0) return
@@ -95,6 +112,7 @@ export default function CreateInternalTournament() {
       title: form.title || 'Клубный турнир',
       date: form.date,
       sportType: form.sportType || null,
+      coverImage: form.coverImage || null,
       brackets: { categories: cats },
     })
     navigate('/tournaments')
@@ -128,28 +146,71 @@ export default function CreateInternalTournament() {
               className={inputCls}
             />
             <DateButton label="Дата турнира" value={form.date} onChange={v => setForm(f => ({ ...f, date: v }))} />
-            {trainerSports.length > 1 && (
-              <div>
-                <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Вид спорта</div>
-                <div className="flex flex-wrap gap-2">
-                  {trainerSports.map(sId => {
-                    const active = form.sportType === sId
-                    return (
-                      <button key={sId} type="button" onClick={() => setForm(f => ({ ...f, sportType: sId }))}
-                        className={`px-3.5 py-2 rounded-2xl text-xs font-bold press-scale transition-all ${
-                          active ? 'bg-accent text-white' : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60'
-                        }`}
-                      >
-                        {getSportLabel(sId)}
-                      </button>
-                    )
-                  })}
-                </div>
+
+            {/* Sport type — always show */}
+            <div>
+              <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Вид спорта *</div>
+              <div className="flex flex-wrap gap-2">
+                {(trainerSports.length > 0 ? trainerSports : allSports.map(s => s.id)).map(sId => {
+                  const active = form.sportType === sId
+                  return (
+                    <button key={sId} type="button" onClick={() => setForm(f => ({ ...f, sportType: sId }))}
+                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold press-scale transition-all ${
+                        active ? 'bg-accent text-white' : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60'
+                      }`}
+                    >
+                      {active && <Check size={12} />}
+                      {getSportLabel(sId)}
+                    </button>
+                  )
+                })}
               </div>
-            )}
+            </div>
+
+            {/* Cover image */}
+            <div>
+              <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Обложка</div>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
+              {form.coverImage ? (
+                <div className="relative rounded-[16px] overflow-hidden">
+                  <img src={form.coverImage} alt="" className="w-full h-40 object-cover" />
+                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center gap-3">
+                    <button onClick={() => fileInputRef.current?.click()}
+                      className="px-4 py-2 rounded-xl bg-white/20 backdrop-blur-md text-white text-xs font-bold press-scale">
+                      Заменить
+                    </button>
+                    <button onClick={() => setForm(f => ({ ...f, coverImage: '' }))}
+                      className="px-4 py-2 rounded-xl bg-red-500/40 backdrop-blur-md text-white text-xs font-bold press-scale">
+                      Убрать
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className={`w-full py-6 rounded-[16px] flex flex-col items-center gap-2 press-scale transition-all ${
+                    dark ? 'bg-white/[0.04] border border-dashed border-white/[0.1]' : 'bg-white/50 border border-dashed border-black/[0.08]'
+                  }`}
+                >
+                  {uploading ? (
+                    <div className="w-6 h-6 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <ImagePlus size={24} className={dark ? 'text-white/25' : 'text-gray-400'} />
+                      <span className={`text-xs ${dark ? 'text-white/30' : 'text-gray-400'}`}>Добавить обложку</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+
             <button
-              onClick={() => setStep(2)}
-              className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale mt-2"
+              onClick={() => form.sportType ? setStep(2) : null}
+              disabled={!form.sportType}
+              className={`w-full py-3.5 rounded-[16px] font-bold press-scale mt-2 ${
+                form.sportType ? 'bg-accent text-white' : 'bg-accent/30 text-white/50 cursor-not-allowed'
+              }`}
             >
               Далее — весовые категории
             </button>

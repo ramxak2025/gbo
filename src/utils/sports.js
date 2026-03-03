@@ -111,50 +111,88 @@ export function generateBracket(participantIds) {
   const slots = [...shuffled]
   while (slots.length < bracketSize) slots.push(null)
 
-  // Build rounds
+  // Build rounds — first create all empty
   const rounds = []
 
-  // Round 1
+  // Round 1: resolve bye matches immediately
   const r1 = []
   for (let i = 0; i < bracketSize; i += 2) {
     const s1 = slots[i]
     const s2 = slots[i + 1]
     const isBye = !s1 || !s2
-    r1.push({ s1, s2, winner: isBye ? (s1 || s2) : null })
+    r1.push({ s1, s2, winner: isBye ? (s1 || s2 || null) : null })
   }
   rounds.push(r1)
 
-  // Subsequent rounds
+  // Create empty subsequent rounds
   for (let r = 1; r < numRounds; r++) {
-    const prevRound = rounds[r - 1]
+    const prevLen = rounds[r - 1].length
     const round = []
-    for (let i = 0; i < prevRound.length; i += 2) {
-      const m1 = prevRound[i]
-      const m2 = prevRound[i + 1]
-      // Propagate bye winners
-      const s1 = m1.winner && (!m1.s1 || !m1.s2) ? m1.winner : null
-      const s2 = m2?.winner && (!m2.s1 || !m2.s2) ? m2.winner : null
-      round.push({ s1, s2, winner: null })
+    for (let i = 0; i < prevLen / 2; i++) {
+      round.push({ s1: null, s2: null, winner: null })
     }
     rounds.push(round)
+  }
+
+  // Propagate all bye winners through the entire bracket
+  let changed = true
+  while (changed) {
+    changed = false
+    for (let r = 0; r < rounds.length; r++) {
+      for (let m = 0; m < rounds[r].length; m++) {
+        const match = rounds[r][m]
+        // Propagate winner to next round
+        if (match.winner && r < rounds.length - 1) {
+          const nextM = Math.floor(m / 2)
+          const slot = m % 2 === 0 ? 's1' : 's2'
+          if (rounds[r + 1][nextM][slot] !== match.winner) {
+            rounds[r + 1][nextM][slot] = match.winner
+            changed = true
+          }
+        }
+        // Auto-resolve: one real opponent, other side empty (bye)
+        if (!match.winner && match.s1 && !match.s2) {
+          match.winner = match.s1
+          changed = true
+        } else if (!match.winner && !match.s1 && match.s2) {
+          match.winner = match.s2
+          changed = true
+        }
+      }
+    }
   }
 
   return { rounds, participants: shuffled }
 }
 
-// Propagate winner to next round
+// Propagate winner to next round (with chained bye auto-resolve)
 export function setMatchWinner(brackets, roundIdx, matchIdx, winnerId) {
   const rounds = brackets.rounds.map(r => r.map(m => ({ ...m })))
   rounds[roundIdx][matchIdx].winner = winnerId
 
-  // Propagate to next round
-  if (roundIdx < rounds.length - 1) {
-    const nextMatchIdx = Math.floor(matchIdx / 2)
-    const isTopSlot = matchIdx % 2 === 0
-    if (isTopSlot) {
-      rounds[roundIdx + 1][nextMatchIdx].s1 = winnerId
+  // Propagate through the bracket, auto-resolving byes
+  let r = roundIdx
+  let m = matchIdx
+  let w = winnerId
+  while (r < rounds.length - 1 && w) {
+    const nextM = Math.floor(m / 2)
+    const slot = m % 2 === 0 ? 's1' : 's2'
+    rounds[r + 1][nextM][slot] = w
+
+    // Check if next match can auto-resolve (opponent is null = bye)
+    const next = rounds[r + 1][nextM]
+    if (!next.winner && next.s1 && !next.s2) {
+      next.winner = next.s1
+      w = next.s1
+      r++
+      m = nextM
+    } else if (!next.winner && !next.s1 && next.s2) {
+      next.winner = next.s2
+      w = next.s2
+      r++
+      m = nextM
     } else {
-      rounds[roundIdx + 1][nextMatchIdx].s2 = winnerId
+      break
     }
   }
 

@@ -101,18 +101,21 @@ export default function Login({ onLogin }) {
         }`} />
       </div>
 
-      {/* Top bar — transparent */}
-      <div className="relative z-10 flex justify-between items-center px-5 pt-4 pb-2">
-        {mode !== 'login' ? (
-          <button onClick={() => { setMode('login'); setError('') }} className="press-scale flex items-center gap-1 py-1.5 px-2 -ml-2 rounded-xl">
-            <ArrowLeft size={18} />
-            <span className="text-sm font-medium">Назад</span>
-          </button>
-        ) : <div />}
+      {/* Theme toggle — absolute top right */}
+      <div className="absolute top-4 right-5 z-20">
         <button onClick={toggle} className={`press-scale p-2.5 rounded-xl transition-colors ${dark ? 'bg-white/[0.06]' : 'bg-white/60 shadow-sm'}`}>
           {dark ? <Sun size={18} /> : <Moon size={18} />}
         </button>
       </div>
+      {/* Back button for register/success */}
+      {mode !== 'login' && (
+        <div className="absolute top-4 left-5 z-20">
+          <button onClick={() => { setMode('login'); setError('') }} className="press-scale flex items-center gap-1 py-1.5 px-2 rounded-xl">
+            <ArrowLeft size={18} />
+            <span className="text-sm font-medium">Назад</span>
+          </button>
+        </div>
+      )}
 
       {/* Content */}
       <div className="relative z-10 flex-1 overflow-y-auto scrollbar-hide">
