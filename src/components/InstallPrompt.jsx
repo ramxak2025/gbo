@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Share, PlusSquare, MoreVertical, Download, Zap, Bell, Wifi } from 'lucide-react'
+import { X, Share, PlusSquare, MoreVertical, Download, Smartphone, WifiOff, AppWindow } from 'lucide-react'
 
 function detectPlatform() {
   const ua = navigator.userAgent || ''
@@ -30,7 +30,6 @@ export default function InstallPrompt() {
     }
     window.addEventListener('beforeinstallprompt', handleBeforeInstall)
 
-    // 2 second delay before showing
     const timer = setTimeout(() => {
       setVisible(true)
       requestAnimationFrame(() => {
@@ -55,148 +54,123 @@ export default function InstallPrompt() {
 
   const handleDismiss = () => {
     setAnimateIn(false)
-    setTimeout(() => setVisible(false), 350)
+    setTimeout(() => setVisible(false), 400)
     localStorage.setItem('iborcuha_install_dismissed', Date.now().toString())
   }
 
   if (!visible) return null
 
-  const benefits = [
-    { icon: Zap, label: 'Быстрый доступ', desc: 'Как обычное приложение' },
-    { icon: Bell, label: 'Уведомления', desc: 'Push о новостях и турнирах' },
-    { icon: Wifi, label: 'Оффлайн', desc: 'Работает без интернета' },
+  const badges = [
+    { icon: Smartphone, label: 'Как приложение' },
+    { icon: WifiOff, label: 'Работает офлайн' },
+    { icon: AppWindow, label: 'Без App Store' },
   ]
 
+  const iosSteps = [
+    { num: '1', text: 'Нажмите кнопку', accent: 'Поделиться', icon: Share, hint: 'внизу экрана Safari' },
+    { num: '2', text: 'Пролистайте вниз', accent: null, icon: null, hint: 'в открывшемся меню' },
+    { num: '3', text: 'Нажмите', accent: 'На экран «Домой»', icon: PlusSquare, hint: null },
+  ]
+
+  const androidSteps = [
+    { num: '1', text: 'Нажмите', accent: 'меню браузера ⋮', icon: MoreVertical, hint: 'в правом верхнем углу' },
+    { num: '2', text: 'Пролистайте вниз', accent: null, icon: null, hint: 'в открывшемся меню' },
+    { num: '3', text: 'Нажмите', accent: 'На главный экран', icon: Download, hint: null },
+  ]
+
+  const steps = platform === 'ios' ? iosSteps : androidSteps
+
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      {/* Blurred backdrop */}
+    <div className="fixed inset-0 z-[9999] flex items-end justify-center">
+      {/* Backdrop with blur */}
       <div
         className={`absolute inset-0 transition-all duration-[400ms] ease-out ${
-          animateIn ? 'bg-black/60 backdrop-blur-xl' : 'bg-black/0 backdrop-blur-none'
+          animateIn ? 'bg-black/50 backdrop-blur-md' : 'bg-black/0 backdrop-blur-none'
         }`}
         onClick={handleDismiss}
       />
 
-      {/* Modal card */}
+      {/* Bottom sheet */}
       <div
-        className="relative w-full max-w-[360px] transition-all duration-[400ms]"
+        className="relative w-full max-w-[440px] transition-all duration-[450ms]"
         style={{
           transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
-          opacity: animateIn ? 1 : 0,
-          transform: animateIn ? 'translateY(0) scale(1)' : 'translateY(32px) scale(0.95)',
+          transform: animateIn ? 'translateY(0)' : 'translateY(100%)',
         }}
       >
-        <div className="rounded-[28px] overflow-hidden bg-dark-800/98 backdrop-blur-3xl border border-white/[0.08] shadow-[0_24px_80px_rgba(0,0,0,0.5)]">
-          {/* Gradient accent top */}
-          <div className="h-1 bg-gradient-to-r from-purple-500 via-accent to-purple-500" />
+        <div className="rounded-t-[28px] overflow-hidden bg-[#1c1c1e] shadow-[0_-8px_40px_rgba(0,0,0,0.4)]">
 
-          <div className="px-6 pt-6 pb-5">
-            {/* Close */}
-            <button
-              onClick={handleDismiss}
-              className="absolute top-5 right-5 p-2 rounded-full bg-white/[0.06] text-white/40 press-scale"
-            >
-              <X size={16} />
-            </button>
+          {/* Handle bar */}
+          <div className="flex justify-center pt-3 pb-2">
+            <div className="w-9 h-1 rounded-full bg-white/20" />
+          </div>
 
-            {/* App branding */}
-            <div className="flex items-center gap-4 mb-5">
-              <div className="relative shrink-0">
-                <img src="/logo.png" alt="iBorcuha" className="w-16 h-16 rounded-[18px] shadow-2xl" />
-                <div className="absolute -inset-1 rounded-[22px] bg-gradient-to-br from-purple-500/20 to-accent/20 -z-10 blur-md" />
-              </div>
+          {/* Close button */}
+          <button
+            onClick={handleDismiss}
+            className="absolute top-3.5 right-4 p-1.5 rounded-full bg-white/10 text-white/50 press-scale"
+          >
+            <X size={16} />
+          </button>
+
+          <div className="px-5 pb-6">
+            {/* App info row */}
+            <div className="flex items-center gap-3.5 mb-5">
+              <img src="/logo.png" alt="iBorcuha" className="w-14 h-14 rounded-[14px] shadow-lg" />
               <div>
-                <h3 className="text-white text-lg font-black tracking-tight">iBorcuha</h3>
-                <p className="text-white/35 text-xs mt-0.5">Тренировки в одном приложении</p>
+                <div className="text-white text-base font-bold">Установить iBorcuha</div>
+                <div className="text-white/35 text-xs mt-0.5">Тренировки в одном приложении</div>
               </div>
             </div>
 
-            {/* Benefits */}
-            <div className="space-y-2 mb-5">
-              {benefits.map(({ icon: Icon, label, desc }, i) => (
-                <div
-                  key={label}
-                  className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl bg-white/[0.04] border border-white/[0.06] transition-all duration-500"
-                  style={{
-                    opacity: animateIn ? 1 : 0,
-                    transform: animateIn ? 'translateX(0)' : 'translateX(16px)',
-                    transitionDelay: animateIn ? `${150 + i * 80}ms` : '0ms',
-                  }}
-                >
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    i === 0 ? 'bg-purple-500/15' : i === 1 ? 'bg-blue-500/15' : 'bg-green-500/15'
-                  }`}>
-                    <Icon size={16} className={
-                      i === 0 ? 'text-purple-400' : i === 1 ? 'text-blue-400' : 'text-green-400'
-                    } />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-white text-xs font-bold">{label}</div>
-                    <div className="text-white/25 text-[10px]">{desc}</div>
-                  </div>
+            {/* Feature badges */}
+            <div className="flex gap-2 mb-5 overflow-x-auto scrollbar-hide -mx-1 px-1">
+              {badges.map(({ icon: Icon, label }) => (
+                <div key={label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.07] border border-white/[0.08] whitespace-nowrap shrink-0">
+                  <Icon size={13} className="text-purple-400" />
+                  <span className="text-white/60 text-[11px] font-medium">{label}</span>
                 </div>
               ))}
             </div>
 
-            {/* Platform-specific */}
+            {/* Install button or steps */}
             {deferredPrompt ? (
               <button
                 onClick={handleInstall}
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-accent to-purple-600 text-white font-bold text-sm press-scale shadow-lg shadow-accent/25 mb-3 flex items-center justify-center gap-2.5"
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-sm press-scale shadow-lg shadow-purple-600/25 flex items-center justify-center gap-2.5 mb-4"
               >
                 <Download size={18} />
-                Установить приложение
+                Установить
               </button>
-            ) : platform === 'ios' ? (
-              <div className="space-y-2 mb-3">
-                <div className="flex items-center gap-3 px-3.5 py-3 rounded-2xl bg-blue-500/[0.08] border border-blue-500/15">
-                  <div className="w-9 h-9 rounded-xl bg-blue-500 flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30">
-                    <Share size={16} className="text-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-white text-xs font-bold">1. Нажмите «Поделиться»</div>
-                    <div className="text-white/25 text-[10px]">Кнопка внизу экрана Safari</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 px-3.5 py-3 rounded-2xl bg-blue-500/[0.08] border border-blue-500/15">
-                  <div className="w-9 h-9 rounded-xl bg-blue-500 flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/30">
-                    <PlusSquare size={16} className="text-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-white text-xs font-bold">2. «На экран Домой»</div>
-                    <div className="text-white/25 text-[10px]">Пролистайте меню и нажмите</div>
-                  </div>
-                </div>
-              </div>
             ) : (
-              <div className="space-y-2 mb-3">
-                <div className="flex items-center gap-3 px-3.5 py-3 rounded-2xl bg-green-500/[0.08] border border-green-500/15">
-                  <div className="w-9 h-9 rounded-xl bg-green-600 flex items-center justify-center shrink-0 shadow-lg shadow-green-500/30">
-                    <MoreVertical size={16} className="text-white" />
+              <div className="space-y-2.5 mb-4">
+                {steps.map((step, i) => (
+                  <div
+                    key={step.num}
+                    className="flex items-center gap-3 transition-all duration-500"
+                    style={{
+                      opacity: animateIn ? 1 : 0,
+                      transform: animateIn ? 'translateY(0)' : 'translateY(12px)',
+                      transitionDelay: animateIn ? `${200 + i * 100}ms` : '0ms',
+                    }}
+                  >
+                    <div className="w-7 h-7 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
+                      <span className="text-purple-400 text-xs font-bold">{step.num}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-white/70 text-[13px]">{step.text}</span>
+                      {step.icon && <step.icon size={14} className="text-blue-400 shrink-0" />}
+                      {step.accent && <span className="text-white text-[13px] font-semibold">{step.accent}</span>}
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-white text-xs font-bold">1. Меню браузера <span className="text-white/50">⋮</span></div>
-                    <div className="text-white/25 text-[10px]">В правом верхнем углу</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 px-3.5 py-3 rounded-2xl bg-green-500/[0.08] border border-green-500/15">
-                  <div className="w-9 h-9 rounded-xl bg-green-600 flex items-center justify-center shrink-0 shadow-lg shadow-green-500/30">
-                    <Download size={16} className="text-white" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-white text-xs font-bold">2. «На главный экран»</div>
-                    <div className="text-white/25 text-[10px]">Добавить на главный экран</div>
-                  </div>
-                </div>
+                ))}
               </div>
             )}
 
-            <button
-              onClick={handleDismiss}
-              className="w-full py-2 text-white/20 text-xs font-medium text-center press-scale"
-            >
-              Не сейчас
-            </button>
+            {/* Bottom note */}
+            <div className="text-center">
+              <p className="text-white/20 text-[10px]">Приложение бесплатное и не занимает память</p>
+            </div>
           </div>
         </div>
       </div>

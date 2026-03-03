@@ -101,7 +101,7 @@ export default function Login({ onLogin }) {
         }`} />
       </div>
 
-      {/* Top bar */}
+      {/* Top bar — transparent */}
       <div className="relative z-10 flex justify-between items-center px-5 pt-4 pb-2">
         {mode !== 'login' ? (
           <button onClick={() => { setMode('login'); setError('') }} className="press-scale flex items-center gap-1 py-1.5 px-2 -ml-2 rounded-xl">

@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, Sun, Moon } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
@@ -5,6 +6,18 @@ import { useTheme } from '../context/ThemeContext'
 export default function PageHeader({ title, back, logo, gradient, children }) {
   const { dark, toggle } = useTheme()
   const navigate = useNavigate()
+  const [scrolled, setScrolled] = useState(false)
+  const headerRef = useRef(null)
+
+  useEffect(() => {
+    const scrollContainer = headerRef.current?.closest('.overflow-y-auto')
+    if (!scrollContainer) return
+    const handleScroll = () => {
+      setScrolled(scrollContainer.scrollTop > 8)
+    }
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
+    return () => scrollContainer.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const renderTitle = () => {
     if (gradient && title === 'iBorcuha') {
@@ -21,9 +34,14 @@ export default function PageHeader({ title, back, logo, gradient, children }) {
   }
 
   return (
-    <header className={`flex items-center justify-between px-4 pt-4 pb-3 mb-1 sticky top-0 z-40 backdrop-blur-xl ${
-      dark ? 'bg-dark-900/60' : 'bg-[#f5f5f7]/70'
-    }`}>
+    <header
+      ref={headerRef}
+      className={`flex items-center justify-between px-4 pt-4 pb-3 mb-1 sticky top-0 z-40 transition-all duration-300 ${
+        scrolled
+          ? `backdrop-blur-xl ${dark ? 'bg-dark-900/70 border-b border-white/[0.06]' : 'bg-[#f5f5f7]/75 border-b border-black/[0.04] shadow-sm'}`
+          : 'bg-transparent'
+      }`}
+    >
       <div className="flex items-center gap-2 min-w-0">
         {back && (
           <button
