@@ -55,8 +55,8 @@ export default function Groups() {
   const inputCls = `
     w-full px-4 py-3 rounded-[16px] text-base outline-none
     ${dark
-      ? 'bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-accent'
-      : 'bg-white border border-black/[0.06] text-gray-900 placeholder-gray-400 focus:border-accent shadow-sm'
+      ? 'bg-white/[0.07] border border-white/[0.08] text-white placeholder-white/25 focus:border-purple-500/50 focus:bg-white/[0.1]'
+      : 'bg-white/70 border border-white/60 text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] shadow-sm'
     }
   `
 
@@ -96,12 +96,12 @@ export default function Groups() {
                 </div>
               </div>
               {/* Attendance toggle */}
-              <div className={`flex items-center justify-between mt-2 pt-2 ${dark ? 'border-t border-white/5' : 'border-t border-black/5'}`}>
+              <div className={`flex items-center justify-between mt-2 pt-2 ${dark ? 'border-t border-white/[0.06]' : 'border-t border-black/[0.05]'}`}>
                 <span className={`text-xs font-medium ${dark ? 'text-white/40' : 'text-gray-400'}`}>Учёт посещаемости</span>
                 <button
                   onClick={() => updateGroup(g.id, { attendanceEnabled: !g.attendanceEnabled })}
                   className={`relative w-10 h-5.5 rounded-full transition-colors press-scale ${
-                    g.attendanceEnabled ? 'bg-green-500' : dark ? 'bg-white/10' : 'bg-black/10'
+                    g.attendanceEnabled ? 'bg-green-500' : dark ? 'bg-white/[0.08]' : 'bg-black/[0.08]'
                   }`}
                 >
                   <div className={`absolute top-0.5 w-4.5 h-4.5 rounded-full bg-white shadow transition-transform ${

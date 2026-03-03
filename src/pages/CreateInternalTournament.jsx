@@ -100,8 +100,8 @@ export default function CreateInternalTournament() {
   const inputCls = `
     w-full px-4 py-3 rounded-[16px] text-base outline-none
     ${dark
-      ? 'bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-accent'
-      : 'bg-white border border-black/[0.06] text-gray-900 placeholder-gray-400 focus:border-accent shadow-sm'
+      ? 'bg-white/[0.07] border border-white/[0.08] text-white placeholder-white/25 focus:border-purple-500/50 focus:bg-white/[0.1]'
+      : 'bg-white/70 border border-white/60 text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] shadow-sm'
     }
   `
 
@@ -157,7 +157,7 @@ export default function CreateInternalTournament() {
                 onClick={addCategory}
                 disabled={!newWeightClass}
                 className={`px-4 py-3 rounded-[16px] font-bold press-scale ${
-                  newWeightClass ? 'bg-accent text-white' : dark ? 'bg-white/5 text-white/20' : 'bg-black/5 text-gray-300'
+                  newWeightClass ? 'bg-accent text-white' : dark ? 'bg-white/[0.05] text-white/20' : 'bg-white/40 text-gray-300'
                 }`}
               >
                 <Plus size={20} />
@@ -197,7 +197,7 @@ export default function CreateInternalTournament() {
                         if (!s) return null
                         return (
                           <div key={pid} className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] ${
-                            dark ? 'bg-white/5' : 'bg-black/5'
+                            dark ? 'bg-white/[0.06]' : 'bg-white/60'
                           }`}>
                             <Avatar name={s.name} size={16} src={s.avatar} />
                             <span className="font-medium">{s.name.split(' ')[0]}</span>
@@ -219,7 +219,7 @@ export default function CreateInternalTournament() {
             <div className="flex gap-3 mt-4">
               <button
                 onClick={() => setStep(1)}
-                className={`flex-1 py-3 rounded-[16px] font-bold press-scale ${dark ? 'bg-white/5 text-white' : 'bg-black/5 text-gray-800'}`}
+                className={`flex-1 py-3 rounded-[16px] font-bold press-scale ${dark ? 'bg-white/[0.06] border border-white/[0.06] text-white' : 'bg-white/70 border border-white/60 text-gray-800'}`}
               >
                 Назад
               </button>
@@ -292,7 +292,7 @@ export default function CreateInternalTournament() {
             <div className="flex gap-3 mt-4">
               <button
                 onClick={() => { setEditingCatIdx(null); setStep(2) }}
-                className={`flex-1 py-3 rounded-[16px] font-bold press-scale ${dark ? 'bg-white/5 text-white' : 'bg-black/5 text-gray-800'}`}
+                className={`flex-1 py-3 rounded-[16px] font-bold press-scale ${dark ? 'bg-white/[0.06] border border-white/[0.06] text-white' : 'bg-white/70 border border-white/60 text-gray-800'}`}
               >
                 Отмена
               </button>

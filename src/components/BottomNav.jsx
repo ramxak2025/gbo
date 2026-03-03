@@ -41,8 +41,11 @@ export default function BottomNav() {
     <nav
       className={`
         fixed bottom-0 left-0 right-0 z-50
-        backdrop-blur-xl border-t
-        ${dark ? 'bg-dark-900/80 border-white/10' : 'bg-white/90 border-black/[0.06] shadow-[0_-1px_12px_rgba(0,0,0,0.04)]'}
+        backdrop-blur-2xl border-t
+        ${dark
+          ? 'bg-dark-900/70 border-white/[0.06]'
+          : 'bg-white/60 border-white/40 shadow-[0_-4px_24px_rgba(0,0,0,0.06)]'
+        }
         pb-[env(safe-area-inset-bottom)]
       `}
     >
@@ -55,11 +58,19 @@ export default function BottomNav() {
               key={path}
               onClick={() => navigate(path)}
               className={`
-                flex flex-col items-center gap-0.5 px-2 py-1 press-scale
+                flex flex-col items-center gap-0.5 px-2 py-1 press-scale relative
                 transition-all duration-200
-                ${active ? 'text-accent' : dark ? 'text-white/40' : 'text-black/35'}
+                ${active
+                  ? 'text-purple-500'
+                  : dark ? 'text-white/30' : 'text-black/30'
+                }
               `}
             >
+              {active && (
+                <div className={`absolute -top-1 w-6 h-0.5 rounded-full ${
+                  dark ? 'bg-purple-400' : 'bg-purple-500'
+                }`} />
+              )}
               <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
               <span className={`text-[10px] leading-tight ${active ? 'font-bold' : 'font-medium'}`}>
                 {label}

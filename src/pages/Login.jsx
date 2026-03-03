@@ -82,7 +82,7 @@ export default function Login({ onLogin }) {
     w-full px-4 py-3 rounded-[14px] text-[15px] outline-none transition-all duration-200
     ${dark
       ? 'bg-white/[0.07] border border-white/[0.08] text-white placeholder-white/25 focus:border-purple-500/50 focus:bg-white/[0.1]'
-      : 'bg-white border border-black/[0.06] text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] shadow-sm'
+      : 'bg-white/80 border border-white/60 text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] shadow-sm'
     }
   `
 
@@ -109,7 +109,7 @@ export default function Login({ onLogin }) {
             <span className="text-sm font-medium">Назад</span>
           </button>
         ) : <div />}
-        <button onClick={toggle} className={`press-scale p-2.5 rounded-xl transition-colors ${dark ? 'bg-white/5' : 'bg-white shadow-sm'}`}>
+        <button onClick={toggle} className={`press-scale p-2.5 rounded-xl transition-colors ${dark ? 'bg-white/[0.06]' : 'bg-white/60 shadow-sm'}`}>
           {dark ? <Sun size={18} /> : <Moon size={18} />}
         </button>
       </div>
@@ -317,7 +317,7 @@ export default function Login({ onLogin }) {
                       </button>
                     </div>
 
-                    <div className={`h-px ${dark ? 'bg-white/5' : 'bg-black/[0.04]'}`} />
+                    <div className={`h-px ${dark ? 'bg-white/[0.06]' : 'bg-black/[0.04]'}`} />
 
                     <div className="relative">
                       <Building2 size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-300'}`} />
@@ -343,14 +343,14 @@ export default function Login({ onLogin }) {
                         className={iconInputCls()} />
                     </div>
 
-                    <div className={`h-px ${dark ? 'bg-white/5' : 'bg-black/[0.04]'}`} />
+                    <div className={`h-px ${dark ? 'bg-white/[0.06]' : 'bg-black/[0.04]'}`} />
 
                     {/* Consent */}
                     <button type="button" onClick={() => setReg(r => ({ ...r, consent: !r.consent }))}
                       className={`w-full flex items-start gap-3 px-3.5 py-3 rounded-[14px] text-left transition-all ${
                         reg.consent
                           ? dark ? 'bg-green-500/10 border border-green-500/20' : 'bg-green-50 border border-green-200'
-                          : dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white border border-black/[0.06]'
+                          : dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white/80 border border-white/60'
                       }`}>
                       {reg.consent
                         ? <CheckSquare size={18} className="text-green-500 shrink-0 mt-0.5" />

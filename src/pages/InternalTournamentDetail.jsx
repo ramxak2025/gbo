@@ -164,7 +164,7 @@ export default function InternalTournamentDetail() {
                     className={`px-4 py-2 rounded-full text-xs font-bold press-scale whitespace-nowrap flex items-center gap-1.5 transition-all ${
                       idx === activeCatIdx
                         ? 'bg-accent text-white'
-                        : dark ? 'bg-white/5 text-white/60' : 'bg-black/5 text-gray-500'
+                        : dark ? 'bg-white/[0.06] text-white/60 border border-white/[0.06]' : 'bg-white/60 text-gray-500 border border-white/60'
                     }`}
                   >
                     {catChampion && <Trophy size={11} className={idx === activeCatIdx ? 'text-yellow-200' : 'text-yellow-400'} />}

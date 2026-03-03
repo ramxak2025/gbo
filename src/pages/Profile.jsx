@@ -111,8 +111,8 @@ export default function Profile() {
         <div className="space-y-2 pt-2">
           <button
             onClick={() => navigate('/notifications')}
-            className={`w-full py-3.5 rounded-[16px] font-bold text-base press-scale flex items-center justify-center gap-2 ${
-              dark ? 'bg-white/5 text-white' : 'bg-white text-gray-900 shadow-sm border border-black/[0.06]'
+            className={`w-full py-3.5 rounded-[16px] font-bold text-base press-scale flex items-center justify-center gap-2 backdrop-blur-xl ${
+              dark ? 'bg-white/[0.06] border border-white/[0.07] text-white' : 'bg-white/70 border border-white/60 text-gray-900 shadow-sm'
             }`}
           >
             <Bell size={18} />
@@ -120,8 +120,8 @@ export default function Profile() {
           </button>
           <button
             onClick={handleLogout}
-            className={`w-full py-3.5 rounded-[16px] font-bold text-base press-scale flex items-center justify-center gap-2 ${
-              dark ? 'bg-white/5 text-white' : 'bg-white text-gray-900 shadow-sm border border-black/[0.06]'
+            className={`w-full py-3.5 rounded-[16px] font-bold text-base press-scale flex items-center justify-center gap-2 backdrop-blur-xl ${
+              dark ? 'bg-white/[0.06] border border-white/[0.07] text-white' : 'bg-white/70 border border-white/60 text-gray-900 shadow-sm'
             }`}
           >
             <LogOut size={18} />

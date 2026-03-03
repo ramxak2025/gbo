@@ -66,14 +66,14 @@ export default function InstallPrompt() {
       <div className="fixed inset-0 bg-black/40" onClick={handleDismiss} />
 
       {/* Popup */}
-      <div className="relative mx-auto max-w-lg bg-dark-700 border-t border-glass-border-dark rounded-t-3xl px-5 pt-3 pb-6 safe-area-bottom">
+      <div className="relative mx-auto max-w-lg bg-dark-800/95 backdrop-blur-2xl border-t border-white/[0.07] rounded-t-3xl px-5 pt-3 pb-6 safe-area-bottom">
         {/* Drag handle */}
         <div className="flex justify-center mb-3">
           <div className="w-10 h-1 rounded-full bg-white/20" />
         </div>
 
         {/* Close */}
-        <button onClick={handleDismiss} className="absolute top-3 right-4 p-1.5 rounded-full bg-white/10 text-white/50">
+        <button onClick={handleDismiss} className="absolute top-3 right-4 p-1.5 rounded-full bg-white/[0.08] text-white/50">
           <X size={16} />
         </button>
 
@@ -100,7 +100,7 @@ export default function InstallPrompt() {
           /* iOS instructions */
           <div className="space-y-3">
             <p className="text-white/70 text-sm">Чтобы установить приложение:</p>
-            <div className="flex items-center gap-3 bg-white/5 rounded-2xl p-3">
+            <div className="flex items-center gap-3 bg-white/[0.06] rounded-2xl p-3">
               <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
                 <Share size={18} className="text-blue-400" />
               </div>
@@ -108,7 +108,7 @@ export default function InstallPrompt() {
                 <span className="font-medium text-white">1.</span> Нажмите <span className="font-medium text-white">«Поделиться»</span> внизу Safari
               </p>
             </div>
-            <div className="flex items-center gap-3 bg-white/5 rounded-2xl p-3">
+            <div className="flex items-center gap-3 bg-white/[0.06] rounded-2xl p-3">
               <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
                 <PlusSquare size={18} className="text-blue-400" />
               </div>
@@ -121,7 +121,7 @@ export default function InstallPrompt() {
           /* Android / Other */
           <div className="space-y-3">
             <p className="text-white/70 text-sm">Чтобы установить приложение:</p>
-            <div className="flex items-center gap-3 bg-white/5 rounded-2xl p-3">
+            <div className="flex items-center gap-3 bg-white/[0.06] rounded-2xl p-3">
               <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
                 <MoreVertical size={18} className="text-blue-400" />
               </div>
@@ -129,7 +129,7 @@ export default function InstallPrompt() {
                 <span className="font-medium text-white">1.</span> Нажмите <span className="font-medium text-white">⋮</span> в правом верхнем углу браузера
               </p>
             </div>
-            <div className="flex items-center gap-3 bg-white/5 rounded-2xl p-3">
+            <div className="flex items-center gap-3 bg-white/[0.06] rounded-2xl p-3">
               <div className="w-9 h-9 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
                 <Download size={18} className="text-blue-400" />
               </div>

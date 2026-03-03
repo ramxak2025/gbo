@@ -139,7 +139,7 @@ export default function Attendance() {
           <button
             onClick={() => setTab('mark')}
             className={`px-3 py-1 rounded-full text-xs font-bold press-scale transition-all ${
-              tab === 'mark' ? 'bg-accent text-white' : dark ? 'bg-white/5 text-white/50' : 'bg-white text-gray-400 shadow-sm'
+              tab === 'mark' ? 'bg-accent text-white' : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-400 border border-white/60 shadow-sm'
             }`}
           >
             <Users size={12} className="inline mr-1" />Отметить
@@ -147,7 +147,7 @@ export default function Attendance() {
           <button
             onClick={() => setTab('stats')}
             className={`px-3 py-1 rounded-full text-xs font-bold press-scale transition-all ${
-              tab === 'stats' ? 'bg-accent text-white' : dark ? 'bg-white/5 text-white/50' : 'bg-white text-gray-400 shadow-sm'
+              tab === 'stats' ? 'bg-accent text-white' : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-400 border border-white/60 shadow-sm'
             }`}
           >
             <BarChart3 size={12} className="inline mr-1" />Статистика
@@ -181,7 +181,7 @@ export default function Attendance() {
                 {absentCount} нет
               </span>
               {unmarkedCount > 0 && (
-                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${dark ? 'bg-white/5 text-white/40' : 'bg-white text-gray-400 shadow-sm'}`}>
+                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${dark ? 'bg-white/[0.06] text-white/40 border border-white/[0.06]' : 'bg-white/70 text-gray-400 border border-white/60 shadow-sm'}`}>
                   {unmarkedCount} не отмечено
                 </span>
               )}
@@ -201,7 +201,7 @@ export default function Attendance() {
                         ? 'bg-green-500/10 border border-green-500/30'
                         : present === false
                           ? `${dark ? 'bg-red-500/5' : 'bg-red-50'} border border-red-500/20`
-                          : dark ? 'bg-white/[0.03] border border-white/[0.06]' : 'bg-black/[0.02] border border-black/[0.06]'
+                          : dark ? 'bg-white/[0.03] border border-white/[0.06]' : 'bg-white/50 border border-white/60'
                       }
                     `}
                   >
@@ -217,7 +217,7 @@ export default function Attendance() {
                         ? 'bg-green-500 text-white'
                         : present === false
                           ? 'bg-red-500/20 text-red-400'
-                          : dark ? 'bg-white/10 text-white/20' : 'bg-black/5 text-gray-300'
+                          : dark ? 'bg-white/[0.08] text-white/20' : 'bg-white/60 text-gray-300'
                     }`}>
                       {present === true ? <Check size={16} strokeWidth={3} /> : present === false ? <X size={16} strokeWidth={3} /> : <div className="w-2 h-2 rounded-full bg-current" />}
                     </div>
@@ -273,7 +273,7 @@ export default function Attendance() {
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-sm truncate">{s.name}</div>
                       <div className="flex items-center gap-2 mt-1">
-                        <div className={`h-1.5 rounded-full flex-1 ${dark ? 'bg-white/10' : 'bg-black/5'}`}>
+                        <div className={`h-1.5 rounded-full flex-1 ${dark ? 'bg-white/[0.08]' : 'bg-black/[0.06]'}`}>
                           <div
                             className={`h-full rounded-full transition-all ${
                               pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-red-500'

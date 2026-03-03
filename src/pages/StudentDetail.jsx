@@ -42,7 +42,7 @@ function AttendanceStats({ studentId, groupId, data, dark }) {
         </span>
       </div>
       <div className="flex items-center gap-3">
-        <div className={`h-2 rounded-full flex-1 ${dark ? 'bg-white/10' : 'bg-black/5'}`}>
+        <div className={`h-2 rounded-full flex-1 ${dark ? 'bg-white/[0.08]' : 'bg-black/[0.06]'}`}>
           <div
             className={`h-full rounded-full transition-all ${
               pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-red-500'
@@ -145,8 +145,8 @@ export default function StudentDetail() {
   const inputCls = `
     w-full px-4 py-3 rounded-[16px] text-base outline-none
     ${dark
-      ? 'bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-accent'
-      : 'bg-white border border-black/[0.06] text-gray-900 placeholder-gray-400 focus:border-accent shadow-sm'
+      ? 'bg-white/[0.07] border border-white/[0.08] text-white placeholder-white/25 focus:border-purple-500/50 focus:bg-white/[0.1]'
+      : 'bg-white/70 border border-white/60 text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] shadow-sm'
     }
   `
 
@@ -300,7 +300,7 @@ export default function StudentDetail() {
                 className={inputCls}
               />
             )}
-            <div className={`flex flex-wrap gap-3 pt-3 ${dark ? 'border-t border-white/5' : 'border-t border-black/5'}`}>
+            <div className={`flex flex-wrap gap-3 pt-3 ${dark ? 'border-t border-white/[0.06]' : 'border-t border-black/[0.05]'}`}>
               <DateButton label="Рождение" value={form.birthDate || ''} onChange={v => setForm(f => ({ ...f, birthDate: v }))} />
               <DateButton label="Тренируется с" value={form.trainingStartDate || ''} onChange={v => setForm(f => ({ ...f, trainingStartDate: v }))} />
               <DateButton label="Абонемент до" value={form.subscriptionExpiresAt ? new Date(form.subscriptionExpiresAt).toISOString().split('T')[0] : ''} onChange={v => setForm(f => ({ ...f, subscriptionExpiresAt: v }))} />

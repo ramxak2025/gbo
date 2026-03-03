@@ -134,7 +134,7 @@ function SuperAdminDash({ data, dark, navigate }) {
                 <button
                   onClick={() => setCityFilter('')}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-bold press-scale whitespace-nowrap flex items-center gap-1.5 transition-all ${
-                    !cityFilter ? 'bg-accent text-white' : dark ? 'bg-white/5 text-white/60' : 'bg-white text-gray-500 shadow-sm'
+                    !cityFilter ? 'bg-accent text-white' : dark ? 'bg-white/[0.06] text-white/60 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60 shadow-sm'
                   }`}
                 >Все города</button>
                 {cities.map(city => (
@@ -142,7 +142,7 @@ function SuperAdminDash({ data, dark, navigate }) {
                     key={city}
                     onClick={() => setCityFilter(cityFilter === city ? '' : city)}
                     className={`px-3.5 py-1.5 rounded-full text-xs font-bold press-scale whitespace-nowrap flex items-center gap-1.5 transition-all ${
-                      cityFilter === city ? 'bg-accent text-white' : dark ? 'bg-white/5 text-white/60' : 'bg-white text-gray-500 shadow-sm'
+                      cityFilter === city ? 'bg-accent text-white' : dark ? 'bg-white/[0.06] text-white/60 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60 shadow-sm'
                     }`}
                   ><MapPin size={11} />{city}</button>
                 ))}
@@ -154,7 +154,7 @@ function SuperAdminDash({ data, dark, navigate }) {
                   <button
                     onClick={() => setSportFilter('')}
                     className={`px-3.5 py-1.5 rounded-full text-xs font-bold press-scale whitespace-nowrap transition-all ${
-                      !sportFilter ? 'bg-purple-500 text-white' : dark ? 'bg-white/5 text-white/60' : 'bg-white text-gray-500 shadow-sm'
+                      !sportFilter ? 'bg-purple-500 text-white' : dark ? 'bg-white/[0.06] text-white/60 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60 shadow-sm'
                     }`}
                   >Все виды</button>
                   {sports.map(s => (
@@ -162,7 +162,7 @@ function SuperAdminDash({ data, dark, navigate }) {
                       key={s}
                       onClick={() => setSportFilter(sportFilter === s ? '' : s)}
                       className={`px-3.5 py-1.5 rounded-full text-xs font-bold press-scale whitespace-nowrap transition-all ${
-                        sportFilter === s ? 'bg-purple-500 text-white' : dark ? 'bg-white/5 text-white/60' : 'bg-white text-gray-500 shadow-sm'
+                        sportFilter === s ? 'bg-purple-500 text-white' : dark ? 'bg-white/[0.06] text-white/60 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60 shadow-sm'
                       }`}
                     >{getSportLabel(s)}</button>
                   ))}
@@ -254,7 +254,7 @@ function SuperAdminDash({ data, dark, navigate }) {
                     <div className="flex items-center gap-1 text-sm shrink-0 ml-2"><Users size={14} /><span>{count}</span></div>
                   </div>
                   {t.plainPassword && (
-                    <div className={`mt-1.5 pt-1.5 text-[10px] flex items-center gap-2 ${dark ? 'border-t border-white/5 text-white/25' : 'border-t border-black/5 text-gray-300'}`}>
+                    <div className={`mt-1.5 pt-1.5 text-[10px] flex items-center gap-2 ${dark ? 'border-t border-white/[0.06] text-white/25' : 'border-t border-black/[0.05] text-gray-300'}`}>
                       <span>Тел: {t.phone}</span>
                       <span>•</span>
                       <span>Пароль: {t.plainPassword}</span>
@@ -320,8 +320,8 @@ function TrainerDash({ auth, data, dark, navigate }) {
   const inputCls = `
     w-full px-4 py-3 rounded-[16px] text-base outline-none
     ${dark
-      ? 'bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-accent'
-      : 'bg-white border border-black/[0.06] text-gray-900 placeholder-gray-400 focus:border-accent shadow-sm'
+      ? 'bg-white/[0.07] border border-white/[0.08] text-white placeholder-white/25 focus:border-purple-500/50 focus:bg-white/[0.1]'
+      : 'bg-white/70 border border-white/60 text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] shadow-sm'
     }
   `
 
@@ -333,10 +333,10 @@ function TrainerDash({ auth, data, dark, navigate }) {
       <div className="px-4 space-y-4 slide-in stagger">
 
         {/* Hero — Club identity */}
-        <div className={`rounded-[28px] p-5 relative overflow-hidden ${
+        <div className={`rounded-[24px] p-5 relative overflow-hidden backdrop-blur-xl ${
           dark
-            ? 'bg-gradient-to-br from-accent/20 via-dark-700 to-purple-900/20 border border-white/10'
-            : 'bg-gradient-to-br from-red-50 via-white to-purple-50 border border-black/[0.05] shadow-sm'
+            ? 'bg-gradient-to-br from-purple-500/10 via-white/[0.04] to-accent/10 border border-white/[0.07]'
+            : 'bg-gradient-to-br from-purple-50/80 via-white/70 to-red-50/80 border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
         }`}>
           <div className="flex items-center gap-4">
             <Avatar name={trainer?.name || 'T'} src={trainer?.avatar} size={56} />
@@ -583,10 +583,10 @@ function StudentDash({ auth, data, dark, navigate }) {
       <div className="px-4 space-y-4 slide-in stagger">
 
         {/* Hero — Student identity + Club info */}
-        <div className={`rounded-[28px] p-5 relative overflow-hidden ${
+        <div className={`rounded-[24px] p-5 relative overflow-hidden backdrop-blur-xl ${
           dark
-            ? 'bg-gradient-to-br from-accent/15 via-dark-700 to-purple-900/20 border border-white/10'
-            : 'bg-gradient-to-br from-red-50 via-white to-purple-50 border border-black/[0.05] shadow-sm'
+            ? 'bg-gradient-to-br from-purple-500/10 via-white/[0.04] to-accent/10 border border-white/[0.07]'
+            : 'bg-gradient-to-br from-purple-50/80 via-white/70 to-red-50/80 border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
         }`}>
           <div className="flex items-center gap-4">
             <Avatar name={student?.name || '?'} src={student?.avatar} size={60} />
@@ -616,7 +616,7 @@ function StudentDash({ auth, data, dark, navigate }) {
           </div>
           {/* Trainer info */}
           {trainer && (
-            <div className={`mt-3 pt-3 flex items-center gap-2 ${dark ? 'border-t border-white/5' : 'border-t border-black/[0.05]'}`}>
+            <div className={`mt-3 pt-3 flex items-center gap-2 ${dark ? 'border-t border-white/[0.06]' : 'border-t border-black/[0.05]'}`}>
               <Shield size={12} className={dark ? 'text-white/30' : 'text-gray-400'} />
               <span className={`text-xs ${dark ? 'text-white/40' : 'text-gray-400'}`}>
                 Тренер: <span className="font-semibold">{trainer.name}</span>

@@ -10,7 +10,7 @@ export default function PageHeader({ title, back, logo, gradient, children }) {
     if (gradient && title === 'iBorcuha') {
       return (
         <h1 className="text-lg font-bold uppercase tracking-tight truncate">
-          <span className={dark ? 'text-white/70' : 'text-gray-400'}>i</span>
+          <span className={dark ? 'text-white/60' : 'text-gray-400'}>i</span>
           <span className="bg-gradient-to-r from-purple-400 via-violet-500 to-indigo-500 bg-clip-text text-transparent">
             Borcuha
           </span>
@@ -21,7 +21,9 @@ export default function PageHeader({ title, back, logo, gradient, children }) {
   }
 
   return (
-    <header className={`flex items-center justify-between px-4 py-3 sticky top-0 z-40 backdrop-blur-xl ${dark ? '' : 'bg-[#f5f5f7]/80'}`}>
+    <header className={`flex items-center justify-between px-4 py-3 sticky top-0 z-40 backdrop-blur-xl ${
+      dark ? 'bg-dark-900/60' : 'bg-[#f5f5f7]/70'
+    }`}>
       <div className="flex items-center gap-2 min-w-0">
         {back && (
           <button
@@ -38,8 +40,8 @@ export default function PageHeader({ title, back, logo, gradient, children }) {
       </div>
       <div className="flex items-center gap-2 shrink-0">
         {children}
-        <button onClick={toggle} className="press-scale p-2 rounded-full">
-          {dark ? <Sun size={20} /> : <Moon size={20} />}
+        <button onClick={toggle} className={`press-scale p-2.5 rounded-xl transition-colors ${dark ? 'bg-white/[0.05]' : 'bg-white/60 shadow-sm'}`}>
+          {dark ? <Sun size={18} /> : <Moon size={18} />}
         </button>
       </div>
     </header>

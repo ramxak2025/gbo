@@ -84,7 +84,7 @@ export default function Team() {
   }))
   const ungrouped = filteredStudents.filter(s => !s.groupId || !myGroups.find(g => g.id === s.groupId))
 
-  const inputCls = `w-full pl-10 pr-4 py-2.5 rounded-[16px] text-sm outline-none ${dark ? 'bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-accent' : 'bg-white border border-black/[0.06] text-gray-900 placeholder-gray-400 focus:border-accent shadow-sm'}`
+  const inputCls = `w-full pl-10 pr-4 py-2.5 rounded-[16px] text-sm outline-none ${dark ? 'bg-white/[0.07] border border-white/[0.08] text-white placeholder-white/25 focus:border-purple-500/50 focus:bg-white/[0.1]' : 'bg-white/70 border border-white/60 text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] shadow-sm'}`
 
   return (
     <Layout>
@@ -98,9 +98,9 @@ export default function Team() {
           <input type="text" placeholder="Поиск по имени..." value={search} onChange={e => setSearch(e.target.value)} className={inputCls} />
         </div>
         {isAdmin && (
-          <div className={`flex rounded-[16px] p-1 ${dark ? 'bg-white/5' : 'bg-black/[0.05]'}`}>
+          <div className={`flex rounded-[16px] p-1 ${dark ? 'bg-white/[0.06] border border-white/[0.06]' : 'bg-white/50 border border-white/60'}`}>
             {[{ key: 'students', label: `Спортсмены (${filteredStudents.length})` }, { key: 'trainers', label: `Тренеры (${filteredTrainers.length})` }].map(({ key, label }) => (
-              <button key={key} onClick={() => setTab(key)} className={`flex-1 py-2 rounded-[12px] text-xs font-semibold transition-all ${tab === key ? (dark ? 'bg-white/10 text-white' : 'bg-white text-gray-900 shadow-sm') : (dark ? 'text-white/40' : 'text-gray-400')}`}>{label}</button>
+              <button key={key} onClick={() => setTab(key)} className={`flex-1 py-2 rounded-[12px] text-xs font-semibold transition-all ${tab === key ? (dark ? 'bg-white/[0.12] text-white' : 'bg-white text-gray-900 shadow-sm') : (dark ? 'text-white/40' : 'text-gray-400')}`}>{label}</button>
             ))}
           </div>
         )}
@@ -187,7 +187,7 @@ function StudentTeam({ auth, data, dark, navigate, search, setSearch }) {
 
   const filtered = teammates.filter(s => s.name.toLowerCase().includes(search.toLowerCase()))
 
-  const inputCls = `w-full pl-10 pr-4 py-2.5 rounded-[16px] text-sm outline-none ${dark ? 'bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-accent' : 'bg-white border border-black/[0.06] text-gray-900 placeholder-gray-400 focus:border-accent shadow-sm'}`
+  const inputCls = `w-full pl-10 pr-4 py-2.5 rounded-[16px] text-sm outline-none ${dark ? 'bg-white/[0.07] border border-white/[0.08] text-white placeholder-white/25 focus:border-purple-500/50 focus:bg-white/[0.1]' : 'bg-white/70 border border-white/60 text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] shadow-sm'}`
 
   const cleanPhone = (phone) => phone?.replace(/[^\d+]/g, '') || ''
 
@@ -229,10 +229,10 @@ function StudentTeam({ auth, data, dark, navigate, search, setSearch }) {
       {/* Teammate detail modal */}
       {selected && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6" onClick={() => setSelected(null)}>
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm modal-overlay" />
           <div
             onClick={e => e.stopPropagation()}
-            className={`relative w-full max-w-xs rounded-[28px] overflow-hidden slide-in ${dark ? 'bg-dark-800' : 'bg-white'}`}
+            className={`relative w-full max-w-xs rounded-[28px] overflow-hidden slide-in backdrop-blur-2xl ${dark ? 'bg-dark-800/95 border border-white/[0.07]' : 'bg-white/90 border border-white/60 shadow-xl'}`}
           >
             <div className="flex justify-center pt-6 pb-4">
               <Avatar name={selected.name} src={selected.avatar} size={120} className="shadow-xl" />
@@ -270,7 +270,7 @@ function StudentTeam({ auth, data, dark, navigate, search, setSearch }) {
                 )}
                 <button
                   onClick={() => setSelected(null)}
-                  className={`flex-1 py-2.5 rounded-[14px] font-bold text-sm flex items-center justify-center gap-2 press-scale ${dark ? 'bg-white/10' : 'bg-black/[0.05]'}`}
+                  className={`flex-1 py-2.5 rounded-[14px] font-bold text-sm flex items-center justify-center gap-2 press-scale ${dark ? 'bg-white/[0.08] border border-white/[0.08]' : 'bg-white/70 border border-white/60 shadow-sm'}`}
                 >
                   <X size={16} />
                   Закрыть

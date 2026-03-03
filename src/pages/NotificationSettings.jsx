@@ -108,7 +108,7 @@ export default function NotificationSettings() {
       onClick={() => onChange(!value)}
       className={`
         relative w-12 h-7 rounded-full press-scale transition-colors duration-200
-        ${value ? 'bg-accent' : dark ? 'bg-white/10' : 'bg-black/10'}
+        ${value ? 'bg-accent' : dark ? 'bg-white/[0.08]' : 'bg-black/[0.08]'}
       `}
     >
       <div className={`
@@ -134,7 +134,7 @@ export default function NotificationSettings() {
         <GlassCard>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${pushEnabled ? 'bg-accent/20' : dark ? 'bg-white/5' : 'bg-black/5'}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${pushEnabled ? 'bg-accent/20' : dark ? 'bg-white/[0.06]' : 'bg-white/60'}`}>
                 {pushEnabled ? <Bell size={20} className="text-accent" /> : <BellOff size={20} className={dark ? 'text-white/30' : 'text-gray-400'} />}
               </div>
               <div>

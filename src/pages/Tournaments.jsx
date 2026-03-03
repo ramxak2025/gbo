@@ -124,7 +124,7 @@ export default function Tournaments() {
                     )}
                     {!t.coverImage && (
                       <div className={`w-full h-28 rounded-[16px] mb-3 flex items-center justify-center ${
-                        dark ? 'bg-white/5' : 'bg-black/[0.04]'
+                        dark ? 'bg-white/[0.05]' : 'bg-white/50'
                       }`}>
                         <span className="text-4xl font-black italic text-accent opacity-30">BJJ</span>
                       </div>
@@ -143,7 +143,7 @@ export default function Tournaments() {
                       </div>
                       {isPast && (
                         <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                          dark ? 'bg-white/10 text-white/40' : 'bg-black/[0.05] text-gray-400'
+                          dark ? 'bg-white/[0.08] text-white/40' : 'bg-white/60 text-gray-400 border border-white/60'
                         }`}>
                           Прошёл
                         </span>

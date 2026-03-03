@@ -24,7 +24,7 @@ export default function DateButton({ label, value, onChange, className = '' }) {
           relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium press-scale transition-all cursor-pointer
           ${display
             ? dark ? 'bg-accent/15 text-accent border border-accent/30' : 'bg-accent/10 text-accent border border-accent/20'
-            : dark ? 'bg-white/5 text-white/40 border border-white/10' : 'bg-white text-gray-400 border border-black/[0.06] shadow-sm'
+            : dark ? 'bg-white/[0.06] text-white/40 border border-white/[0.08]' : 'bg-white/70 text-gray-400 border border-white/60 shadow-sm'
           }
         `}
       >

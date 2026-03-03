@@ -100,8 +100,8 @@ export default function TournamentDetail() {
   const inputCls = `
     w-full px-4 py-3 rounded-[16px] text-base outline-none
     ${dark
-      ? 'bg-white/5 border border-white/10 text-white placeholder-white/30 focus:border-accent'
-      : 'bg-white border border-black/[0.06] text-gray-900 placeholder-gray-400 focus:border-accent shadow-sm'
+      ? 'bg-white/[0.07] border border-white/[0.08] text-white placeholder-white/25 focus:border-purple-500/50 focus:bg-white/[0.1]'
+      : 'bg-white/70 border border-white/60 text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] shadow-sm'
     }
   `
 
@@ -124,7 +124,7 @@ export default function TournamentDetail() {
         {tournament.coverImage ? (
           <img src={tournament.coverImage} alt={tournament.title} className="w-full h-52 object-cover rounded-[24px]" />
         ) : (
-          <div className={`w-full h-44 rounded-[24px] flex items-center justify-center ${dark ? 'bg-white/5' : 'bg-black/[0.04]'}`}>
+          <div className={`w-full h-44 rounded-[24px] flex items-center justify-center ${dark ? 'bg-white/[0.05]' : 'bg-white/50'}`}>
             <span className="text-5xl font-black italic text-accent opacity-20">FIGHT</span>
           </div>
         )}
@@ -203,7 +203,7 @@ export default function TournamentDetail() {
       <Modal open={editing} onClose={() => setEditing(false)} title="Редактировать турнир">
         {form && (
           <form onSubmit={saveEdit} className="space-y-3">
-            <label className={`block w-full h-32 rounded-[16px] cursor-pointer press-scale flex items-center justify-center overflow-hidden ${dark ? 'bg-white/5 border border-dashed border-white/20' : 'bg-black/[0.04] border border-dashed border-black/[0.15]'}`}>
+            <label className={`block w-full h-32 rounded-[16px] cursor-pointer press-scale flex items-center justify-center overflow-hidden ${dark ? 'bg-white/[0.05] border border-dashed border-white/[0.15]' : 'bg-white/50 border border-dashed border-black/[0.1]'}`}>
               {form.coverImage
                 ? <img src={form.coverImage} alt="Cover" className="w-full h-full object-cover" />
                 : <div className="flex flex-col items-center gap-1"><Camera size={24} className={dark ? 'text-white/30' : 'text-gray-400'} /><span className={`text-xs ${dark ? 'text-white/30' : 'text-gray-400'}`}>Обложка</span></div>

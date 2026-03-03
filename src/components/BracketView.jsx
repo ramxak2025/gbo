@@ -19,7 +19,7 @@ function MatchCard({ match, students, canEdit, onSelectWinner, dark }) {
           ${isTop ? 'rounded-t-xl' : 'rounded-b-xl'}
           ${isWinner ? 'bg-accent/20 border-accent' : ''}
           ${active ? 'press-scale cursor-pointer' : ''}
-          ${dark ? 'hover:bg-white/5' : 'hover:bg-black/5'}
+          ${dark ? 'hover:bg-white/[0.06]' : 'hover:bg-black/[0.04]'}
         `}
       >
         {student ? (
@@ -42,11 +42,11 @@ function MatchCard({ match, students, canEdit, onSelectWinner, dark }) {
   return (
     <div className={`
       rounded-xl overflow-hidden border min-w-[160px]
-      ${dark ? 'bg-dark-700 border-white/10' : 'bg-white border-black/10'}
+      ${dark ? 'bg-white/[0.04] border-white/[0.08] backdrop-blur-xl' : 'bg-white/70 border-white/60 shadow-sm'}
       ${match.winner ? 'opacity-90' : ''}
     `}>
       <PlayerSlot student={s1} studentId={match.s1} isWinner={match.winner === match.s1} isTop />
-      <div className={`h-px ${dark ? 'bg-white/10' : 'bg-black/10'}`} />
+      <div className={`h-px ${dark ? 'bg-white/[0.08]' : 'bg-black/[0.06]'}`} />
       <PlayerSlot student={s2} studentId={match.s2} isWinner={match.winner === match.s2} isTop={false} />
     </div>
   )
