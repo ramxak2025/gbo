@@ -96,6 +96,36 @@ export const WEIGHT_CLASSES = [
   'До 82 кг', 'До 90 кг', 'До 100 кг', 'Свыше 100 кг', 'Абсолютка',
 ]
 
+// Standard tournament seeding order — distributes byes evenly across bracket
+function generateSeedOrder(size) {
+  if (size === 1) return [0]
+  if (size === 2) return [0, 1]
+  const half = generateSeedOrder(size / 2)
+  const result = []
+  for (const pos of half) {
+    result.push(pos)
+    result.push(size - 1 - pos)
+  }
+  return result
+}
+
+// Check if a match position is completely dead (no real participants will ever arrive)
+function isMatchDead(rounds, roundIdx, matchIdx) {
+  const match = rounds[roundIdx]?.[matchIdx]
+  if (!match) return true
+  if (roundIdx === 0) return !match.s1 && !match.s2
+  const feeder1 = matchIdx * 2
+  const feeder2 = matchIdx * 2 + 1
+  return isMatchDead(rounds, roundIdx - 1, feeder1) && isMatchDead(rounds, roundIdx - 1, feeder2)
+}
+
+// Check if a specific slot in a match will never be filled (feeder match is dead)
+function isSlotDead(rounds, roundIdx, matchIdx, slot) {
+  if (roundIdx === 0) return true // Round 1 null = genuine bye
+  const feederIdx = matchIdx * 2 + (slot === 's2' ? 1 : 0)
+  return isMatchDead(rounds, roundIdx - 1, feederIdx)
+}
+
 // Generate single elimination bracket
 export function generateBracket(participantIds) {
   const n = participantIds.length
@@ -107,11 +137,11 @@ export function generateBracket(participantIds) {
   const bracketSize = Math.pow(2, Math.ceil(Math.log2(n)))
   const numRounds = Math.ceil(Math.log2(n))
 
-  // Pad with nulls for byes
-  const slots = [...shuffled]
-  while (slots.length < bracketSize) slots.push(null)
+  // Place participants using standard seeding order (distributes byes evenly)
+  const seedOrder = generateSeedOrder(bracketSize)
+  const slots = seedOrder.map(pos => shuffled[pos] || null)
 
-  // Build rounds — first create all empty
+  // Build rounds
   const rounds = []
 
   // Round 1: resolve bye matches immediately
@@ -134,7 +164,7 @@ export function generateBracket(participantIds) {
     rounds.push(round)
   }
 
-  // Propagate all bye winners through the entire bracket
+  // Propagate bye winners, but only auto-resolve when the empty slot is genuinely dead
   let changed = true
   while (changed) {
     changed = false
@@ -150,11 +180,11 @@ export function generateBracket(participantIds) {
             changed = true
           }
         }
-        // Auto-resolve: one real opponent, other side empty (bye)
-        if (!match.winner && match.s1 && !match.s2) {
+        // Auto-resolve only if the empty slot is a genuine dead bye
+        if (!match.winner && match.s1 && !match.s2 && isSlotDead(rounds, r, m, 's2')) {
           match.winner = match.s1
           changed = true
-        } else if (!match.winner && !match.s1 && match.s2) {
+        } else if (!match.winner && !match.s1 && match.s2 && isSlotDead(rounds, r, m, 's1')) {
           match.winner = match.s2
           changed = true
         }
@@ -165,12 +195,12 @@ export function generateBracket(participantIds) {
   return { rounds, participants: shuffled }
 }
 
-// Propagate winner to next round (with chained bye auto-resolve)
+// Propagate winner to next round
 export function setMatchWinner(brackets, roundIdx, matchIdx, winnerId) {
   const rounds = brackets.rounds.map(r => r.map(m => ({ ...m })))
   rounds[roundIdx][matchIdx].winner = winnerId
 
-  // Propagate through the bracket, auto-resolving byes
+  // Propagate through the bracket, only auto-resolve genuine dead-slot byes
   let r = roundIdx
   let m = matchIdx
   let w = winnerId
@@ -179,14 +209,13 @@ export function setMatchWinner(brackets, roundIdx, matchIdx, winnerId) {
     const slot = m % 2 === 0 ? 's1' : 's2'
     rounds[r + 1][nextM][slot] = w
 
-    // Check if next match can auto-resolve (opponent is null = bye)
     const next = rounds[r + 1][nextM]
-    if (!next.winner && next.s1 && !next.s2) {
+    if (!next.winner && next.s1 && !next.s2 && isSlotDead(rounds, r + 1, nextM, 's2')) {
       next.winner = next.s1
       w = next.s1
       r++
       m = nextM
-    } else if (!next.winner && !next.s1 && next.s2) {
+    } else if (!next.winner && !next.s1 && next.s2 && isSlotDead(rounds, r + 1, nextM, 's1')) {
       next.winner = next.s2
       w = next.s2
       r++

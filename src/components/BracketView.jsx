@@ -8,6 +8,7 @@ function MatchCard({ match, students, canEdit, onSelectWinner, dark, sportType }
   const isBye = !match.s1 || !match.s2
 
   if (isBye && match.winner) return null // Don't render bye matches
+  if (!match.s1 && !match.s2) return null // Don't render empty/dead matches
 
   const victoryLabel = match.victoryType ? getVictoryLabel(sportType, match.victoryType) : null
 
@@ -75,9 +76,13 @@ export default function BracketView({ brackets, students, canEdit, onSelectWinne
     return names
   }
 
-  // Filter out rounds where all matches are byes
+  // Filter out byes, dead matches, and empty rounds
   const visibleRounds = brackets.rounds.map((round, ri) => ({
-    matches: round.filter(m => !((!m.s1 || !m.s2) && m.winner)),
+    matches: round.filter(m => {
+      if (!m.s1 && !m.s2) return false // dead/empty match
+      if ((!m.s1 || !m.s2) && m.winner) return false // resolved bye
+      return true
+    }),
     index: ri,
   })).filter(r => r.matches.length > 0)
 
