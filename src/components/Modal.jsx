@@ -12,7 +12,7 @@ export default function Modal({ open, onClose, title, children }) {
         onClick={e => e.stopPropagation()}
         className={`
           relative w-full max-w-lg max-h-[85vh] overflow-y-auto scrollbar-hide
-          rounded-t-[32px] p-5 pt-3 modal-sheet backdrop-blur-2xl
+          rounded-t-[32px] p-5 pt-3 pb-[calc(env(safe-area-inset-bottom)+100px)] modal-sheet backdrop-blur-2xl
           ${dark ? 'bg-dark-800/95 text-white' : 'bg-[#f5f5f7]/95 text-gray-900'}
         `}
       >
