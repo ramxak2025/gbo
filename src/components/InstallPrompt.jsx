@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Share, PlusSquare, MoreVertical, Download, Smartphone, WifiOff, AppWindow } from 'lucide-react'
+import { X, Share, PlusSquare, MoreVertical, Download, WifiOff, AppWindow } from 'lucide-react'
 
 function detectPlatform() {
   const ua = navigator.userAgent || ''
@@ -61,7 +61,6 @@ export default function InstallPrompt() {
   if (!visible) return null
 
   const badges = [
-    { icon: Smartphone, label: 'Как приложение' },
     { icon: WifiOff, label: 'Работает офлайн' },
     { icon: AppWindow, label: 'Без App Store' },
   ]
@@ -77,8 +76,6 @@ export default function InstallPrompt() {
     { num: '2', text: 'Пролистайте вниз', accent: null, icon: null, hint: 'в открывшемся меню' },
     { num: '3', text: 'Нажмите', accent: 'На главный экран', icon: Download, hint: null },
   ]
-
-  const steps = platform === 'ios' ? iosSteps : androidSteps
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-end justify-center">
@@ -133,18 +130,50 @@ export default function InstallPrompt() {
               ))}
             </div>
 
-            {/* Install button or steps */}
-            {deferredPrompt ? (
-              <button
-                onClick={handleInstall}
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-sm press-scale shadow-lg shadow-purple-600/25 flex items-center justify-center gap-2.5 mb-4"
-              >
-                <Download size={18} />
-                Установить
-              </button>
+            {/* Android: install button + fallback steps; iOS: steps only */}
+            {platform === 'android' ? (
+              <div className="mb-4">
+                <button
+                  onClick={deferredPrompt ? handleInstall : undefined}
+                  className={`w-full py-3.5 rounded-2xl text-white font-bold text-sm press-scale flex items-center justify-center gap-2.5 shadow-lg mb-3 ${
+                    deferredPrompt
+                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 shadow-purple-600/25'
+                      : 'bg-white/[0.08] shadow-none'
+                  }`}
+                  disabled={!deferredPrompt}
+                >
+                  <Download size={18} />
+                  {deferredPrompt ? 'Скачать приложение' : 'Ожидание...'}
+                </button>
+                {!deferredPrompt && (
+                  <div className="space-y-2.5">
+                    <div className="text-white/30 text-[11px] text-center mb-2">Или установите вручную:</div>
+                    {androidSteps.map((step, i) => (
+                      <div
+                        key={step.num}
+                        className="flex items-center gap-3 transition-all duration-500"
+                        style={{
+                          opacity: animateIn ? 1 : 0,
+                          transform: animateIn ? 'translateY(0)' : 'translateY(12px)',
+                          transitionDelay: animateIn ? `${200 + i * 100}ms` : '0ms',
+                        }}
+                      >
+                        <div className="w-7 h-7 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
+                          <span className="text-purple-400 text-xs font-bold">{step.num}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-white/70 text-[13px]">{step.text}</span>
+                          {step.icon && <step.icon size={14} className="text-blue-400 shrink-0" />}
+                          {step.accent && <span className="text-white text-[13px] font-semibold">{step.accent}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="space-y-2.5 mb-4">
-                {steps.map((step, i) => (
+                {iosSteps.map((step, i) => (
                   <div
                     key={step.num}
                     className="flex items-center gap-3 transition-all duration-500"
@@ -169,7 +198,7 @@ export default function InstallPrompt() {
 
             {/* Bottom note */}
             <div className="text-center">
-              <p className="text-white/20 text-[10px]">Приложение бесплатное и не занимает память</p>
+              <p className="text-white/20 text-[10px]">Приложение бесплатное и не занимает много места</p>
             </div>
           </div>
         </div>
