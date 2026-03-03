@@ -6,7 +6,7 @@ const DataContext = createContext()
 const EMPTY_DATA = {
   users: [], groups: [], students: [], transactions: [],
   tournaments: [], news: [], tournamentRegistrations: [], authorInfo: {},
-  internalTournaments: [], attendance: [],
+  internalTournaments: [], attendance: [], pendingRegistrations: [],
 }
 
 export function DataProvider({ children }) {

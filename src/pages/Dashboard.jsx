@@ -1,9 +1,10 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords, MapPin, Megaphone, Plus, ClipboardList, Award, ChevronRight, Dumbbell, CreditCard, Shield } from 'lucide-react'
+import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords, MapPin, Megaphone, Plus, ClipboardList, Award, ChevronRight, Dumbbell, CreditCard, Shield, UserPlus, Check, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
+import { api } from '../utils/api'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
@@ -78,9 +79,39 @@ export default function Dashboard() {
 
 /* ======================== SUPER ADMIN ======================== */
 function SuperAdminDash({ data, dark, navigate }) {
+  const { reload } = useData()
   const allTrainers = data.users.filter(u => u.role === 'trainer' && !u.isDemo)
+  const pendingRegs = data.pendingRegistrations || []
   const [cityFilter, setCityFilter] = useState('')
   const [sportFilter, setSportFilter] = useState('')
+  const [processing, setProcessing] = useState(null)
+
+  const handleApprove = async (id) => {
+    if (processing) return
+    setProcessing(id)
+    try {
+      await api.approveRegistration(id)
+      reload()
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setProcessing(null)
+    }
+  }
+
+  const handleReject = async (id) => {
+    if (processing) return
+    if (!confirm('Отклонить заявку?')) return
+    setProcessing(id)
+    try {
+      await api.rejectRegistration(id)
+      reload()
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setProcessing(null)
+    }
+  }
 
   const cities = [...new Set(allTrainers.filter(t => t.city).map(t => t.city))].sort()
   const sports = [...new Set(allTrainers.filter(t => t.sportType).map(t => t.sportType))]
@@ -151,6 +182,59 @@ function SuperAdminDash({ data, dark, navigate }) {
             <div className="text-3xl font-black mt-1">{filteredStudents.length}</div>
           </GlassCard>
         </div>
+        {/* Pending registrations */}
+        {pendingRegs.length > 0 && (
+          <div>
+            <SectionTitle dark={dark}>
+              <span className="flex items-center gap-1.5">
+                <UserPlus size={12} className="text-orange-400" />
+                Заявки на регистрацию
+                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-orange-500 text-white text-[10px] font-bold">{pendingRegs.length}</span>
+              </span>
+            </SectionTitle>
+            <div className="space-y-2">
+              {pendingRegs.map(r => (
+                <GlassCard key={r.id} className={`border ${dark ? 'border-orange-500/20' : 'border-orange-200'}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold truncate">{r.name}</div>
+                      <div className={`text-xs ${dark ? 'text-white/50' : 'text-gray-500'}`}>
+                        {r.clubName || 'Без названия'}
+                      </div>
+                      <div className={`text-xs mt-1 flex flex-wrap gap-x-2 gap-y-0.5 ${dark ? 'text-white/35' : 'text-gray-400'}`}>
+                        <span>{r.phone}</span>
+                        {r.sportType && <span>{getSportLabel(r.sportType)}</span>}
+                        {r.city && <span className="flex items-center gap-0.5"><MapPin size={9} />{r.city}</span>}
+                      </div>
+                      {r.plainPassword && (
+                        <div className={`text-[10px] mt-1 ${dark ? 'text-white/25' : 'text-gray-300'}`}>
+                          Пароль: {r.plainPassword}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => handleApprove(r.id)}
+                        disabled={processing === r.id}
+                        className="w-9 h-9 rounded-full bg-green-500/20 flex items-center justify-center press-scale"
+                      >
+                        <Check size={18} className="text-green-400" />
+                      </button>
+                      <button
+                        onClick={() => handleReject(r.id)}
+                        disabled={processing === r.id}
+                        className="w-9 h-9 rounded-full bg-red-500/20 flex items-center justify-center press-scale"
+                      >
+                        <X size={18} className="text-red-400" />
+                      </button>
+                    </div>
+                  </div>
+                </GlassCard>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div>
           <SectionTitle dark={dark}>Клубы</SectionTitle>
           <div className="space-y-2">

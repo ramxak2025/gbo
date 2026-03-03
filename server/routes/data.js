@@ -50,7 +50,7 @@ function mapAuthor(a) {
 // GET all data (role-aware)
 router.get('/', authMiddleware, async (req, res) => {
   const { userId, role, studentId } = req.user
-  const [users, groups, students, transactions, tournaments, news, regs, author, intTournaments, attendance] = await Promise.all([
+  const queries = [
     pool.query('SELECT * FROM users'),
     pool.query('SELECT * FROM groups'),
     pool.query('SELECT * FROM students'),
@@ -61,7 +61,11 @@ router.get('/', authMiddleware, async (req, res) => {
     pool.query('SELECT * FROM author_info WHERE id = 1'),
     pool.query('SELECT * FROM internal_tournaments ORDER BY created_at DESC'),
     pool.query('SELECT * FROM attendance ORDER BY date DESC'),
-  ])
+  ]
+  if (role === 'superadmin') queries.push(pool.query("SELECT * FROM pending_registrations WHERE status = 'pending' ORDER BY created_at DESC"))
+  const results = await Promise.all(queries)
+  const [users, groups, students, transactions, tournaments, news, regs, author, intTournaments, attendance] = results
+  const pendingRegs = results[10] || { rows: [] }
 
   const isSuperadmin = role === 'superadmin'
   // Superadmin sees passwords + no demo data; demo users see only their demo data
@@ -84,6 +88,13 @@ router.get('/', authMiddleware, async (req, res) => {
     authorInfo: mapAuthor(author.rows[0]),
     internalTournaments: filteredIntTournaments.map(mapInternalTournament),
     attendance: attendance.rows.map(mapAttendance),
+    ...(isSuperadmin ? {
+      pendingRegistrations: pendingRegs.rows.map(r => ({
+        id: r.id, name: r.name, phone: r.phone, clubName: r.club_name,
+        sportType: r.sport_type, city: r.city, plainPassword: r.plain_password,
+        status: r.status, createdAt: r.created_at,
+      }))
+    } : {}),
   })
 })
 
@@ -341,6 +352,41 @@ router.put('/internal-tournaments/:id', authMiddleware, async (req, res) => {
 
 router.delete('/internal-tournaments/:id', authMiddleware, async (req, res) => {
   await pool.query('DELETE FROM internal_tournaments WHERE id = $1', [req.params.id])
+  res.json({ ok: true })
+})
+
+// --- Pending Registrations (superadmin) ---
+router.get('/registrations', authMiddleware, async (req, res) => {
+  if (req.user.role !== 'superadmin') return res.status(403).json({ error: 'Нет доступа' })
+  const { rows } = await pool.query("SELECT * FROM pending_registrations ORDER BY created_at DESC")
+  res.json(rows.map(r => ({
+    id: r.id, name: r.name, phone: r.phone, clubName: r.club_name,
+    sportType: r.sport_type, city: r.city, plainPassword: r.plain_password,
+    status: r.status, createdAt: r.created_at,
+  })))
+})
+
+router.post('/registrations/:id/approve', authMiddleware, async (req, res) => {
+  if (req.user.role !== 'superadmin') return res.status(403).json({ error: 'Нет доступа' })
+  const { rows: [reg] } = await pool.query('SELECT * FROM pending_registrations WHERE id = $1', [req.params.id])
+  if (!reg) return res.status(404).json({ error: 'Заявка не найдена' })
+  if (reg.status !== 'pending') return res.status(400).json({ error: 'Заявка уже обработана' })
+
+  // Create trainer
+  const id = genId()
+  await pool.query(
+    'INSERT INTO users (id, name, phone, password_hash, role, club_name, sport_type, city, plain_password) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+    [id, reg.name, reg.phone, reg.password_hash, 'trainer', reg.club_name || '', reg.sport_type, reg.city, reg.plain_password]
+  )
+
+  // Mark as approved
+  await pool.query("UPDATE pending_registrations SET status = 'approved' WHERE id = $1", [req.params.id])
+  res.json({ ok: true, trainerId: id })
+})
+
+router.post('/registrations/:id/reject', authMiddleware, async (req, res) => {
+  if (req.user.role !== 'superadmin') return res.status(403).json({ error: 'Нет доступа' })
+  await pool.query("UPDATE pending_registrations SET status = 'rejected' WHERE id = $1", [req.params.id])
   res.json({ ok: true })
 })
 

@@ -165,3 +165,18 @@ DO $$ BEGIN
   ALTER TABLE students ADD COLUMN is_demo BOOLEAN DEFAULT false;
 EXCEPTION WHEN duplicate_column THEN NULL;
 END $$;
+
+-- Trainer registration requests
+CREATE TABLE IF NOT EXISTS pending_registrations (
+  id TEXT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  phone VARCHAR(50) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  plain_password VARCHAR(255),
+  club_name VARCHAR(255),
+  sport_type VARCHAR(50),
+  city VARCHAR(255),
+  consent BOOLEAN NOT NULL DEFAULT false,
+  status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);

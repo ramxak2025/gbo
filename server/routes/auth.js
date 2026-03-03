@@ -61,6 +61,35 @@ router.post('/login', async (req, res) => {
   return res.status(401).json({ error: 'Пользователь не найден', errorType: 'student' })
 })
 
+// --- Public registration for trainers ---
+router.post('/register', async (req, res) => {
+  const { name, phone, password, clubName, sportType, city, consent } = req.body
+  if (!name || !phone || !password) return res.status(400).json({ error: 'Заполните все обязательные поля' })
+  if (!consent) return res.status(400).json({ error: 'Необходимо согласие на обработку персональных данных' })
+
+  const digits = phone.replace(/\D/g, '').slice(-10)
+  if (digits.length < 10) return res.status(400).json({ error: 'Введите корректный номер телефона' })
+
+  // Check if phone already exists in users
+  const { rows: existingUsers } = await pool.query('SELECT id FROM users WHERE phone LIKE $1', [`%${digits}`])
+  if (existingUsers.length > 0) return res.status(400).json({ error: 'Этот номер уже зарегистрирован' })
+
+  // Check if phone already has a pending request
+  const { rows: existingRegs } = await pool.query("SELECT id FROM pending_registrations WHERE phone LIKE $1 AND status = 'pending'", [`%${digits}`])
+  if (existingRegs.length > 0) return res.status(400).json({ error: 'Заявка с этим номером уже отправлена. Ожидайте одобрения.' })
+
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
+  const hash = bcrypt.hashSync(password, 10)
+
+  await pool.query(
+    `INSERT INTO pending_registrations (id, name, phone, password_hash, plain_password, club_name, sport_type, city, consent)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+    [id, name.trim(), phone, hash, password, clubName?.trim() || '', sportType || null, city?.trim() || null, true]
+  )
+
+  res.json({ ok: true, message: 'Заявка отправлена! Ожидайте одобрения администратора.' })
+})
+
 router.post('/logout', (req, res) => {
   res.clearCookie('token')
   res.json({ ok: true })

@@ -100,6 +100,15 @@ export const api = {
   // Attendance
   saveAttendanceBulk: (data) => request('/data/attendance/bulk', { method: 'POST', body: JSON.stringify(data) }),
 
+  // Registration
+  register: (data) => {
+    const headers = { 'Content-Type': 'application/json' }
+    return fetch(`${BASE}/auth/register`, { method: 'POST', headers, body: JSON.stringify(data) })
+      .then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Ошибка'); return d })
+  },
+  approveRegistration: (id) => request(`/data/registrations/${id}/approve`, { method: 'POST' }),
+  rejectRegistration: (id) => request(`/data/registrations/${id}/reject`, { method: 'POST' }),
+
   // Push notifications
   getVapidKey: () => request('/push/vapid-key'),
   subscribePush: (subscription) => request('/push/subscribe', { method: 'POST', body: JSON.stringify({ subscription }) }),
