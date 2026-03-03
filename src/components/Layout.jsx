@@ -15,7 +15,7 @@ export default function Layout({ children }) {
           dark ? 'bg-red-900/15' : 'bg-red-100/20'
         }`} />
       </div>
-      <div className="relative z-10 flex-1 overflow-y-auto scrollbar-hide pb-32 pt-[env(safe-area-inset-top)]">
+      <div className="relative z-10 flex-1 overflow-y-auto scrollbar-hide pb-44 pt-[env(safe-area-inset-top)]">
         {children}
       </div>
       <BottomNav />

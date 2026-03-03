@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Plus, Trash2, Film, Play, ChevronRight, X, Link2 } from 'lucide-react'
+import { Plus, Trash2, Film, Play, X, Link2, Search, FolderOpen } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -8,15 +8,29 @@ import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
 import Modal from '../components/Modal'
 
+const CATEGORIES = [
+  { id: 'all', label: 'Все', icon: '📂' },
+  { id: 'technique', label: 'Техника', icon: '🥋' },
+  { id: 'tactics', label: 'Тактика', icon: '🧠' },
+  { id: 'warmup', label: 'Разминка', icon: '🔥' },
+  { id: 'physical', label: 'ОФП', icon: '💪' },
+  { id: 'sparring', label: 'Спарринг', icon: '🤼' },
+  { id: 'theory', label: 'Теория', icon: '📖' },
+  { id: 'other', label: 'Другое', icon: '📁' },
+]
+
+const CATEGORY_MAP = Object.fromEntries(CATEGORIES.filter(c => c.id !== 'all').map(c => [c.id, c]))
+
+function getCategoryInfo(id) {
+  return CATEGORY_MAP[id] || CATEGORY_MAP.other
+}
+
 function getVideoEmbed(url) {
   if (!url) return null
-  // YouTube
   const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
   if (ytMatch) return { type: 'youtube', id: ytMatch[1], src: `https://www.youtube.com/embed/${ytMatch[1]}` }
-  // VK Video
   const vkMatch = url.match(/vk\.com\/video(-?\d+)_(\d+)/)
   if (vkMatch) return { type: 'vk', id: `${vkMatch[1]}_${vkMatch[2]}`, src: `https://vk.com/video_ext.php?oid=${vkMatch[1]}&id=${vkMatch[2]}&hd=2` }
-  // VK clip
   const vkClip = url.match(/vk\.com\/clip(-?\d+)_(\d+)/)
   if (vkClip) return { type: 'vk', id: `${vkClip[1]}_${vkClip[2]}`, src: `https://vk.com/video_ext.php?oid=${vkClip[1]}&id=${vkClip[2]}&hd=2` }
   return null
@@ -34,24 +48,52 @@ export default function Materials() {
   const { dark } = useTheme()
   const [showAdd, setShowAdd] = useState(false)
   const [viewing, setViewing] = useState(null)
-  const [form, setForm] = useState({ title: '', description: '', videoUrl: '', groupIds: [] })
+  const [activeCategory, setActiveCategory] = useState('all')
+  const [search, setSearch] = useState('')
+  const [form, setForm] = useState({ title: '', description: '', videoUrl: '', groupIds: [], category: 'technique' })
 
   const isTrainer = auth.role === 'trainer'
   const myGroups = data.groups.filter(g => g.trainerId === (isTrainer ? auth.userId : null))
 
   // Filter materials based on role
-  const materials = useMemo(() => {
-    const allMaterials = data.materials || []
-    if (auth.role === 'superadmin') return allMaterials
-    if (auth.role === 'trainer') return allMaterials.filter(m => m.trainerId === auth.userId)
-    // Student — filter by group access
+  const allMaterials = useMemo(() => {
+    const mats = data.materials || []
+    if (auth.role === 'superadmin') return mats
+    if (auth.role === 'trainer') return mats.filter(m => m.trainerId === auth.userId)
     const student = data.students.find(s => s.id === auth.studentId)
     if (!student) return []
-    return allMaterials.filter(m => {
+    return mats.filter(m => {
       if (!m.groupIds || m.groupIds.length === 0) return m.trainerId === student.trainerId
       return m.groupIds.includes(student.groupId)
     })
   }, [data.materials, data.students, auth])
+
+  // Filter by category and search
+  const materials = useMemo(() => {
+    let filtered = allMaterials
+    if (activeCategory !== 'all') {
+      filtered = filtered.filter(m => (m.category || 'other') === activeCategory)
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase().trim()
+      filtered = filtered.filter(m =>
+        m.title.toLowerCase().includes(q) ||
+        (m.description && m.description.toLowerCase().includes(q))
+      )
+    }
+    return filtered
+  }, [allMaterials, activeCategory, search])
+
+  // Count materials per category
+  const categoryCounts = useMemo(() => {
+    const counts = { all: allMaterials.length }
+    for (const cat of CATEGORIES) {
+      if (cat.id !== 'all') {
+        counts[cat.id] = allMaterials.filter(m => (m.category || 'other') === cat.id).length
+      }
+    }
+    return counts
+  }, [allMaterials])
 
   const handleAdd = (e) => {
     e.preventDefault()
@@ -67,8 +109,9 @@ export default function Materials() {
       description: form.description.trim(),
       videoUrl: form.videoUrl.trim(),
       groupIds: form.groupIds,
+      category: form.category,
     })
-    setForm({ title: '', description: '', videoUrl: '', groupIds: [] })
+    setForm({ title: '', description: '', videoUrl: '', groupIds: [], category: 'technique' })
     setShowAdd(false)
   }
 
@@ -89,7 +132,7 @@ export default function Materials() {
   }
 
   const inputCls = `
-    w-full px-4 py-3 rounded-[16px] text-base outline-none
+    w-full px-4 py-3 rounded-[16px] text-base outline-none transition-all
     ${dark
       ? 'bg-white/[0.07] border border-white/[0.08] text-white placeholder-white/25 focus:border-purple-500/50 focus:bg-white/[0.1]'
       : 'bg-white/70 border border-white/60 text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] shadow-sm'
@@ -101,7 +144,7 @@ export default function Materials() {
       <PageHeader title="Материалы">
         {isTrainer && (
           <button
-            onClick={() => { setForm({ title: '', description: '', videoUrl: '', groupIds: [] }); setShowAdd(true) }}
+            onClick={() => { setForm({ title: '', description: '', videoUrl: '', groupIds: [], category: 'technique' }); setShowAdd(true) }}
             className="press-scale p-2"
           >
             <Plus size={20} />
@@ -109,28 +152,110 @@ export default function Materials() {
         )}
       </PageHeader>
 
+      {/* Search bar */}
+      <div className="px-4 mb-3">
+        <div className="relative">
+          <Search size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-400'}`} />
+          <input
+            type="text"
+            placeholder="Поиск материалов..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className={`
+              w-full pl-10 pr-4 py-2.5 rounded-2xl text-sm outline-none transition-all
+              ${dark
+                ? 'bg-white/[0.06] border border-white/[0.06] text-white placeholder-white/20 focus:border-purple-500/40'
+                : 'bg-white/60 border border-white/50 text-gray-900 placeholder-gray-400 focus:border-purple-400 shadow-sm'
+              }
+            `}
+          />
+        </div>
+      </div>
+
+      {/* Category tabs - horizontal scroll */}
+      <div className="mb-4 overflow-x-auto scrollbar-hide">
+        <div className="flex gap-2 px-4 pb-1">
+          {CATEGORIES.map(cat => {
+            const isActive = activeCategory === cat.id
+            const count = categoryCounts[cat.id] || 0
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`
+                  flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap
+                  press-scale transition-all shrink-0
+                  ${isActive
+                    ? dark
+                      ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                      : 'bg-purple-100 text-purple-700 border border-purple-200'
+                    : dark
+                      ? 'bg-white/[0.05] text-white/40 border border-white/[0.05]'
+                      : 'bg-white/50 text-gray-500 border border-white/40'
+                  }
+                `}
+              >
+                <span className="text-sm">{cat.icon}</span>
+                <span>{cat.label}</span>
+                {count > 0 && (
+                  <span className={`
+                    min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold px-1
+                    ${isActive
+                      ? dark ? 'bg-purple-400/30 text-purple-200' : 'bg-purple-200 text-purple-700'
+                      : dark ? 'bg-white/[0.08] text-white/30' : 'bg-black/[0.05] text-gray-400'
+                    }
+                  `}>
+                    {count}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
       <div className="px-4 space-y-3 slide-in">
+        {/* Empty state */}
         {materials.length === 0 && (
           <div className="text-center py-12">
-            <Film size={48} className={`mx-auto mb-3 ${dark ? 'text-white/10' : 'text-gray-200'}`} />
-            <p className={`text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>
-              {isTrainer ? 'Нет материалов. Добавьте первый!' : 'Нет доступных материалов'}
-            </p>
-            {isTrainer && (
-              <button
-                onClick={() => { setForm({ title: '', description: '', videoUrl: '', groupIds: [] }); setShowAdd(true) }}
-                className="mt-3 px-5 py-2 rounded-full bg-accent text-white text-sm font-bold press-scale"
-              >
-                Добавить материал
-              </button>
+            {search.trim() || activeCategory !== 'all' ? (
+              <>
+                <Search size={48} className={`mx-auto mb-3 ${dark ? 'text-white/10' : 'text-gray-200'}`} />
+                <p className={`text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>
+                  Ничего не найдено
+                </p>
+                <button
+                  onClick={() => { setSearch(''); setActiveCategory('all') }}
+                  className={`mt-2 text-xs font-semibold ${dark ? 'text-purple-400' : 'text-purple-600'}`}
+                >
+                  Сбросить фильтры
+                </button>
+              </>
+            ) : (
+              <>
+                <Film size={48} className={`mx-auto mb-3 ${dark ? 'text-white/10' : 'text-gray-200'}`} />
+                <p className={`text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>
+                  {isTrainer ? 'Нет материалов. Добавьте первый!' : 'Нет доступных материалов'}
+                </p>
+                {isTrainer && (
+                  <button
+                    onClick={() => { setForm({ title: '', description: '', videoUrl: '', groupIds: [], category: 'technique' }); setShowAdd(true) }}
+                    className="mt-3 px-5 py-2 rounded-full bg-accent text-white text-sm font-bold press-scale"
+                  >
+                    Добавить материал
+                  </button>
+                )}
+              </>
             )}
           </div>
         )}
 
+        {/* Material cards */}
         {materials.map(m => {
           const thumb = getVideoThumb(m.videoUrl)
           const embed = getVideoEmbed(m.videoUrl)
           const groups = (m.groupIds || []).map(gId => data.groups.find(g => g.id === gId)).filter(Boolean)
+          const catInfo = getCategoryInfo(m.category)
           return (
             <GlassCard
               key={m.id}
@@ -151,6 +276,7 @@ export default function Materials() {
                     <Play size={22} className="text-white ml-0.5" fill="white" />
                   </div>
                 </div>
+                {/* Platform badge */}
                 {embed?.type && (
                   <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
                     embed.type === 'youtube' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'
@@ -158,6 +284,12 @@ export default function Materials() {
                     {embed.type === 'youtube' ? 'YouTube' : 'VK'}
                   </span>
                 )}
+                {/* Category badge */}
+                <span className={`absolute top-2 right-2 px-2 py-0.5 rounded-md text-[10px] font-bold backdrop-blur-sm ${
+                  dark ? 'bg-black/40 text-white/80' : 'bg-white/70 text-gray-700'
+                }`}>
+                  {catInfo.icon} {catInfo.label}
+                </span>
               </div>
 
               <div className="flex items-start justify-between gap-2">
@@ -199,7 +331,6 @@ export default function Materials() {
         <div className="fixed inset-0 z-[100] flex flex-col">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" onClick={() => setViewing(null)} />
           <div className="relative z-10 flex flex-col h-full safe-top">
-            {/* Header */}
             <div className="flex items-center justify-between px-4 py-3">
               <div className="min-w-0 flex-1 mr-3">
                 <h2 className="text-white font-bold truncate">{viewing.title}</h2>
@@ -211,8 +342,6 @@ export default function Materials() {
                 <X size={20} className="text-white" />
               </button>
             </div>
-
-            {/* Video embed */}
             <div className="flex-1 flex items-center px-2">
               {getVideoEmbed(viewing.videoUrl) ? (
                 <div className="w-full aspect-video rounded-2xl overflow-hidden">
@@ -279,6 +408,37 @@ export default function Materials() {
               />
             </div>
           )}
+
+          {/* Category selection */}
+          <div>
+            <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+              Раздел
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {CATEGORIES.filter(c => c.id !== 'all').map(cat => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, category: cat.id }))}
+                  className={`
+                    flex items-center gap-2 px-3 py-2.5 rounded-2xl text-xs font-bold
+                    press-scale transition-all text-left
+                    ${form.category === cat.id
+                      ? dark
+                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                        : 'bg-purple-100 text-purple-700 border border-purple-200'
+                      : dark
+                        ? 'bg-white/[0.05] text-white/40 border border-white/[0.05]'
+                        : 'bg-white/50 text-gray-500 border border-white/40'
+                    }
+                  `}
+                >
+                  <span className="text-base">{cat.icon}</span>
+                  <span>{cat.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Group selection */}
           {myGroups.length > 0 && (

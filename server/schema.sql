@@ -177,6 +177,12 @@ CREATE TABLE IF NOT EXISTS materials (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Category column for materials
+DO $$ BEGIN
+  ALTER TABLE materials ADD COLUMN category VARCHAR(100) DEFAULT 'other';
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
 -- Trainer registration requests
 CREATE TABLE IF NOT EXISTS pending_registrations (
   id TEXT PRIMARY KEY,

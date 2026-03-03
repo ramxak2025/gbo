@@ -57,17 +57,17 @@ export default function BottomNav() {
                 key={path}
                 onClick={() => navigate(path)}
                 className={`
-                  flex flex-col items-center gap-0.5 px-3 py-1.5 press-scale relative
+                  flex-1 flex flex-col items-center gap-0.5 py-1.5 press-scale relative
                   transition-all duration-300 rounded-2xl
                   ${active
                     ? dark
                       ? 'text-white bg-white/[0.12]'
                       : 'text-gray-900 bg-black/[0.06]'
-                    : dark ? 'text-white/40' : 'text-gray-500'
+                    : dark ? 'text-gray-500' : 'text-gray-400'
                   }
                 `}
               >
-                <Icon size={22} strokeWidth={active ? 2.5 : 2} />
+                <Icon size={22} strokeWidth={active ? 2.5 : 1.5} />
                 <span className={`text-[9px] leading-tight tracking-wide ${active ? 'font-bold' : 'font-medium'}`}>
                   {label}
                 </span>
