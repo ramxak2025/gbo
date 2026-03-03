@@ -1,16 +1,8 @@
-import { useEffect } from 'react'
 import { useTheme } from '../context/ThemeContext'
 import BottomNav from './BottomNav'
 
 export default function Layout({ children }) {
   const { dark } = useTheme()
-
-  // Sync body background + theme-color meta for iOS PWA status bar area
-  useEffect(() => {
-    const bg = dark ? '#050505' : '#f5f5f7'
-    document.body.style.backgroundColor = bg
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg)
-  }, [dark])
 
   return (
     <div className={`h-full flex flex-col relative overflow-hidden ${dark ? 'bg-dark-900 text-white' : 'bg-[#f5f5f7] text-gray-900'}`}>

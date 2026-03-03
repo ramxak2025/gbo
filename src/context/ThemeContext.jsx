@@ -11,6 +11,10 @@ export function ThemeProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('iborcuha_theme', dark ? 'dark' : 'light')
     document.documentElement.classList.toggle('dark', dark)
+    // Sync body background + theme-color meta globally (works on all pages including Login)
+    const bg = dark ? '#050505' : '#f5f5f7'
+    document.body.style.backgroundColor = bg
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg)
   }, [dark])
 
   const toggle = () => setDark(d => !d)

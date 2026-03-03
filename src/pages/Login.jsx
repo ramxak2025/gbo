@@ -89,7 +89,7 @@ export default function Login({ onLogin }) {
   const iconInputCls = (icon) => `${inputCls} pl-11`
 
   return (
-    <div className={`h-full flex flex-col relative overflow-hidden ${dark ? 'bg-dark-900 text-white' : 'bg-[#f5f5f7] text-gray-900'}`}>
+    <div className={`h-full flex flex-col relative overflow-hidden ${dark ? 'bg-dark-900 text-white' : 'bg-[#f5f5f7] text-gray-900'}`} style={{ paddingTop: 'env(safe-area-inset-top)' }}>
 
       {/* Background decoration */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -102,14 +102,14 @@ export default function Login({ onLogin }) {
       </div>
 
       {/* Theme toggle — absolute top right */}
-      <div className="absolute top-4 right-5 z-20">
+      <div className="absolute right-5 z-20" style={{ top: 'calc(env(safe-area-inset-top) + 16px)' }}>
         <button onClick={toggle} className={`press-scale p-2.5 rounded-xl transition-colors ${dark ? 'bg-white/[0.06]' : 'bg-white/60 shadow-sm'}`}>
           {dark ? <Sun size={18} /> : <Moon size={18} />}
         </button>
       </div>
       {/* Back button for register/success */}
       {mode !== 'login' && (
-        <div className="absolute top-4 left-5 z-20">
+        <div className="absolute left-5 z-20" style={{ top: 'calc(env(safe-area-inset-top) + 16px)' }}>
           <button onClick={() => { setMode('login'); setError('') }} className="press-scale flex items-center gap-1 py-1.5 px-2 rounded-xl">
             <ArrowLeft size={18} />
             <span className="text-sm font-medium">Назад</span>
