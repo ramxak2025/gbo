@@ -246,6 +246,19 @@ input, select, textarea {
 .safe-area-bottom {
   padding-bottom: max(env(safe-area-inset-bottom, 16px), 16px);
 }
+
+/* === Drawer slide from right === */
+.drawer-backdrop {
+  animation: overlayIn 0.25s ease-out forwards;
+}
+.drawer-panel {
+  animation: drawerSlideIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes drawerSlideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
 .toast-in {
   animation: toastIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }

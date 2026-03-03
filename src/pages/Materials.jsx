@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from 'react'
-import { Plus, Trash2, Film, Play, X, Link2, Search, Tag, Heart, Video, Upload, MapPin, FolderPlus, BookOpen } from 'lucide-react'
+import { Plus, Trash2, Film, Play, X, Link2, Search, Tag, Heart, Video, Upload, MapPin, FolderPlus, BookOpen, ChevronRight } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -28,13 +28,21 @@ function getVideoThumb(url) {
 
 function getFavorites(userId) {
   try {
-    const stored = localStorage.getItem(`iborcuha_favorites_${userId}`)
-    return stored ? JSON.parse(stored) : []
+    return JSON.parse(localStorage.getItem(`iborcuha_favorites_${userId}`)) || []
   } catch { return [] }
 }
-
 function saveFavorites(userId, ids) {
   localStorage.setItem(`iborcuha_favorites_${userId}`, JSON.stringify(ids))
+}
+
+// Custom empty categories stored per trainer in localStorage
+function getCustomCategories(userId) {
+  try {
+    return JSON.parse(localStorage.getItem(`iborcuha_categories_${userId}`)) || []
+  } catch { return [] }
+}
+function saveCustomCategories(userId, cats) {
+  localStorage.setItem(`iborcuha_categories_${userId}`, JSON.stringify(cats))
 }
 
 export default function Materials() {
@@ -50,6 +58,8 @@ export default function Materials() {
   const [newCategoryInput, setNewCategoryInput] = useState('')
   const [uploadingThumb, setUploadingThumb] = useState(false)
   const [showPinModal, setShowPinModal] = useState(null)
+  const [showCategories, setShowCategories] = useState(false)
+  const [drawerNewCat, setDrawerNewCat] = useState('')
   const thumbInputRef = useRef(null)
 
   const isTrainer = auth.role === 'trainer'
@@ -57,6 +67,10 @@ export default function Materials() {
 
   const favUserId = auth.studentId || auth.userId
   const [favorites, setFavoritesState] = useState(() => getFavorites(favUserId))
+
+  // Custom categories (trainer can create empty ones)
+  const catOwnerId = auth.userId
+  const [customCategories, setCustomCategoriesState] = useState(() => getCustomCategories(catOwnerId))
 
   const toggleFavorite = useCallback((materialId) => {
     setFavoritesState(prev => {
@@ -79,14 +93,29 @@ export default function Materials() {
     })
   }, [data.materials, data.students, auth])
 
-  // Dynamic categories
-  const existingCategories = useMemo(() => {
+  // Categories from materials
+  const materialCategories = useMemo(() => {
     const cats = new Set()
     allMaterials.forEach(m => { if (m.category) cats.add(m.category) })
     return [...cats].sort()
   }, [allMaterials])
 
+  // All categories = union of material categories + custom empty categories
+  const allCategories = useMemo(() => {
+    const set = new Set([...materialCategories, ...customCategories])
+    return [...set].sort()
+  }, [materialCategories, customCategories])
+
   const hasFavorites = useMemo(() => allMaterials.some(m => favorites.includes(m.id)), [allMaterials, favorites])
+
+  // Category counts
+  const categoryCounts = useMemo(() => {
+    const counts = { all: allMaterials.length, favorites: allMaterials.filter(m => favorites.includes(m.id)).length }
+    allCategories.forEach(cat => {
+      counts[cat] = allMaterials.filter(m => m.category === cat).length
+    })
+    return counts
+  }, [allMaterials, allCategories, favorites])
 
   // Filter by category, favorites, and search
   const materials = useMemo(() => {
@@ -107,13 +136,31 @@ export default function Materials() {
     return filtered
   }, [allMaterials, activeCategory, search, favorites])
 
-  const categoryCounts = useMemo(() => {
-    const counts = { all: allMaterials.length, favorites: allMaterials.filter(m => favorites.includes(m.id)).length }
-    existingCategories.forEach(cat => {
-      counts[cat] = allMaterials.filter(m => m.category === cat).length
-    })
-    return counts
-  }, [allMaterials, existingCategories, favorites])
+  // Drawer: add new category
+  const handleAddCustomCategory = () => {
+    const val = drawerNewCat.trim()
+    if (!val) return
+    if (allCategories.includes(val)) { setDrawerNewCat(''); return }
+    const next = [...customCategories, val]
+    setCustomCategoriesState(next)
+    saveCustomCategories(catOwnerId, next)
+    setDrawerNewCat('')
+  }
+
+  // Drawer: delete custom category (only if it has 0 materials)
+  const handleDeleteCustomCategory = (cat) => {
+    const count = allMaterials.filter(m => m.category === cat).length
+    if (count > 0) return // can't delete if materials use it
+    const next = customCategories.filter(c => c !== cat)
+    setCustomCategoriesState(next)
+    saveCustomCategories(catOwnerId, next)
+    if (activeCategory === cat) setActiveCategory('all')
+  }
+
+  const selectCategory = (cat) => {
+    setActiveCategory(cat)
+    setShowCategories(false)
+  }
 
   const handleThumbUpload = async (e) => {
     const file = e.target.files?.[0]
@@ -161,7 +208,6 @@ export default function Materials() {
     updateGroup(groupId, { pinnedMaterialId: materialId })
     setShowPinModal(null)
   }
-
   const handleUnpin = (groupId) => {
     updateGroup(groupId, { pinnedMaterialId: null })
   }
@@ -173,12 +219,12 @@ export default function Materials() {
     }))
   }
 
-  const handleSelectCategory = (cat) => {
+  const handleSelectFormCategory = (cat) => {
     setForm(f => ({ ...f, category: cat }))
     setNewCategoryInput('')
   }
 
-  const handleNewCategory = () => {
+  const handleNewFormCategory = () => {
     const val = newCategoryInput.trim()
     if (val) {
       setForm(f => ({ ...f, category: val }))
@@ -193,6 +239,9 @@ export default function Materials() {
     : 'bg-white/70 border border-white/60 text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] shadow-sm'
   }`
 
+  // Active category label
+  const activeCategoryLabel = activeCategory === 'all' ? 'Все категории' : activeCategory === 'favorites' ? 'Избранное' : activeCategory
+
   return (
     <Layout>
       <PageHeader title="Материалы">
@@ -206,55 +255,62 @@ export default function Materials() {
         )}
       </PageHeader>
 
-      {/* Search */}
-      {allMaterials.length > 0 && (
-        <div className="px-4 mb-3">
-          <div className="relative">
-            <Search size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-400'}`} />
-            <input
-              type="text"
-              placeholder="Поиск материалов..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2.5 rounded-2xl text-sm outline-none transition-all ${dark
-                ? 'bg-white/[0.06] border border-white/[0.06] text-white placeholder-white/20 focus:border-purple-500/40'
-                : 'bg-white/60 border border-white/50 text-gray-900 placeholder-gray-400 focus:border-purple-400 shadow-sm'
-              }`}
-            />
-          </div>
+      {/* Search + Category button row */}
+      <div className="px-4 mb-4 space-y-2.5">
+        {/* Search */}
+        <div className="relative">
+          <Search size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-400'}`} />
+          <input
+            type="text"
+            placeholder="Поиск материалов..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className={`w-full pl-10 pr-4 py-2.5 rounded-2xl text-sm outline-none transition-all ${dark
+              ? 'bg-white/[0.06] border border-white/[0.06] text-white placeholder-white/20 focus:border-purple-500/40'
+              : 'bg-white/60 border border-white/50 text-gray-900 placeholder-gray-400 focus:border-purple-400 shadow-sm'
+            }`}
+          />
         </div>
-      )}
 
-      {/* Category tabs */}
-      {(existingCategories.length > 0 || hasFavorites) && (
-        <div className="mb-4 overflow-x-auto scrollbar-hide">
-          <div className="flex gap-2 px-4 pb-1">
-            <CategoryTab active={activeCategory === 'all'} onClick={() => setActiveCategory('all')} dark={dark} label="Все" count={categoryCounts.all} />
-            {hasFavorites && (
-              <CategoryTab
-                active={activeCategory === 'favorites'}
-                onClick={() => setActiveCategory('favorites')}
-                dark={dark}
-                label="Избранное"
-                count={categoryCounts.favorites}
-                icon={<Heart size={12} fill={activeCategory === 'favorites' ? 'currentColor' : 'none'} />}
-                accent="red"
-              />
-            )}
-            {existingCategories.map(cat => (
-              <CategoryTab
-                key={cat}
-                active={activeCategory === cat}
-                onClick={() => setActiveCategory(cat)}
-                dark={dark}
-                label={cat}
-                count={categoryCounts[cat]}
-                icon={<Tag size={12} />}
-              />
-            ))}
-          </div>
+        {/* Category button + Favorites toggle */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowCategories(true)}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-bold press-scale transition-all flex-1 min-w-0 ${
+              activeCategory !== 'all' && activeCategory !== 'favorites'
+                ? dark ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-purple-100 text-purple-700 border border-purple-200'
+                : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/60 text-gray-600 border border-white/50'
+            }`}
+          >
+            <Tag size={14} />
+            <span className="truncate">{activeCategoryLabel}</span>
+            <ChevronRight size={14} className="ml-auto shrink-0 opacity-40" />
+          </button>
+
+          {hasFavorites && (
+            <button
+              onClick={() => setActiveCategory(activeCategory === 'favorites' ? 'all' : 'favorites')}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold press-scale transition-all shrink-0 ${
+                activeCategory === 'favorites'
+                  ? dark ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-red-100 text-red-600 border border-red-200'
+                  : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/60 text-gray-600 border border-white/50'
+              }`}
+            >
+              <Heart size={14} fill={activeCategory === 'favorites' ? 'currentColor' : 'none'} />
+              <span>{categoryCounts.favorites || 0}</span>
+            </button>
+          )}
+
+          {activeCategory !== 'all' && activeCategory !== 'favorites' && (
+            <button
+              onClick={() => setActiveCategory('all')}
+              className={`p-2 rounded-2xl press-scale ${dark ? 'bg-white/[0.06] text-white/40' : 'bg-white/60 text-gray-400'}`}
+            >
+              <X size={16} />
+            </button>
+          )}
         </div>
-      )}
+      </div>
 
       <div className="px-4 space-y-3 slide-in">
         {/* Empty state */}
@@ -288,7 +344,7 @@ export default function Materials() {
                   <p className={`text-sm leading-relaxed max-w-[280px] mx-auto ${dark ? 'text-white/35' : 'text-gray-500'}`}>
                     {isTrainer
                       ? 'Загружайте видео с YouTube и VK для своих спортсменов. Создавайте разделы, управляйте доступом.'
-                      : 'Здесь будут учебные видео от вашего тренера — техника, тактика и другие материалы.'}
+                      : 'Здесь будут учебные видео от тренера — техника, тактика и другие материалы.'}
                   </p>
                 </div>
                 <div className="space-y-2 max-w-[300px] mx-auto text-left">
@@ -358,40 +414,24 @@ export default function Materials() {
                   </>
                 )}
 
-                {/* Platform badge */}
                 {embed?.type && !isExpanded && (
                   <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
                     embed.type === 'youtube' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'
-                  }`}>
-                    {embed.type === 'youtube' ? 'YouTube' : 'VK'}
-                  </span>
+                  }`}>{embed.type === 'youtube' ? 'YouTube' : 'VK'}</span>
                 )}
-
-                {/* Category badge */}
                 {m.category && !isExpanded && (
-                  <span className={`absolute top-2 right-2 px-2 py-0.5 rounded-md text-[10px] font-bold backdrop-blur-sm ${dark ? 'bg-black/40 text-white/80' : 'bg-white/70 text-gray-700'}`}>
-                    {m.category}
-                  </span>
+                  <span className={`absolute top-2 right-2 px-2 py-0.5 rounded-md text-[10px] font-bold backdrop-blur-sm ${dark ? 'bg-black/40 text-white/80' : 'bg-white/70 text-gray-700'}`}>{m.category}</span>
                 )}
-
-                {/* Favorite button in thumbnail */}
                 {!isExpanded && (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); toggleFavorite(m.id) }}
-                    className="absolute bottom-2 right-2 press-scale p-1.5 rounded-full bg-black/30 backdrop-blur-sm"
-                  >
+                  <button onClick={(e) => { e.stopPropagation(); toggleFavorite(m.id) }} className="absolute bottom-2 right-2 press-scale p-1.5 rounded-full bg-black/30 backdrop-blur-sm">
                     <Heart size={16} className={isFav ? 'text-red-400' : 'text-white/60'} fill={isFav ? 'currentColor' : 'none'} strokeWidth={2} />
                   </button>
                 )}
-
-                {/* Pinned badge in thumbnail */}
                 {!isExpanded && pinnedGroups.length > 0 && (
                   <span className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-green-500/80 text-white backdrop-blur-sm">
                     <MapPin size={10} /> Отработка
                   </span>
                 )}
-
-                {/* Close button when expanded */}
                 {isExpanded && (
                   <button onClick={() => setExpandedId(null)} className="absolute top-2 right-2 press-scale p-1.5 rounded-full bg-black/50 backdrop-blur-sm z-10">
                     <X size={16} className="text-white" />
@@ -405,9 +445,7 @@ export default function Materials() {
                   <div className="min-w-0 flex-1">
                     <h3 className="font-bold text-sm truncate">{m.title}</h3>
                     {m.description && (
-                      <p className={`text-xs mt-0.5 ${isExpanded ? '' : 'line-clamp-2'} ${dark ? 'text-white/40' : 'text-gray-500'}`}>
-                        {m.description}
-                      </p>
+                      <p className={`text-xs mt-0.5 ${isExpanded ? '' : 'line-clamp-2'} ${dark ? 'text-white/40' : 'text-gray-500'}`}>{m.description}</p>
                     )}
                   </div>
                   <div className="flex items-center gap-0.5 shrink-0">
@@ -428,18 +466,12 @@ export default function Materials() {
                     )}
                   </div>
                 </div>
-
-                {/* Tags */}
                 <div className="flex flex-wrap gap-1 mt-1.5">
                   {m.category && isExpanded && (
-                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${dark ? 'bg-white/[0.06] text-white/40' : 'bg-gray-100 text-gray-500'}`}>
-                      {m.category}
-                    </span>
+                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${dark ? 'bg-white/[0.06] text-white/40' : 'bg-gray-100 text-gray-500'}`}>{m.category}</span>
                   )}
                   {groups.map(g => (
-                    <span key={g.id} className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${dark ? 'bg-purple-500/15 text-purple-300' : 'bg-purple-100 text-purple-600'}`}>
-                      {g.name}
-                    </span>
+                    <span key={g.id} className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${dark ? 'bg-purple-500/15 text-purple-300' : 'bg-purple-100 text-purple-600'}`}>{g.name}</span>
                   ))}
                   {pinnedGroups.length > 0 && isExpanded && (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 flex items-center gap-0.5">
@@ -453,6 +485,151 @@ export default function Materials() {
         })}
       </div>
 
+      {/* ===== Categories drawer (slides from right) ===== */}
+      {showCategories && (
+        <div className="fixed inset-0 z-[100] flex">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/50 drawer-backdrop" onClick={() => setShowCategories(false)} />
+
+          {/* Panel */}
+          <div className={`ml-auto relative w-[78%] max-w-[340px] h-full flex flex-col drawer-panel backdrop-blur-2xl ${
+            dark ? 'bg-dark-800/98' : 'bg-[#f5f5f7]/98'
+          }`}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-[calc(env(safe-area-inset-top)+16px)] pb-4">
+              <h2 className="text-lg font-black uppercase italic">Категории</h2>
+              <button onClick={() => setShowCategories(false)} className={`press-scale p-2 rounded-xl ${dark ? 'bg-white/[0.06]' : 'bg-black/[0.04]'}`}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Separator */}
+            <div className={`mx-5 h-px ${dark ? 'bg-white/[0.06]' : 'bg-black/[0.06]'}`} />
+
+            {/* Category list */}
+            <div className="flex-1 overflow-y-auto scrollbar-hide px-3 py-3 space-y-1">
+              {/* All */}
+              <button
+                onClick={() => selectCategory('all')}
+                className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl press-scale transition-all text-left ${
+                  activeCategory === 'all'
+                    ? dark ? 'bg-purple-500/15 border border-purple-500/25' : 'bg-purple-100 border border-purple-200'
+                    : dark ? 'bg-transparent' : 'bg-transparent'
+                }`}
+              >
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                  activeCategory === 'all'
+                    ? 'bg-purple-500/20' : dark ? 'bg-white/[0.06]' : 'bg-black/[0.04]'
+                }`}>
+                  <Video size={16} className={activeCategory === 'all' ? 'text-purple-400' : dark ? 'text-white/40' : 'text-gray-400'} />
+                </div>
+                <span className={`flex-1 font-semibold text-sm ${activeCategory === 'all' ? dark ? 'text-purple-300' : 'text-purple-700' : ''}`}>Все</span>
+                <span className={`text-xs font-bold ${activeCategory === 'all' ? dark ? 'text-purple-400' : 'text-purple-600' : dark ? 'text-white/25' : 'text-gray-400'}`}>
+                  {categoryCounts.all}
+                </span>
+              </button>
+
+              {/* Favorites */}
+              {hasFavorites && (
+                <button
+                  onClick={() => selectCategory('favorites')}
+                  className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl press-scale transition-all text-left ${
+                    activeCategory === 'favorites'
+                      ? dark ? 'bg-red-500/15 border border-red-500/25' : 'bg-red-100 border border-red-200'
+                      : dark ? 'bg-transparent' : 'bg-transparent'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                    activeCategory === 'favorites'
+                      ? 'bg-red-500/20' : dark ? 'bg-white/[0.06]' : 'bg-black/[0.04]'
+                  }`}>
+                    <Heart size={16} fill={activeCategory === 'favorites' ? 'currentColor' : 'none'} className={activeCategory === 'favorites' ? 'text-red-400' : dark ? 'text-white/40' : 'text-gray-400'} />
+                  </div>
+                  <span className={`flex-1 font-semibold text-sm ${activeCategory === 'favorites' ? dark ? 'text-red-300' : 'text-red-600' : ''}`}>Избранное</span>
+                  <span className={`text-xs font-bold ${activeCategory === 'favorites' ? dark ? 'text-red-400' : 'text-red-600' : dark ? 'text-white/25' : 'text-gray-400'}`}>
+                    {categoryCounts.favorites}
+                  </span>
+                </button>
+              )}
+
+              {/* Separator if categories exist */}
+              {allCategories.length > 0 && (
+                <div className={`mx-2 my-2 h-px ${dark ? 'bg-white/[0.06]' : 'bg-black/[0.06]'}`} />
+              )}
+
+              {/* Category items */}
+              {allCategories.map(cat => {
+                const count = categoryCounts[cat] || 0
+                const isActive = activeCategory === cat
+                const isCustomOnly = customCategories.includes(cat) && count === 0
+                return (
+                  <div key={cat} className="flex items-center gap-1">
+                    <button
+                      onClick={() => selectCategory(cat)}
+                      className={`flex-1 flex items-center gap-3 px-3.5 py-3 rounded-2xl press-scale transition-all text-left min-w-0 ${
+                        isActive
+                          ? dark ? 'bg-purple-500/15 border border-purple-500/25' : 'bg-purple-100 border border-purple-200'
+                          : dark ? 'bg-transparent' : 'bg-transparent'
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                        isActive ? 'bg-purple-500/20' : dark ? 'bg-white/[0.06]' : 'bg-black/[0.04]'
+                      }`}>
+                        <Tag size={14} className={isActive ? 'text-purple-400' : dark ? 'text-white/40' : 'text-gray-400'} />
+                      </div>
+                      <span className={`flex-1 font-semibold text-sm truncate ${isActive ? dark ? 'text-purple-300' : 'text-purple-700' : ''}`}>{cat}</span>
+                      <span className={`text-xs font-bold shrink-0 ${isActive ? dark ? 'text-purple-400' : 'text-purple-600' : dark ? 'text-white/25' : 'text-gray-400'}`}>
+                        {count}
+                      </span>
+                    </button>
+                    {/* Delete button for empty custom categories */}
+                    {isTrainer && isCustomOnly && (
+                      <button onClick={() => handleDeleteCustomCategory(cat)} className="press-scale p-2 shrink-0">
+                        <Trash2 size={14} className={dark ? 'text-white/20' : 'text-gray-300'} />
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Add new category (trainer only) */}
+            {isTrainer && (
+              <div className={`px-4 py-4 border-t ${dark ? 'border-white/[0.06]' : 'border-black/[0.06]'}`}>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Новая категория..."
+                    value={drawerNewCat}
+                    onChange={e => setDrawerNewCat(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomCategory() } }}
+                    className={`flex-1 px-4 py-2.5 rounded-2xl text-sm outline-none transition-all ${
+                      dark
+                        ? 'bg-white/[0.07] border border-white/[0.08] text-white placeholder-white/20 focus:border-purple-500/50'
+                        : 'bg-white/70 border border-white/60 text-gray-900 placeholder-gray-400 focus:border-purple-400 shadow-sm'
+                    }`}
+                  />
+                  <button
+                    onClick={handleAddCustomCategory}
+                    disabled={!drawerNewCat.trim()}
+                    className={`px-4 py-2.5 rounded-2xl text-sm font-bold press-scale shrink-0 transition-all ${
+                      drawerNewCat.trim()
+                        ? 'bg-accent text-white'
+                        : dark ? 'bg-white/[0.04] text-white/15' : 'bg-gray-100 text-gray-300'
+                    }`}
+                  >
+                    <Plus size={18} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Safe area bottom */}
+            <div className="safe-area-bottom" />
+          </div>
+        </div>
+      )}
+
       {/* Add material modal */}
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Новый материал">
         <form onSubmit={handleAdd} className="space-y-4">
@@ -463,14 +640,13 @@ export default function Materials() {
             <input type="url" placeholder="Ссылка на видео (YouTube / VK) *" value={form.videoUrl} onChange={e => setForm(f => ({ ...f, videoUrl: e.target.value }))} className={`${inputCls} pl-10`} required />
           </div>
 
-          {/* Video preview */}
           {form.videoUrl && getVideoEmbed(form.videoUrl) && (
             <div className={`rounded-xl overflow-hidden aspect-video ${dark ? 'bg-white/[0.03]' : 'bg-black/[0.02]'}`}>
               <iframe src={getVideoEmbed(form.videoUrl).src} className="w-full h-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen frameBorder="0" />
             </div>
           )}
 
-          {/* Custom thumbnail upload */}
+          {/* Custom thumbnail */}
           <div>
             <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Обложка (необязательно)</div>
             <input ref={thumbInputRef} type="file" accept="image/*" onChange={handleThumbUpload} className="hidden" />
@@ -482,13 +658,8 @@ export default function Materials() {
                 </button>
               </div>
             ) : (
-              <button
-                type="button"
-                onClick={() => thumbInputRef.current?.click()}
-                disabled={uploadingThumb}
-                className={`w-full py-3 rounded-[16px] border-2 border-dashed flex items-center justify-center gap-2 text-sm font-medium press-scale ${
-                  dark ? 'border-white/10 text-white/30' : 'border-gray-200 text-gray-400'
-                }`}
+              <button type="button" onClick={() => thumbInputRef.current?.click()} disabled={uploadingThumb}
+                className={`w-full py-3 rounded-[16px] border-2 border-dashed flex items-center justify-center gap-2 text-sm font-medium press-scale ${dark ? 'border-white/10 text-white/30' : 'border-gray-200 text-gray-400'}`}
               >
                 <Upload size={18} />
                 {uploadingThumb ? 'Загрузка...' : 'Загрузить свою обложку'}
@@ -508,10 +679,10 @@ export default function Materials() {
                 </button>
               </div>
             )}
-            {existingCategories.length > 0 && !form.category && (
+            {allCategories.length > 0 && !form.category && (
               <div className="flex flex-wrap gap-2 mb-3">
-                {existingCategories.map(cat => (
-                  <button key={cat} type="button" onClick={() => handleSelectCategory(cat)} className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-bold press-scale transition-all ${dark ? 'bg-white/[0.05] text-white/50 border border-white/[0.05]' : 'bg-white/60 text-gray-600 border border-white/50'}`}>
+                {allCategories.map(cat => (
+                  <button key={cat} type="button" onClick={() => handleSelectFormCategory(cat)} className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-bold press-scale transition-all ${dark ? 'bg-white/[0.05] text-white/50 border border-white/[0.05]' : 'bg-white/60 text-gray-600 border border-white/50'}`}>
                     <Tag size={12} />{cat}
                   </button>
                 ))}
@@ -521,14 +692,14 @@ export default function Materials() {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder={existingCategories.length > 0 ? 'Или новый раздел...' : 'Название раздела...'}
+                  placeholder={allCategories.length > 0 ? 'Или новый раздел...' : 'Название раздела...'}
                   value={newCategoryInput}
                   onChange={e => setNewCategoryInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleNewCategory() } }}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleNewFormCategory() } }}
                   className={`flex-1 px-4 py-2.5 rounded-2xl text-sm outline-none transition-all ${dark ? 'bg-white/[0.07] border border-white/[0.08] text-white placeholder-white/20 focus:border-purple-500/50' : 'bg-white/70 border border-white/60 text-gray-900 placeholder-gray-400 focus:border-purple-400 shadow-sm'}`}
                 />
                 {newCategoryInput.trim() && (
-                  <button type="button" onClick={handleNewCategory} className="px-4 py-2.5 rounded-2xl bg-accent text-white text-sm font-bold press-scale shrink-0">OK</button>
+                  <button type="button" onClick={handleNewFormCategory} className="px-4 py-2.5 rounded-2xl bg-accent text-white text-sm font-bold press-scale shrink-0">OK</button>
                 )}
               </div>
             )}
@@ -571,13 +742,9 @@ export default function Materials() {
             {myGroups.map(g => {
               const isPinned = g.pinnedMaterialId === showPinModal.id
               return (
-                <button
-                  key={g.id}
-                  onClick={() => isPinned ? handleUnpin(g.id) : handlePin(showPinModal.id, g.id)}
+                <button key={g.id} onClick={() => isPinned ? handleUnpin(g.id) : handlePin(showPinModal.id, g.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-[16px] press-scale transition-all text-left ${
-                    isPinned
-                      ? 'bg-green-500/15 border border-green-500/30'
-                      : dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white/60 border border-white/50'
+                    isPinned ? 'bg-green-500/15 border border-green-500/30' : dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white/60 border border-white/50'
                   }`}
                 >
                   <MapPin size={16} className={isPinned ? 'text-green-400' : dark ? 'text-white/30' : 'text-gray-400'} />
@@ -590,38 +757,5 @@ export default function Materials() {
         )}
       </Modal>
     </Layout>
-  )
-}
-
-function CategoryTab({ active, onClick, dark, label, count, icon, accent = 'purple' }) {
-  const colors = accent === 'red'
-    ? {
-        active: dark ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-red-100 text-red-600 border border-red-200',
-        badge: dark ? 'bg-red-400/30 text-red-200' : 'bg-red-200 text-red-600',
-      }
-    : {
-        active: dark ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-purple-100 text-purple-700 border border-purple-200',
-        badge: dark ? 'bg-purple-400/30 text-purple-200' : 'bg-purple-200 text-purple-700',
-      }
-
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap press-scale transition-all shrink-0 ${
-        active
-          ? colors.active
-          : dark ? 'bg-white/[0.05] text-white/40 border border-white/[0.05]' : 'bg-white/50 text-gray-500 border border-white/40'
-      }`}
-    >
-      {icon}
-      <span>{label}</span>
-      {(count || 0) > 0 && (
-        <span className={`min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold px-1 ${
-          active ? colors.badge : dark ? 'bg-white/[0.08] text-white/30' : 'bg-black/[0.05] text-gray-400'
-        }`}>
-          {count}
-        </span>
-      )}
-    </button>
   )
 }
