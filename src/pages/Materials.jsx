@@ -1,5 +1,5 @@
-import { useState, useMemo, useRef } from 'react'
-import { Plus, Trash2, Film, Play, X, Link2, Search, ChevronLeft, Tag } from 'lucide-react'
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
+import { Plus, Trash2, Film, Play, X, Link2, Search, ChevronLeft, Tag, Heart, BookOpen, Video, FolderPlus } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -9,11 +9,14 @@ import GlassCard from '../components/GlassCard'
 
 function getVideoEmbed(url) {
   if (!url) return null
+  // YouTube
   const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
   if (ytMatch) return { type: 'youtube', id: ytMatch[1], src: `https://www.youtube.com/embed/${ytMatch[1]}` }
-  const vkMatch = url.match(/vk\.com\/video(-?\d+)_(\d+)/)
+  // VK Video — vk.com/video and vkvideo.ru/video
+  const vkMatch = url.match(/(?:vk\.com|vkvideo\.ru)\/video(-?\d+)_(\d+)/)
   if (vkMatch) return { type: 'vk', id: `${vkMatch[1]}_${vkMatch[2]}`, src: `https://vk.com/video_ext.php?oid=${vkMatch[1]}&id=${vkMatch[2]}&hd=2` }
-  const vkClip = url.match(/vk\.com\/clip(-?\d+)_(\d+)/)
+  // VK clip
+  const vkClip = url.match(/(?:vk\.com|vkvideo\.ru)\/clip(-?\d+)_(\d+)/)
   if (vkClip) return { type: 'vk', id: `${vkClip[1]}_${vkClip[2]}`, src: `https://vk.com/video_ext.php?oid=${vkClip[1]}&id=${vkClip[2]}&hd=2` }
   return null
 }
@@ -22,6 +25,18 @@ function getVideoThumb(url) {
   const embed = getVideoEmbed(url)
   if (embed?.type === 'youtube') return `https://img.youtube.com/vi/${embed.id}/mqdefault.jpg`
   return null
+}
+
+// Favorites stored in localStorage per user
+function getFavorites(userId) {
+  try {
+    const stored = localStorage.getItem(`iborcuha_favorites_${userId}`)
+    return stored ? JSON.parse(stored) : []
+  } catch { return [] }
+}
+
+function setFavorites(userId, ids) {
+  localStorage.setItem(`iborcuha_favorites_${userId}`, JSON.stringify(ids))
 }
 
 export default function Materials() {
@@ -36,8 +51,22 @@ export default function Materials() {
   const [newCategoryInput, setNewCategoryInput] = useState('')
   const categoryInputRef = useRef(null)
 
+  const favUserId = auth.studentId || auth.userId
+  const [favorites, setFavoritesState] = useState(() => getFavorites(favUserId))
+
   const isTrainer = auth.role === 'trainer'
+  const isStudent = auth.role === 'student'
   const myGroups = data.groups.filter(g => g.trainerId === (isTrainer ? auth.userId : null))
+
+  const toggleFavorite = useCallback((materialId) => {
+    setFavoritesState(prev => {
+      const next = prev.includes(materialId)
+        ? prev.filter(id => id !== materialId)
+        : [...prev, materialId]
+      setFavorites(favUserId, next)
+      return next
+    })
+  }, [favUserId])
 
   // Filter materials based on role
   const allMaterials = useMemo(() => {
@@ -61,10 +90,17 @@ export default function Materials() {
     return [...cats].sort()
   }, [allMaterials])
 
-  // Filter by category and search
+  // Check if user has any favorites
+  const hasFavorites = useMemo(() => {
+    return allMaterials.some(m => favorites.includes(m.id))
+  }, [allMaterials, favorites])
+
+  // Filter by category, favorites, and search
   const materials = useMemo(() => {
     let filtered = allMaterials
-    if (activeCategory !== 'all') {
+    if (activeCategory === 'favorites') {
+      filtered = filtered.filter(m => favorites.includes(m.id))
+    } else if (activeCategory !== 'all') {
       filtered = filtered.filter(m => (m.category || '') === activeCategory)
     }
     if (search.trim()) {
@@ -76,16 +112,16 @@ export default function Materials() {
       )
     }
     return filtered
-  }, [allMaterials, activeCategory, search])
+  }, [allMaterials, activeCategory, search, favorites])
 
   // Count materials per category
   const categoryCounts = useMemo(() => {
-    const counts = { all: allMaterials.length }
+    const counts = { all: allMaterials.length, favorites: allMaterials.filter(m => favorites.includes(m.id)).length }
     existingCategories.forEach(cat => {
       counts[cat] = allMaterials.filter(m => m.category === cat).length
     })
     return counts
-  }, [allMaterials, existingCategories])
+  }, [allMaterials, existingCategories, favorites])
 
   const handleAdd = (e) => {
     e.preventDefault()
@@ -159,27 +195,29 @@ export default function Materials() {
       </PageHeader>
 
       {/* Search bar */}
-      <div className="px-4 mb-3">
-        <div className="relative">
-          <Search size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-400'}`} />
-          <input
-            type="text"
-            placeholder="Поиск материалов..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className={`
-              w-full pl-10 pr-4 py-2.5 rounded-2xl text-sm outline-none transition-all
-              ${dark
-                ? 'bg-white/[0.06] border border-white/[0.06] text-white placeholder-white/20 focus:border-purple-500/40'
-                : 'bg-white/60 border border-white/50 text-gray-900 placeholder-gray-400 focus:border-purple-400 shadow-sm'
-              }
-            `}
-          />
+      {allMaterials.length > 0 && (
+        <div className="px-4 mb-3">
+          <div className="relative">
+            <Search size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-400'}`} />
+            <input
+              type="text"
+              placeholder="Поиск материалов..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className={`
+                w-full pl-10 pr-4 py-2.5 rounded-2xl text-sm outline-none transition-all
+                ${dark
+                  ? 'bg-white/[0.06] border border-white/[0.06] text-white placeholder-white/20 focus:border-purple-500/40'
+                  : 'bg-white/60 border border-white/50 text-gray-900 placeholder-gray-400 focus:border-purple-400 shadow-sm'
+                }
+              `}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Category tabs - horizontal scroll (only show if categories exist) */}
-      {existingCategories.length > 0 && (
+      {/* Category tabs - horizontal scroll */}
+      {(existingCategories.length > 0 || hasFavorites) && (
         <div className="mb-4 overflow-x-auto scrollbar-hide">
           <div className="flex gap-2 px-4 pb-1">
             {/* "All" tab */}
@@ -209,6 +247,37 @@ export default function Materials() {
                 {categoryCounts.all || 0}
               </span>
             </button>
+
+            {/* Favorites tab */}
+            {hasFavorites && (
+              <button
+                onClick={() => setActiveCategory('favorites')}
+                className={`
+                  flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap
+                  press-scale transition-all shrink-0
+                  ${activeCategory === 'favorites'
+                    ? dark
+                      ? 'bg-red-500/20 text-red-300 border border-red-500/30'
+                      : 'bg-red-100 text-red-600 border border-red-200'
+                    : dark
+                      ? 'bg-white/[0.05] text-white/40 border border-white/[0.05]'
+                      : 'bg-white/50 text-gray-500 border border-white/40'
+                  }
+                `}
+              >
+                <Heart size={12} fill={activeCategory === 'favorites' ? 'currentColor' : 'none'} />
+                <span>Избранное</span>
+                <span className={`
+                  min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold px-1
+                  ${activeCategory === 'favorites'
+                    ? dark ? 'bg-red-400/30 text-red-200' : 'bg-red-200 text-red-600'
+                    : dark ? 'bg-white/[0.08] text-white/30' : 'bg-black/[0.05] text-gray-400'
+                  }
+                `}>
+                  {categoryCounts.favorites || 0}
+                </span>
+              </button>
+            )}
 
             {/* Dynamic category tabs */}
             {existingCategories.map(cat => {
@@ -254,8 +323,8 @@ export default function Materials() {
       <div className="px-4 space-y-3 slide-in">
         {/* Empty state */}
         {materials.length === 0 && (
-          <div className="text-center py-12">
-            {search.trim() || activeCategory !== 'all' ? (
+          <div className="text-center py-8">
+            {search.trim() || (activeCategory !== 'all' && activeCategory !== 'favorites') ? (
               <>
                 <Search size={48} className={`mx-auto mb-3 ${dark ? 'text-white/10' : 'text-gray-200'}`} />
                 <p className={`text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>
@@ -268,21 +337,70 @@ export default function Materials() {
                   Сбросить фильтры
                 </button>
               </>
-            ) : (
+            ) : activeCategory === 'favorites' ? (
               <>
-                <Film size={48} className={`mx-auto mb-3 ${dark ? 'text-white/10' : 'text-gray-200'}`} />
-                <p className={`text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>
-                  {isTrainer ? 'Нет материалов. Добавьте первый!' : 'Нет доступных материалов'}
+                <div className={`w-16 h-16 mx-auto mb-4 rounded-3xl flex items-center justify-center ${
+                  dark ? 'bg-red-500/10' : 'bg-red-50'
+                }`}>
+                  <Heart size={28} className={dark ? 'text-red-400/40' : 'text-red-300'} />
+                </div>
+                <p className={`text-sm font-semibold mb-1 ${dark ? 'text-white/60' : 'text-gray-700'}`}>
+                  Нет избранных материалов
                 </p>
+                <p className={`text-xs ${dark ? 'text-white/25' : 'text-gray-400'}`}>
+                  Нажмите на сердечко на любом видео, чтобы добавить в избранное
+                </p>
+              </>
+            ) : (
+              /* Rich empty state */
+              <div className="space-y-6">
+                <div className={`w-20 h-20 mx-auto rounded-[28px] flex items-center justify-center ${
+                  dark ? 'bg-gradient-to-br from-purple-500/20 to-blue-500/10' : 'bg-gradient-to-br from-purple-100 to-blue-50'
+                }`}>
+                  <Video size={36} className={dark ? 'text-purple-400/60' : 'text-purple-400'} />
+                </div>
+
+                <div>
+                  <h3 className={`text-lg font-bold mb-2 ${dark ? 'text-white/80' : 'text-gray-800'}`}>
+                    Медиатека
+                  </h3>
+                  <p className={`text-sm leading-relaxed max-w-[280px] mx-auto ${dark ? 'text-white/35' : 'text-gray-500'}`}>
+                    {isTrainer
+                      ? 'Загружайте видео с YouTube и VK для своих спортсменов. Создавайте разделы, управляйте доступом по группам.'
+                      : 'Здесь будут учебные видео от вашего тренера — техника, тактика, разминка и другие материалы.'
+                    }
+                  </p>
+                </div>
+
+                {/* Feature highlights */}
+                <div className="space-y-2 max-w-[300px] mx-auto text-left">
+                  {(isTrainer ? [
+                    { icon: Video, text: 'Видео с YouTube и VK Video' },
+                    { icon: FolderPlus, text: 'Разделы для организации' },
+                    { icon: BookOpen, text: 'Доступ по группам' },
+                  ] : [
+                    { icon: Video, text: 'Учебные видео от тренера' },
+                    { icon: Heart, text: 'Избранное для быстрого доступа' },
+                    { icon: BookOpen, text: 'Разделы по темам' },
+                  ]).map(({ icon: FIcon, text }, i) => (
+                    <div key={i} className={`flex items-center gap-3 px-4 py-2.5 rounded-2xl ${
+                      dark ? 'bg-white/[0.03]' : 'bg-white/40'
+                    }`}>
+                      <FIcon size={16} className={dark ? 'text-purple-400/50' : 'text-purple-400'} />
+                      <span className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>{text}</span>
+                    </div>
+                  ))}
+                </div>
+
                 {isTrainer && (
                   <button
                     onClick={() => { setForm({ title: '', description: '', videoUrl: '', groupIds: [], category: '' }); setShowAdd(true) }}
-                    className="mt-3 px-5 py-2 rounded-full bg-accent text-white text-sm font-bold press-scale"
+                    className="px-6 py-3 rounded-2xl bg-accent text-white text-sm font-bold press-scale"
                   >
-                    Добавить материал
+                    Добавить первый материал
                   </button>
                 )}
-              </>
+              </div>
             )}
           </div>
         )}
@@ -292,6 +410,7 @@ export default function Materials() {
           const thumb = getVideoThumb(m.videoUrl)
           const embed = getVideoEmbed(m.videoUrl)
           const groups = (m.groupIds || []).map(gId => data.groups.find(g => g.id === gId)).filter(Boolean)
+          const isFav = favorites.includes(m.id)
           return (
             <GlassCard
               key={m.id}
@@ -328,6 +447,18 @@ export default function Materials() {
                     {m.category}
                   </span>
                 )}
+                {/* Favorite button */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleFavorite(m.id) }}
+                  className="absolute bottom-2 right-2 press-scale p-1.5 rounded-full bg-black/30 backdrop-blur-sm"
+                >
+                  <Heart
+                    size={16}
+                    className={isFav ? 'text-red-400' : 'text-white/60'}
+                    fill={isFav ? 'currentColor' : 'none'}
+                    strokeWidth={2}
+                  />
+                </button>
               </div>
 
               <div className="flex items-start justify-between gap-2">
@@ -376,6 +507,16 @@ export default function Materials() {
                   <p className="text-white/50 text-xs truncate">{viewing.description}</p>
                 )}
               </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleFavorite(viewing.id) }}
+                className="press-scale p-2 rounded-full bg-white/10 mr-2"
+              >
+                <Heart
+                  size={18}
+                  className={favorites.includes(viewing.id) ? 'text-red-400' : 'text-white/60'}
+                  fill={favorites.includes(viewing.id) ? 'currentColor' : 'none'}
+                />
+              </button>
               <button onClick={() => setViewing(null)} className="press-scale p-2 rounded-full bg-white/10">
                 <X size={20} className="text-white" />
               </button>
