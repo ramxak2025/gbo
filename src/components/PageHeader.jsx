@@ -21,7 +21,7 @@ export default function PageHeader({ title, back, logo, gradient, children }) {
   }
 
   return (
-    <header className={`flex items-center justify-between px-4 pt-4 pb-3 sticky top-0 z-40 backdrop-blur-xl ${
+    <header className={`flex items-center justify-between px-4 pt-4 pb-3 mb-1 sticky top-0 z-40 backdrop-blur-xl ${
       dark ? 'bg-dark-900/60' : 'bg-[#f5f5f7]/70'
     }`}>
       <div className="flex items-center gap-2 min-w-0">

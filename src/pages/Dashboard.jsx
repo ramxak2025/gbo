@@ -543,7 +543,6 @@ function AuthorBlock({ data, dark, navigate }) {
           Проект разработал
         </div>
         <div className="flex items-center justify-center gap-3 mb-2">
-          <img src="/logo.png" alt="iBorcuha" className="w-10 h-10 rounded-xl shadow-lg shadow-black/20" />
           <h3 className="text-base font-black italic">{info.name}</h3>
         </div>
         {info.description && (

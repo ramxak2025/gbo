@@ -14,15 +14,15 @@ const navConfigs = {
     { path: '/', icon: Home, label: 'Главная' },
     { path: '/cash', icon: Wallet, label: 'Касса' },
     { path: '/team', icon: Users, label: 'Команда' },
-    { path: '/materials', icon: Film, label: 'Материалы' },
     { path: '/tournaments', icon: Trophy, label: 'Турниры' },
+    { path: '/materials', icon: Film, label: 'Материалы' },
   ],
   student: [
     { path: '/', icon: Home, label: 'Главная' },
     { path: '/team', icon: Users, label: 'Команда' },
-    { path: '/materials', icon: Film, label: 'Материалы' },
     { path: '/tournaments', icon: Trophy, label: 'Турниры' },
     { path: '/author', icon: Sparkles, label: 'Автор' },
+    { path: '/materials', icon: Film, label: 'Материалы' },
   ],
 }
 
@@ -37,7 +37,7 @@ export default function BottomNav() {
   const items = navConfigs[auth.role] || navConfigs.student
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-[max(env(safe-area-inset-bottom),8px)]">
+    <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-[calc(env(safe-area-inset-bottom)+10px)]">
       <nav
         className={`
           rounded-[22px] mx-auto max-w-lg
@@ -63,11 +63,11 @@ export default function BottomNav() {
                     ? dark
                       ? 'text-white bg-white/[0.12]'
                       : 'text-gray-900 bg-black/[0.06]'
-                    : dark ? 'text-white/35' : 'text-gray-500'
+                    : dark ? 'text-white/40' : 'text-gray-500'
                   }
                 `}
               >
-                <Icon size={21} strokeWidth={active ? 2.4 : 1.7} />
+                <Icon size={22} strokeWidth={active ? 2.5 : 2} />
                 <span className={`text-[9px] leading-tight tracking-wide ${active ? 'font-bold' : 'font-medium'}`}>
                   {label}
                 </span>
