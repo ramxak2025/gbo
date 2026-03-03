@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from 'react'
-import { Plus, Trash2, Film, Play, X, Link2, Search, Tag, Heart, Video, Upload, MapPin, FolderPlus, BookOpen, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, Film, Play, X, Link2, Search, Heart, Video, Upload, MapPin, FolderPlus, BookOpen, ChevronRight, Edit3, Layers } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -51,6 +51,7 @@ export default function Materials() {
   const { dark } = useTheme()
 
   const [showAdd, setShowAdd] = useState(false)
+  const [editingMaterial, setEditingMaterial] = useState(null)
   const [expandedId, setExpandedId] = useState(null)
   const [activeCategory, setActiveCategory] = useState('all')
   const [search, setSearch] = useState('')
@@ -183,18 +184,44 @@ export default function Materials() {
       alert('Вставьте корректную ссылку на YouTube или VK Video')
       return
     }
-    addMaterial({
-      trainerId: auth.userId,
-      title: form.title.trim(),
-      description: form.description.trim(),
-      videoUrl: form.videoUrl.trim(),
-      groupIds: form.groupIds,
-      category: form.category.trim() || '',
-      customThumb: form.customThumb || '',
-    })
+    if (editingMaterial) {
+      updateMaterial(editingMaterial.id, {
+        title: form.title.trim(),
+        description: form.description.trim(),
+        videoUrl: form.videoUrl.trim(),
+        groupIds: form.groupIds,
+        category: form.category.trim() || '',
+        customThumb: form.customThumb || '',
+      })
+      setEditingMaterial(null)
+    } else {
+      addMaterial({
+        trainerId: auth.userId,
+        title: form.title.trim(),
+        description: form.description.trim(),
+        videoUrl: form.videoUrl.trim(),
+        groupIds: form.groupIds,
+        category: form.category.trim() || '',
+        customThumb: form.customThumb || '',
+      })
+    }
     setForm({ title: '', description: '', videoUrl: '', groupIds: [], category: '', customThumb: '' })
     setNewCategoryInput('')
     setShowAdd(false)
+  }
+
+  const startEdit = (m) => {
+    setEditingMaterial(m)
+    setForm({
+      title: m.title || '',
+      description: m.description || '',
+      videoUrl: m.videoUrl || '',
+      groupIds: m.groupIds || [],
+      category: m.category || '',
+      customThumb: m.customThumb || '',
+    })
+    setNewCategoryInput('')
+    setShowAdd(true)
   }
 
   const handleDelete = (id) => {
@@ -247,7 +274,7 @@ export default function Materials() {
       <PageHeader title="Материалы">
         {isTrainer && (
           <button
-            onClick={() => { setForm({ title: '', description: '', videoUrl: '', groupIds: [], category: '', customThumb: '' }); setNewCategoryInput(''); setShowAdd(true) }}
+            onClick={() => { setEditingMaterial(null); setForm({ title: '', description: '', videoUrl: '', groupIds: [], category: '', customThumb: '' }); setNewCategoryInput(''); setShowAdd(true) }}
             className="press-scale p-2"
           >
             <Plus size={20} />
@@ -282,7 +309,7 @@ export default function Materials() {
                 : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/60 text-gray-600 border border-white/50'
             }`}
           >
-            <Tag size={14} />
+            <Layers size={14} />
             <span className="truncate">{activeCategoryLabel}</span>
             <ChevronRight size={14} className="ml-auto shrink-0 opacity-40" />
           </button>
@@ -365,7 +392,7 @@ export default function Materials() {
                 </div>
                 {isTrainer && (
                   <button
-                    onClick={() => { setForm({ title: '', description: '', videoUrl: '', groupIds: [], category: '', customThumb: '' }); setShowAdd(true) }}
+                    onClick={() => { setEditingMaterial(null); setForm({ title: '', description: '', videoUrl: '', groupIds: [], category: '', customThumb: '' }); setShowAdd(true) }}
                     className="px-6 py-3 rounded-2xl bg-accent text-white text-sm font-bold press-scale"
                   >
                     Добавить первый материал
@@ -402,12 +429,23 @@ export default function Materials() {
                     {thumb ? (
                       <img src={thumb} alt={m.title} className="w-full h-full object-cover cursor-pointer" onClick={() => setExpandedId(m.id)} />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center cursor-pointer" onClick={() => setExpandedId(m.id)}>
-                        <Film size={32} className={dark ? 'text-white/10' : 'text-gray-200'} />
+                      <div className={`w-full h-full flex flex-col items-center justify-center cursor-pointer ${
+                        embed?.type === 'vk'
+                          ? 'bg-gradient-to-br from-blue-600/20 via-blue-500/10 to-indigo-600/20'
+                          : 'bg-gradient-to-br from-purple-500/10 via-white/[0.02] to-blue-500/10'
+                      }`} onClick={() => setExpandedId(m.id)}>
+                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-2 ${
+                          embed?.type === 'vk' ? 'bg-blue-500/20' : dark ? 'bg-white/[0.06]' : 'bg-black/[0.04]'
+                        }`}>
+                          <Video size={28} className={embed?.type === 'vk' ? 'text-blue-400' : dark ? 'text-white/20' : 'text-gray-300'} />
+                        </div>
+                        <span className={`text-xs font-medium ${dark ? 'text-white/20' : 'text-gray-400'}`}>{m.title}</span>
                       </div>
                     )}
                     <div className="absolute inset-0 flex items-center justify-center cursor-pointer" onClick={() => setExpandedId(m.id)}>
-                      <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                      <div className={`w-12 h-12 rounded-full backdrop-blur-sm flex items-center justify-center ${
+                        thumb ? 'bg-black/50' : dark ? 'bg-black/30' : 'bg-black/20'
+                      }`}>
                         <Play size={22} className="text-white ml-0.5" fill="white" />
                       </div>
                     </div>
@@ -457,6 +495,11 @@ export default function Materials() {
                     {isTrainer && isExpanded && (
                       <button onClick={() => setShowPinModal(m)} className="press-scale p-1.5">
                         <MapPin size={14} className={pinnedGroups.length > 0 ? 'text-green-400' : dark ? 'text-white/30' : 'text-gray-300'} />
+                      </button>
+                    )}
+                    {isTrainer && (
+                      <button onClick={(e) => { e.stopPropagation(); startEdit(m) }} className="press-scale p-1.5">
+                        <Edit3 size={14} className={dark ? 'text-white/40' : 'text-gray-400'} />
                       </button>
                     )}
                     {isTrainer && (
@@ -575,7 +618,7 @@ export default function Materials() {
                       <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
                         isActive ? 'bg-purple-500/20' : dark ? 'bg-white/[0.06]' : 'bg-black/[0.04]'
                       }`}>
-                        <Tag size={14} className={isActive ? 'text-purple-400' : dark ? 'text-white/40' : 'text-gray-400'} />
+                        <Layers size={14} className={isActive ? 'text-purple-400' : dark ? 'text-white/40' : 'text-gray-400'} />
                       </div>
                       <span className={`flex-1 font-semibold text-sm truncate ${isActive ? dark ? 'text-purple-300' : 'text-purple-700' : ''}`}>{cat}</span>
                       <span className={`text-xs font-bold shrink-0 ${isActive ? dark ? 'text-purple-400' : 'text-purple-600' : dark ? 'text-white/25' : 'text-gray-400'}`}>
@@ -630,8 +673,8 @@ export default function Materials() {
         </div>
       )}
 
-      {/* Add material modal */}
-      <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Новый материал">
+      {/* Add/Edit material modal */}
+      <Modal open={showAdd} onClose={() => { setShowAdd(false); setEditingMaterial(null) }} title={editingMaterial ? 'Редактировать материал' : 'Новый материал'}>
         <form onSubmit={handleAdd} className="space-y-4">
           <input type="text" placeholder="Название *" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} className={inputCls} required />
           <textarea placeholder="Описание (необязательно)" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className={`${inputCls} min-h-[80px] resize-none`} rows={2} />
@@ -672,7 +715,7 @@ export default function Materials() {
             <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Раздел</div>
             {form.category && (
               <div className={`flex items-center gap-2 mb-3 px-3 py-2 rounded-2xl ${dark ? 'bg-purple-500/20 border border-purple-500/30' : 'bg-purple-100 border border-purple-200'}`}>
-                <Tag size={14} className={dark ? 'text-purple-300' : 'text-purple-600'} />
+                <Layers size={14} className={dark ? 'text-purple-300' : 'text-purple-600'} />
                 <span className={`text-sm font-bold flex-1 ${dark ? 'text-purple-300' : 'text-purple-700'}`}>{form.category}</span>
                 <button type="button" onClick={() => setForm(f => ({ ...f, category: '' }))} className="press-scale">
                   <X size={16} className={dark ? 'text-purple-300/60' : 'text-purple-400'} />
@@ -683,7 +726,7 @@ export default function Materials() {
               <div className="flex flex-wrap gap-2 mb-3">
                 {allCategories.map(cat => (
                   <button key={cat} type="button" onClick={() => handleSelectFormCategory(cat)} className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-bold press-scale transition-all ${dark ? 'bg-white/[0.05] text-white/50 border border-white/[0.05]' : 'bg-white/60 text-gray-600 border border-white/50'}`}>
-                    <Tag size={12} />{cat}
+                    <Layers size={12} />{cat}
                   </button>
                 ))}
               </div>
@@ -727,7 +770,7 @@ export default function Materials() {
           )}
 
           <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale text-base">
-            Добавить материал
+            {editingMaterial ? 'Сохранить' : 'Добавить материал'}
           </button>
         </form>
       </Modal>

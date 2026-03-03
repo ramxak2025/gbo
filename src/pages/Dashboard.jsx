@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords, MapPin, Megaphone, Plus, ClipboardList, Award, ChevronRight, Dumbbell, CreditCard, Shield, UserPlus, Check, X, Instagram, Globe, MessageCircle, Code, Play, Film } from 'lucide-react'
+import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords, MapPin, Megaphone, Plus, ClipboardList, Award, ChevronRight, Dumbbell, CreditCard, Shield, UserPlus, Check, X, Instagram, Globe, MessageCircle, Code, Play, Film, Trash2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -285,7 +285,7 @@ function SuperAdminDash({ data, dark, navigate }) {
 
 /* ======================== TRAINER ======================== */
 function TrainerDash({ auth, data, dark, navigate }) {
-  const { addNews } = useData()
+  const { addNews, deleteNews } = useData()
   const trainer = auth.user
   const myStudents = data.students.filter(s => s.trainerId === auth.userId)
   const myGroups = data.groups.filter(g => g.trainerId === auth.userId)
@@ -450,6 +450,9 @@ function TrainerDash({ auth, data, dark, navigate }) {
                           {n.groupId ? g?.name || '—' : 'Все группы'} — {n.content?.slice(0, 50)}{n.content?.length > 50 ? '...' : ''}
                         </div>
                       </div>
+                      <button onClick={(e) => { e.stopPropagation(); if (confirm('Удалить новость?')) deleteNews(n.id) }} className="press-scale p-1.5 shrink-0 rounded-full hover:bg-red-500/10 transition-colors">
+                        <Trash2 size={14} className="text-red-400" />
+                      </button>
                     </div>
                   </GlassCard>
                 )
