@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Trophy, Trash2, Calendar, RotateCcw, Check, Weight, ImagePlus } from 'lucide-react'
+import { Trophy, Trash2, Calendar, RotateCcw, Check, Weight, ImagePlus, Star } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -28,6 +28,7 @@ export default function InternalTournamentDetail() {
   const tournament = (data.internalTournaments || []).find(t => t.id === id)
   const [activeCatIdx, setActiveCatIdx] = useState(0)
   const [pendingWinner, setPendingWinner] = useState(null) // { roundIdx, matchIdx, winnerId }
+  const [showCelebration, setShowCelebration] = useState(null) // { name, avatar, weightClass }
   const coverInputRef = useRef(null)
 
   if (!tournament) {
@@ -59,6 +60,18 @@ export default function InternalTournamentDetail() {
     return lastRound?.[0]?.winner || null
   }
 
+  // Check if ALL real matches (non-bye) in a category are completed
+  const isAllMatchesCompleted = useCallback((rounds) => {
+    if (!rounds?.length) return false
+    for (const round of rounds) {
+      for (const match of round) {
+        if (!match.s1 && !match.s2) continue // empty bye slot
+        if (!match.winner) return false
+      }
+    }
+    return true
+  }, [])
+
   const sportType = tournament?.sportType || null
   const victoryTypes = getVictoryTypes(sportType)
 
@@ -79,6 +92,24 @@ export default function InternalTournamentDetail() {
     // Store victory type on the match
     if (victoryType) {
       newBracket.rounds[roundIdx][matchIdx].victoryType = victoryType
+    }
+
+    // Check if this was the final match → all matches now completed → trigger celebration
+    const wasDone = isAllMatchesCompleted(activeCat.rounds)
+    const nowDone = isAllMatchesCompleted(newBracket.rounds)
+
+    if (!wasDone && nowDone) {
+      const finalWinner = newBracket.rounds[newBracket.rounds.length - 1]?.[0]?.winner
+      if (finalWinner) {
+        const student = allStudents.find(s => s.id === finalWinner)
+        if (student) {
+          setTimeout(() => setShowCelebration({
+            name: student.name,
+            avatar: student.avatar,
+            weightClass: activeCat?.weightClass || ''
+          }), 400)
+        }
+      }
     }
 
     if (isLegacy) {
@@ -139,9 +170,9 @@ export default function InternalTournamentDetail() {
     updateInternalTournament(tournament.id, { coverImage: null })
   }
 
-  // Check if all categories have champions
+  // Check if all categories have all matches completed
   const allCats = isLegacy ? [activeCat] : categories
-  const allHaveChampion = allCats.every(c => getChampion(c))
+  const allHaveChampion = allCats.every(c => getChampion(c) && isAllMatchesCompleted(c?.rounds))
   const totalParticipants = allCats.reduce((s, c) => s + (c.participants?.length || 0), 0)
 
   const champion = getChampion(activeCat)
@@ -243,7 +274,7 @@ export default function InternalTournamentDetail() {
           <div className="overflow-x-auto -mx-4 px-4 pb-1">
             <div className="flex gap-2" style={{ minWidth: 'max-content' }}>
               {categories.map((cat, idx) => {
-                const catChampion = getChampion(cat)
+                const catDone = getChampion(cat) && isAllMatchesCompleted(cat?.rounds)
                 return (
                   <button
                     key={idx}
@@ -254,7 +285,7 @@ export default function InternalTournamentDetail() {
                         : dark ? 'bg-white/[0.06] text-white/60 border border-white/[0.06]' : 'bg-white/60 text-gray-500 border border-white/60'
                     }`}
                   >
-                    {catChampion && <Trophy size={11} className={idx === activeCatIdx ? 'text-yellow-200' : 'text-yellow-400'} />}
+                    {catDone && <Trophy size={11} className={idx === activeCatIdx ? 'text-yellow-200' : 'text-yellow-400'} />}
                     {cat.weightClass}
                     <span className={`${idx === activeCatIdx ? 'text-white/60' : dark ? 'text-white/30' : 'text-gray-500'}`}>
                       ({cat.participants?.length || 0})
@@ -274,8 +305,8 @@ export default function InternalTournamentDetail() {
           </div>
         )}
 
-        {/* Champion for active category */}
-        {championStudent && (
+        {/* Champion for active category — only after ALL matches are done */}
+        {championStudent && isAllMatchesCompleted(activeCat?.rounds) && (
           <div className={`rounded-[24px] p-5 relative overflow-hidden ${
             dark
               ? 'bg-gradient-to-br from-yellow-500/15 via-amber-500/10 to-orange-500/15 border border-yellow-500/30'
@@ -335,11 +366,12 @@ export default function InternalTournamentDetail() {
               {(activeCat.participants || []).map(pid => {
                 const s = allStudents.find(st => st.id === pid)
                 if (!s) return null
-                const isChampion = pid === champion
+                const allDone = isAllMatchesCompleted(activeCat?.rounds)
+                const isChamp = allDone && pid === champion
                 return (
                   <GlassCard
                     key={pid}
-                    className={`flex items-center gap-3 ${isChampion ? 'border border-yellow-500/30' : ''}`}
+                    className={`flex items-center gap-3 ${isChamp ? 'border border-yellow-500/30' : ''}`}
                   >
                     <Avatar name={s.name} src={s.avatar} size={32} />
                     <div className="min-w-0 flex-1">
@@ -348,7 +380,7 @@ export default function InternalTournamentDetail() {
                     <span className={`text-xs ${dark ? 'text-white/30' : 'text-gray-500'}`}>
                       {s.weight ? s.weight + ' кг' : '—'}
                     </span>
-                    {isChampion && <Trophy size={14} className="text-yellow-400 shrink-0" />}
+                    {isChamp && <Trophy size={14} className="text-yellow-400 shrink-0" />}
                   </GlassCard>
                 )
               })}
@@ -373,6 +405,77 @@ export default function InternalTournamentDetail() {
           ))}
         </div>
       </Modal>
+
+      {/* Champion celebration overlay */}
+      {showCelebration && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center champion-overlay"
+          onClick={() => setShowCelebration(null)}
+        >
+          {/* Dark backdrop */}
+          <div className="absolute inset-0 bg-black/85 backdrop-blur-md" />
+
+          {/* Animated glow rings */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="champion-glow w-72 h-72 rounded-full bg-gradient-to-br from-yellow-400/30 via-amber-500/20 to-orange-500/30 blur-[60px]" />
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="champion-ring w-64 h-64 rounded-full border-2 border-dashed border-yellow-400/20" />
+          </div>
+
+          {/* Sparkle dots */}
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute champion-sparkle"
+              style={{
+                top: `${20 + Math.random() * 60}%`,
+                left: `${10 + Math.random() * 80}%`,
+                animationDelay: `${i * 0.3}s`,
+              }}
+            >
+              <Star size={12} className="text-yellow-400" fill="currentColor" />
+            </div>
+          ))}
+
+          {/* Content */}
+          <div className="relative z-10 text-center px-8">
+            {/* Trophy */}
+            <div className="champion-trophy mb-6">
+              <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500 flex items-center justify-center shadow-[0_0_60px_rgba(234,179,8,0.4)]">
+                <Trophy size={48} className="text-white" fill="white" />
+              </div>
+            </div>
+
+            {/* Avatar */}
+            <div className="champion-trophy mb-4" style={{ animationDelay: '0.5s' }}>
+              <div className="w-20 h-20 mx-auto rounded-full p-1 bg-gradient-to-br from-yellow-400 to-amber-600">
+                <div className="w-full h-full rounded-full overflow-hidden">
+                  <Avatar name={showCelebration.name} src={showCelebration.avatar} size={72} />
+                </div>
+              </div>
+            </div>
+
+            {/* Title */}
+            <div className="champion-name">
+              <p className="text-yellow-400 text-xs font-black uppercase tracking-[0.3em] mb-2">
+                Чемпион{showCelebration.weightClass ? ` — ${showCelebration.weightClass}` : ''}
+              </p>
+              <h2 className="text-white text-3xl font-black">{showCelebration.name}</h2>
+            </div>
+
+            {/* Tournament name */}
+            <div className="champion-subtitle mt-3">
+              <p className="text-white/40 text-sm">{tournament.title}</p>
+            </div>
+
+            {/* Hint */}
+            <div className="champion-hint mt-10">
+              <p className="text-white/25 text-xs">Нажмите, чтобы продолжить</p>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   )
 }
