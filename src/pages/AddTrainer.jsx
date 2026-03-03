@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Check } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
 import Layout from '../components/Layout'
@@ -18,20 +19,31 @@ export default function AddTrainer() {
     phone: '',
     clubName: '',
     city: '',
-    sportType: 'bjj',
+    sportTypes: [],
   })
+
+  const toggleSport = (id) => {
+    setForm(f => ({
+      ...f,
+      sportTypes: f.sportTypes.includes(id)
+        ? f.sportTypes.filter(s => s !== id)
+        : [...f.sportTypes, id]
+    }))
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault()
     const phoneDigits = cleanPhone(form.phone)
     if (!form.name.trim() || phoneDigits.length < 11) return
+    if (form.sportTypes.length === 0) return
     addTrainer({
       name: form.name.trim(),
       password: form.password,
       phone: phoneDigits,
       clubName: form.clubName.trim(),
       city: form.city.trim(),
-      sportType: form.sportType,
+      sportType: form.sportTypes[0],
+      sportTypes: form.sportTypes,
       avatar: null,
     })
     navigate(-1)
@@ -80,13 +92,37 @@ export default function AddTrainer() {
               )}
             </datalist>
           </div>
-          <select
-            value={form.sportType}
-            onChange={e => setForm(f => ({ ...f, sportType: e.target.value }))}
-            className={inputCls}
-          >
-            {SPORT_TYPES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-          </select>
+
+          {/* Multiple sports selection */}
+          <div>
+            <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+              Виды спорта *
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {SPORT_TYPES.map(s => {
+                const selected = form.sportTypes.includes(s.id)
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => toggleSport(s.id)}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold press-scale transition-all ${
+                      selected
+                        ? 'bg-accent text-white'
+                        : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60'
+                    }`}
+                  >
+                    {selected && <Check size={12} />}
+                    {s.label}
+                  </button>
+                )
+              })}
+            </div>
+            {form.sportTypes.length === 0 && (
+              <p className="text-[10px] mt-1.5 text-red-400">Выберите хотя бы один вид спорта</p>
+            )}
+          </div>
+
           <PhoneInput
             value={form.phone}
             onChange={v => setForm(f => ({ ...f, phone: v }))}
@@ -100,7 +136,13 @@ export default function AddTrainer() {
             onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
             className={inputCls}
           />
-          <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale mt-4">
+          <button
+            type="submit"
+            disabled={form.sportTypes.length === 0}
+            className={`w-full py-3.5 rounded-[16px] font-bold press-scale mt-4 ${
+              form.sportTypes.length > 0 ? 'bg-accent text-white' : 'bg-accent/30 text-white/50 cursor-not-allowed'
+            }`}
+          >
             Добавить тренера
           </button>
         </form>

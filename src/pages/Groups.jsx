@@ -8,6 +8,7 @@ import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
 import Modal from '../components/Modal'
+import { SPORT_TYPES, getSportLabel } from '../utils/sports'
 
 export default function Groups() {
   const { auth } = useAuth()
@@ -16,9 +17,13 @@ export default function Groups() {
   const navigate = useNavigate()
   const [showAdd, setShowAdd] = useState(false)
   const [editGroup, setEditGroup] = useState(null)
-  const [form, setForm] = useState({ name: '', schedule: '', subscriptionCost: '' })
+  const [form, setForm] = useState({ name: '', schedule: '', subscriptionCost: '', sportType: '' })
 
   const myGroups = data.groups.filter(g => g.trainerId === auth.userId)
+  const trainerUser = data.users.find(u => u.id === auth.userId)
+  const trainerSports = trainerUser?.sportTypes?.length > 0
+    ? trainerUser.sportTypes
+    : trainerUser?.sportType ? [trainerUser.sportType] : []
 
   const handleAdd = (e) => {
     e.preventDefault()
@@ -28,8 +33,9 @@ export default function Groups() {
       name: form.name.trim(),
       schedule: form.schedule.trim(),
       subscriptionCost: parseInt(form.subscriptionCost) || 5000,
+      sportType: form.sportType || trainerSports[0] || null,
     })
-    setForm({ name: '', schedule: '', subscriptionCost: '' })
+    setForm({ name: '', schedule: '', subscriptionCost: '', sportType: '' })
     setShowAdd(false)
   }
 
@@ -40,6 +46,7 @@ export default function Groups() {
       name: editGroup.name,
       schedule: editGroup.schedule,
       subscriptionCost: parseInt(editGroup.subscriptionCost) || 5000,
+      sportType: editGroup.sportType || null,
     })
     setEditGroup(null)
   }
@@ -77,8 +84,13 @@ export default function Groups() {
                 <div className="min-w-0">
                   <div className="font-bold">{g.name}</div>
                   <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>{g.schedule}</div>
-                  <div className={`text-xs mt-0.5 ${dark ? 'text-white/30' : 'text-gray-500'}`}>
-                    {count} чел. — {g.subscriptionCost?.toLocaleString('ru-RU')} ₽/мес
+                  <div className={`text-xs mt-0.5 flex items-center gap-2 ${dark ? 'text-white/30' : 'text-gray-500'}`}>
+                    <span>{count} чел. — {g.subscriptionCost?.toLocaleString('ru-RU')} ₽/мес</span>
+                    {g.sportType && (
+                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${
+                        dark ? 'bg-accent/15 text-accent-light' : 'bg-red-50 text-red-600'
+                      }`}>{getSportLabel(g.sportType)}</span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
@@ -145,6 +157,25 @@ export default function Groups() {
             className={inputCls}
             inputMode="numeric"
           />
+          {trainerSports.length > 1 && (
+            <div>
+              <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Вид спорта</div>
+              <div className="flex flex-wrap gap-2">
+                {trainerSports.map(sId => {
+                  const active = form.sportType === sId || (!form.sportType && sId === trainerSports[0])
+                  return (
+                    <button key={sId} type="button" onClick={() => setForm(f => ({ ...f, sportType: sId }))}
+                      className={`px-3.5 py-2 rounded-2xl text-xs font-bold press-scale transition-all ${
+                        active ? 'bg-accent text-white' : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60'
+                      }`}
+                    >
+                      {getSportLabel(sId)}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
           <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale">
             Создать группу
           </button>
@@ -177,6 +208,25 @@ export default function Groups() {
               className={inputCls}
               inputMode="numeric"
             />
+            {trainerSports.length > 1 && (
+              <div>
+                <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Вид спорта</div>
+                <div className="flex flex-wrap gap-2">
+                  {trainerSports.map(sId => {
+                    const active = editGroup.sportType === sId
+                    return (
+                      <button key={sId} type="button" onClick={() => setEditGroup(g => ({ ...g, sportType: sId }))}
+                        className={`px-3.5 py-2 rounded-2xl text-xs font-bold press-scale transition-all ${
+                          active ? 'bg-accent text-white' : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60'
+                        }`}
+                      >
+                        {getSportLabel(sId)}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
             <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale">
               Сохранить
             </button>

@@ -35,19 +35,9 @@ function saveFavorites(userId, ids) {
   localStorage.setItem(`iborcuha_favorites_${userId}`, JSON.stringify(ids))
 }
 
-// Custom empty categories stored per trainer in localStorage
-function getCustomCategories(userId) {
-  try {
-    return JSON.parse(localStorage.getItem(`iborcuha_categories_${userId}`)) || []
-  } catch { return [] }
-}
-function saveCustomCategories(userId, cats) {
-  localStorage.setItem(`iborcuha_categories_${userId}`, JSON.stringify(cats))
-}
-
 export default function Materials() {
   const { auth } = useAuth()
-  const { data, addMaterial, updateMaterial, deleteMaterial, updateGroup } = useData()
+  const { data, addMaterial, updateMaterial, deleteMaterial, updateGroup, updateTrainer } = useData()
   const { dark } = useTheme()
 
   const [showAdd, setShowAdd] = useState(false)
@@ -69,9 +59,9 @@ export default function Materials() {
   const favUserId = auth.studentId || auth.userId
   const [favorites, setFavoritesState] = useState(() => getFavorites(favUserId))
 
-  // Custom categories (trainer can create empty ones)
-  const catOwnerId = auth.userId
-  const [customCategories, setCustomCategoriesState] = useState(() => getCustomCategories(catOwnerId))
+  // Custom categories from server (trainer's user.materialCategories)
+  const trainerUser = data.users.find(u => u.id === auth.userId)
+  const customCategories = useMemo(() => trainerUser?.materialCategories || [], [trainerUser])
 
   const toggleFavorite = useCallback((materialId) => {
     setFavoritesState(prev => {
@@ -137,24 +127,22 @@ export default function Materials() {
     return filtered
   }, [allMaterials, activeCategory, search, favorites])
 
-  // Drawer: add new category
+  // Drawer: add new category (saved to server)
   const handleAddCustomCategory = () => {
     const val = drawerNewCat.trim()
     if (!val) return
     if (allCategories.includes(val)) { setDrawerNewCat(''); return }
     const next = [...customCategories, val]
-    setCustomCategoriesState(next)
-    saveCustomCategories(catOwnerId, next)
+    updateTrainer(auth.userId, { materialCategories: next })
     setDrawerNewCat('')
   }
 
   // Drawer: delete custom category (only if it has 0 materials)
   const handleDeleteCustomCategory = (cat) => {
     const count = allMaterials.filter(m => m.category === cat).length
-    if (count > 0) return // can't delete if materials use it
+    if (count > 0) return
     const next = customCategories.filter(c => c !== cat)
-    setCustomCategoriesState(next)
-    saveCustomCategories(catOwnerId, next)
+    updateTrainer(auth.userId, { materialCategories: next })
     if (activeCategory === cat) setActiveCategory('all')
   }
 

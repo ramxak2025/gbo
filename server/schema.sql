@@ -183,6 +183,64 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_column THEN NULL;
 END $$;
 
+-- Custom thumbnail for materials
+DO $$ BEGIN
+  ALTER TABLE materials ADD COLUMN custom_thumb TEXT;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+-- Sport types for trainers (JSON array for multiple sports)
+DO $$ BEGIN
+  ALTER TABLE users ADD COLUMN sport_types JSONB DEFAULT '[]';
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+-- Sport type for groups
+DO $$ BEGIN
+  ALTER TABLE groups ADD COLUMN sport_type VARCHAR(50);
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+-- Pinned material for groups
+DO $$ BEGIN
+  ALTER TABLE groups ADD COLUMN pinned_material_id TEXT;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+-- Sport type for internal tournaments
+DO $$ BEGIN
+  ALTER TABLE internal_tournaments ADD COLUMN sport_type VARCHAR(50);
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+-- Trainer categories (stored on server, not localStorage)
+DO $$ BEGIN
+  ALTER TABLE users ADD COLUMN material_categories JSONB DEFAULT '[]';
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+-- Clubs
+CREATE TABLE IF NOT EXISTS clubs (
+  id TEXT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  city VARCHAR(255),
+  sport_types JSONB DEFAULT '[]',
+  head_trainer_id TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Club ID for trainers
+DO $$ BEGIN
+  ALTER TABLE users ADD COLUMN club_id TEXT;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+-- Is head trainer flag
+DO $$ BEGIN
+  ALTER TABLE users ADD COLUMN is_head_trainer BOOLEAN DEFAULT false;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
 -- Trainer registration requests
 CREATE TABLE IF NOT EXISTS pending_registrations (
   id TEXT PRIMARY KEY,

@@ -1,11 +1,12 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Home, Wallet, Users, Trophy, User, Sparkles, Film } from 'lucide-react'
+import { Home, Wallet, Users, Trophy, User, Sparkles, Film, Shield } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 
 const navConfigs = {
   superadmin: [
     { path: '/', icon: Home, label: 'Главная' },
+    { path: '/clubs', icon: Shield, label: 'Клубы' },
     { path: '/team', icon: Users, label: 'Люди' },
     { path: '/tournaments', icon: Trophy, label: 'Турниры' },
     { path: '/profile', icon: User, label: 'Профиль' },

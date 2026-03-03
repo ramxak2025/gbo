@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords, MapPin, Megaphone, Plus, ClipboardList, Award, ChevronRight, Dumbbell, CreditCard, Shield, UserPlus, Check, X, Instagram, Globe, MessageCircle, Code, Play, Film, Trash2 } from 'lucide-react'
+import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords, MapPin, Megaphone, Plus, ClipboardList, Award, ChevronRight, Dumbbell, CreditCard, Shield, UserPlus, Check, X, Instagram, Globe, MessageCircle, Code, Play, Film, Trash2, Trophy } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -235,8 +235,41 @@ function SuperAdminDash({ data, dark, navigate }) {
           </div>
         )}
 
+        {/* Clubs */}
+        {(data.clubs || []).length > 0 && (
+          <div>
+            <SectionTitle dark={dark} action="Все" onAction={() => navigate('/clubs')}>Клубы</SectionTitle>
+            <div className="space-y-2">
+              {(data.clubs || []).slice(0, 3).map(club => {
+                const clubTrainers = data.users.filter(u => u.role === 'trainer' && u.clubId === club.id)
+                const headT = clubTrainers.find(t => t.isHeadTrainer)
+                return (
+                  <GlassCard key={club.id} onClick={() => navigate(`/club/${club.id}`)}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-[14px] flex items-center justify-center shrink-0 ${
+                        dark ? 'bg-blue-500/15' : 'bg-blue-100'
+                      }`}>
+                        <Shield size={18} className={dark ? 'text-blue-400' : 'text-blue-600'} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold truncate">{club.name}</div>
+                        <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-600'} flex items-center gap-1 flex-wrap`}>
+                          {headT && <span>{headT.name}</span>}
+                          {club.city && <><span>•</span><MapPin size={10} />{club.city}</>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 text-sm shrink-0 ml-2"><Users size={14} /><span>{clubTrainers.length}</span></div>
+                    </div>
+                  </GlassCard>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Trainers */}
         <div>
-          <SectionTitle dark={dark}>Клубы</SectionTitle>
+          <SectionTitle dark={dark}>Тренеры</SectionTitle>
           <div className="space-y-2">
             {trainers.map(t => {
               const count = data.students.filter(s => s.trainerId === t.id && !s.isDemo).length
@@ -605,6 +638,33 @@ function StudentDash({ auth, data, dark, navigate }) {
     return matches
   }, [data.internalTournaments, data.students, auth.studentId])
 
+  // Check if student is a champion in any active/completed tournament
+  const championTournaments = useMemo(() => {
+    const results = []
+    const tournaments = (data.internalTournaments || []).filter(t => t.status === 'active' || t.status === 'completed')
+    for (const tournament of tournaments) {
+      const brackets = tournament.brackets || {}
+      const cats = brackets.categories || []
+      if (cats.length > 0) {
+        for (const cat of cats) {
+          if (!cat.rounds?.length) continue
+          const lastRound = cat.rounds[cat.rounds.length - 1]
+          if (lastRound?.[0]?.winner === auth.studentId) {
+            results.push({ tournament, weightClass: cat.weightClass })
+          }
+        }
+      } else if (brackets.rounds?.length) {
+        const lastRound = brackets.rounds[brackets.rounds.length - 1]
+        if (lastRound?.[0]?.winner === auth.studentId) {
+          results.push({ tournament, weightClass: brackets.weightClass })
+        }
+      }
+    }
+    return results
+  }, [data.internalTournaments, auth.studentId])
+
+  const isChampion = championTournaments.length > 0
+
   // Today's workout — pinned material for student's group
   const pinnedMaterial = useMemo(() => {
     if (!group?.pinnedMaterialId) return null
@@ -625,16 +685,55 @@ function StudentDash({ auth, data, dark, navigate }) {
       <PageHeader title="Мой кабинет" logo />
       <div className="px-4 space-y-4 slide-in stagger">
 
+        {/* Champion banner */}
+        {isChampion && (
+          <div className={`rounded-[24px] p-5 relative overflow-hidden ${
+            dark
+              ? 'bg-gradient-to-br from-yellow-500/20 via-amber-500/10 to-orange-500/20 border border-yellow-500/30'
+              : 'bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 border border-yellow-300/50 shadow-[0_8px_32px_rgba(234,179,8,0.15)]'
+          }`}>
+            <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full ${dark ? 'bg-yellow-500/10' : 'bg-yellow-200/40'}`} />
+            <div className={`absolute -bottom-8 -left-8 w-24 h-24 rounded-full ${dark ? 'bg-orange-500/10' : 'bg-orange-200/30'}`} />
+            <div className="relative flex items-center justify-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg">
+                <Trophy size={20} className="text-white" fill="white" />
+              </div>
+              <div className="text-center">
+                <div className={`text-[10px] uppercase font-black tracking-widest ${dark ? 'text-yellow-400' : 'text-yellow-600'}`}>Чемпион</div>
+                <div className="text-sm font-bold">
+                  {championTournaments.map(ct => ct.tournament.title).join(', ')}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Hero — Student identity + Club info (tap for profile) */}
         <div
           onClick={() => navigate('/profile')}
           className={`rounded-[24px] p-5 relative overflow-hidden backdrop-blur-xl press-scale cursor-pointer ${
-          dark
-            ? 'bg-gradient-to-br from-purple-500/10 via-white/[0.04] to-accent/10 border border-white/[0.07]'
-            : 'bg-gradient-to-br from-purple-50/80 via-white/70 to-red-50/80 border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
+          isChampion
+            ? dark
+              ? 'bg-gradient-to-br from-yellow-500/10 via-amber-500/5 to-orange-500/10 border border-yellow-500/20'
+              : 'bg-gradient-to-br from-yellow-50/80 via-amber-50/60 to-orange-50/80 border border-yellow-200/60 shadow-[0_4px_24px_rgba(234,179,8,0.1)]'
+            : dark
+              ? 'bg-gradient-to-br from-purple-500/10 via-white/[0.04] to-accent/10 border border-white/[0.07]'
+              : 'bg-gradient-to-br from-purple-50/80 via-white/70 to-red-50/80 border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
         }`}>
           <div className="flex items-center gap-4">
-            <Avatar name={student?.name || '?'} src={student?.avatar} size={60} />
+            <div className="relative">
+              {isChampion && (
+                <div className={`absolute -inset-1 rounded-full ${
+                  dark ? 'bg-gradient-to-br from-yellow-400/30 to-amber-500/30' : 'bg-gradient-to-br from-yellow-300/40 to-amber-400/40'
+                }`} />
+              )}
+              <Avatar name={student?.name || '?'} src={student?.avatar} size={60} />
+              {isChampion && (
+                <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-md">
+                  <Trophy size={12} className="text-white" fill="white" />
+                </div>
+              )}
+            </div>
             <div className="min-w-0 flex-1">
               <h2 className="text-lg font-black truncate">{student?.name}</h2>
               <p className={`text-sm truncate ${dark ? 'text-white/50' : 'text-gray-600'}`}>

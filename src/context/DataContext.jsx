@@ -7,7 +7,7 @@ const EMPTY_DATA = {
   users: [], groups: [], students: [], transactions: [],
   tournaments: [], news: [], tournamentRegistrations: [], authorInfo: {},
   internalTournaments: [], attendance: [], pendingRegistrations: [],
-  materials: [],
+  materials: [], clubs: [],
 }
 
 export function DataProvider({ children }) {
@@ -233,6 +233,45 @@ export function DataProvider({ children }) {
     setData(d => ({ ...d, materials: d.materials.filter(m => m.id !== id) }))
   }, [])
 
+  const addClub = useCallback(async (club) => {
+    const c = await api.addClub(club)
+    setData(d => ({ ...d, clubs: [c, ...d.clubs] }))
+    return c.id
+  }, [])
+
+  const updateClub = useCallback(async (id, changes) => {
+    await api.updateClub(id, changes)
+    setData(d => ({
+      ...d,
+      clubs: d.clubs.map(c => c.id === id ? { ...c, ...changes } : c)
+    }))
+  }, [])
+
+  const deleteClub = useCallback(async (id) => {
+    await api.deleteClub(id)
+    setData(d => ({
+      ...d,
+      clubs: d.clubs.filter(c => c.id !== id),
+      users: d.users.map(u => u.clubId === id ? { ...u, clubId: null, isHeadTrainer: false } : u),
+    }))
+  }, [])
+
+  const assignTrainerToClub = useCallback(async (clubId, trainerId) => {
+    await api.assignTrainerToClub(clubId, trainerId)
+    setData(d => ({
+      ...d,
+      users: d.users.map(u => u.id === trainerId ? { ...u, clubId } : u)
+    }))
+  }, [])
+
+  const removeTrainerFromClub = useCallback(async (clubId, trainerId) => {
+    await api.removeTrainerFromClub(clubId, trainerId)
+    setData(d => ({
+      ...d,
+      users: d.users.map(u => u.id === trainerId ? { ...u, clubId: null, isHeadTrainer: false } : u)
+    }))
+  }, [])
+
   const resetAll = useCallback(() => {
     // Not implemented for DB version — would need admin API
   }, [])
@@ -249,6 +288,7 @@ export function DataProvider({ children }) {
       addInternalTournament, updateInternalTournament, deleteInternalTournament,
       saveAttendanceBulk,
       addMaterial, updateMaterial, deleteMaterial,
+      addClub, updateClub, deleteClub, assignTrainerToClub, removeTrainerFromClub,
     }}>
       {children}
     </DataContext.Provider>

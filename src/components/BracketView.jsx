@@ -1,12 +1,15 @@
 import { useTheme } from '../context/ThemeContext'
+import { getVictoryLabel } from '../utils/sports'
 import Avatar from './Avatar'
 
-function MatchCard({ match, students, canEdit, onSelectWinner, dark }) {
+function MatchCard({ match, students, canEdit, onSelectWinner, dark, sportType }) {
   const s1 = students.find(s => s.id === match.s1)
   const s2 = students.find(s => s.id === match.s2)
   const isBye = !match.s1 || !match.s2
 
   if (isBye && match.winner) return null // Don't render bye matches
+
+  const victoryLabel = match.victoryType ? getVictoryLabel(sportType, match.victoryType) : null
 
   const PlayerSlot = ({ student, studentId, isWinner, isTop }) => {
     const active = canEdit && match.s1 && match.s2 && !match.winner
@@ -48,11 +51,16 @@ function MatchCard({ match, students, canEdit, onSelectWinner, dark }) {
       <PlayerSlot student={s1} studentId={match.s1} isWinner={match.winner === match.s1} isTop />
       <div className={`h-px ${dark ? 'bg-white/[0.08]' : 'bg-black/[0.06]'}`} />
       <PlayerSlot student={s2} studentId={match.s2} isWinner={match.winner === match.s2} isTop={false} />
+      {victoryLabel && (
+        <div className={`text-center py-1 text-[9px] font-bold uppercase ${dark ? 'bg-accent/10 text-accent-light' : 'bg-red-50 text-red-500'}`}>
+          {victoryLabel}
+        </div>
+      )}
     </div>
   )
 }
 
-export default function BracketView({ brackets, students, canEdit, onSelectWinner }) {
+export default function BracketView({ brackets, students, canEdit, onSelectWinner, sportType }) {
   const { dark } = useTheme()
   if (!brackets?.rounds?.length) return null
 
@@ -92,6 +100,7 @@ export default function BracketView({ brackets, students, canEdit, onSelectWinne
                   canEdit={canEdit}
                   onSelectWinner={(winnerId) => onSelectWinner(index, brackets.rounds[index].indexOf(match), winnerId)}
                   dark={dark}
+                  sportType={sportType}
                 />
               ))}
             </div>

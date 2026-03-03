@@ -7,9 +7,10 @@ import { useTheme } from '../context/ThemeContext'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
+import Modal from '../components/Modal'
 import BracketView from '../components/BracketView'
 import Avatar from '../components/Avatar'
-import { setMatchWinner, generateBracket } from '../utils/sports'
+import { setMatchWinner, generateBracket, getVictoryTypes, getSportLabel } from '../utils/sports'
 
 function formatDate(iso) {
   if (!iso) return '—'
@@ -25,6 +26,7 @@ export default function InternalTournamentDetail() {
 
   const tournament = (data.internalTournaments || []).find(t => t.id === id)
   const [activeCatIdx, setActiveCatIdx] = useState(0)
+  const [pendingWinner, setPendingWinner] = useState(null) // { roundIdx, matchIdx, winnerId }
 
   if (!tournament) {
     return (
@@ -55,10 +57,27 @@ export default function InternalTournamentDetail() {
     return lastRound?.[0]?.winner || null
   }
 
+  const sportType = tournament?.sportType || null
+  const victoryTypes = getVictoryTypes(sportType)
+
   const handleSelectWinner = (roundIdx, matchIdx, winnerId) => {
     if (!isTrainer) return
+    // If sport has victory types, show picker
+    if (sportType && victoryTypes.length > 0) {
+      setPendingWinner({ roundIdx, matchIdx, winnerId })
+      return
+    }
+    applyWinner(roundIdx, matchIdx, winnerId, null)
+  }
+
+  const applyWinner = (roundIdx, matchIdx, winnerId, victoryType) => {
     const catBracket = { rounds: activeCat.rounds, participants: activeCat.participants }
     const newBracket = setMatchWinner(catBracket, roundIdx, matchIdx, winnerId)
+
+    // Store victory type on the match
+    if (victoryType) {
+      newBracket.rounds[roundIdx][matchIdx].victoryType = victoryType
+    }
 
     if (isLegacy) {
       updateInternalTournament(tournament.id, {
@@ -72,6 +91,7 @@ export default function InternalTournamentDetail() {
         brackets: { ...brackets, categories: newCategories }
       })
     }
+    setPendingWinner(null)
   }
 
   const handleDelete = () => {
@@ -136,7 +156,7 @@ export default function InternalTournamentDetail() {
         {/* Header */}
         <div className="text-center">
           <h1 className="text-xl font-black">{tournament.title}</h1>
-          <div className={`text-sm mt-1 flex items-center justify-center gap-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+          <div className={`text-sm mt-1 flex items-center justify-center gap-2 flex-wrap ${dark ? 'text-white/40' : 'text-gray-500'}`}>
             <Calendar size={14} />
             <span>{formatDate(tournament.date)}</span>
             <span>•</span>
@@ -144,6 +164,13 @@ export default function InternalTournamentDetail() {
             <span>•</span>
             <span>{allCats.length} {allCats.length === 1 ? 'весовая' : allCats.length < 5 ? 'весовых' : 'весовых'}</span>
           </div>
+          {sportType && (
+            <div className="mt-2 flex justify-center">
+              <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
+                dark ? 'bg-accent/15 text-accent-light border border-accent/20' : 'bg-red-50 text-red-600'
+              }`}>{getSportLabel(sportType)}</span>
+            </div>
+          )}
           {tournament.status === 'completed' && (
             <div className="mt-2 inline-block px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-bold uppercase">
               Завершён
@@ -189,20 +216,37 @@ export default function InternalTournamentDetail() {
 
         {/* Champion for active category */}
         {championStudent && (
-          <GlassCard className="border border-yellow-500/30 bg-gradient-to-r from-yellow-500/10 to-orange-500/10">
-            <div className="flex items-center gap-3">
+          <div className={`rounded-[24px] p-5 relative overflow-hidden ${
+            dark
+              ? 'bg-gradient-to-br from-yellow-500/15 via-amber-500/10 to-orange-500/15 border border-yellow-500/30'
+              : 'bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 border border-yellow-300/50 shadow-[0_8px_32px_rgba(234,179,8,0.15)]'
+          }`}>
+            <div className={`absolute -top-8 -right-8 w-24 h-24 rounded-full ${dark ? 'bg-yellow-500/10' : 'bg-yellow-200/40'}`} />
+            <div className={`absolute -bottom-6 -left-6 w-20 h-20 rounded-full ${dark ? 'bg-orange-500/10' : 'bg-orange-200/30'}`} />
+            <div className="relative flex items-center gap-4">
               <div className="relative">
-                <Avatar name={championStudent.name} src={championStudent.avatar} size={48} />
-                <Trophy size={16} className="text-yellow-400 absolute -top-1 -right-1" />
+                <div className={`w-16 h-16 rounded-full p-0.5 ${
+                  dark ? 'bg-gradient-to-br from-yellow-400 to-amber-600' : 'bg-gradient-to-br from-yellow-400 to-amber-500'
+                }`}>
+                  <div className="w-full h-full rounded-full overflow-hidden">
+                    <Avatar name={championStudent.name} src={championStudent.avatar} size={60} />
+                  </div>
+                </div>
+                <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-lg">
+                  <Trophy size={16} className="text-white" fill="white" />
+                </div>
               </div>
               <div>
-                <div className={`text-[10px] uppercase font-bold ${dark ? 'text-yellow-400/60' : 'text-yellow-600'}`}>
-                  Победитель{!isLegacy && categories.length > 1 ? ` — ${activeCat?.weightClass}` : ''}
+                <div className={`text-[10px] uppercase font-black tracking-wider ${dark ? 'text-yellow-400' : 'text-yellow-600'}`}>
+                  Чемпион{!isLegacy && categories.length > 1 ? ` — ${activeCat?.weightClass}` : ''}
                 </div>
-                <div className="font-bold">{championStudent.name}</div>
+                <div className="text-lg font-black">{championStudent.name}</div>
+                {championStudent.weight && (
+                  <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>{championStudent.weight} кг</div>
+                )}
               </div>
             </div>
-          </GlassCard>
+          </div>
         )}
 
         {/* Bracket */}
@@ -216,6 +260,7 @@ export default function InternalTournamentDetail() {
               students={allStudents}
               canEdit={isTrainer && tournament.status !== 'completed'}
               onSelectWinner={handleSelectWinner}
+              sportType={sportType}
             />
           </div>
         )}
@@ -251,6 +296,23 @@ export default function InternalTournamentDetail() {
           </div>
         )}
       </div>
+
+      {/* Victory type picker modal */}
+      <Modal open={!!pendingWinner} onClose={() => setPendingWinner(null)} title="Вид победы">
+        <div className="space-y-2">
+          {victoryTypes.map(vt => (
+            <button
+              key={vt.id}
+              onClick={() => pendingWinner && applyWinner(pendingWinner.roundIdx, pendingWinner.matchIdx, pendingWinner.winnerId, vt.id)}
+              className={`w-full py-3.5 px-4 rounded-[16px] text-left font-semibold press-scale transition-all ${
+                dark ? 'bg-white/[0.05] border border-white/[0.07] hover:bg-white/[0.1]' : 'bg-white/60 border border-white/50 hover:bg-white/80 shadow-sm'
+              }`}
+            >
+              {vt.label}
+            </button>
+          ))}
+        </div>
+      </Modal>
     </Layout>
   )
 }

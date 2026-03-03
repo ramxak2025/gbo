@@ -105,6 +105,13 @@ export const api = {
   updateMaterial: (id, data) => request(`/data/materials/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteMaterial: (id) => request(`/data/materials/${id}`, { method: 'DELETE' }),
 
+  // Clubs
+  addClub: (data) => request('/data/clubs', { method: 'POST', body: JSON.stringify(data) }),
+  updateClub: (id, data) => request(`/data/clubs/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteClub: (id) => request(`/data/clubs/${id}`, { method: 'DELETE' }),
+  assignTrainerToClub: (clubId, trainerId) => request(`/data/clubs/${clubId}/trainers`, { method: 'POST', body: JSON.stringify({ trainerId }) }),
+  removeTrainerFromClub: (clubId, trainerId) => request(`/data/clubs/${clubId}/trainers/${trainerId}`, { method: 'DELETE' }),
+
   // Registration
   register: (data) => {
     const headers = { 'Content-Type': 'application/json' }

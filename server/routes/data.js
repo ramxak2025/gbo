@@ -8,12 +8,15 @@ const router = Router()
 const genId = () => Date.now().toString(36) + crypto.randomBytes(4).toString('hex')
 
 function mapUser(u, includeSecrets = false) {
-  const base = { id: u.id, name: u.name, phone: u.phone, role: u.role, avatar: u.avatar, clubName: u.club_name, sportType: u.sport_type, city: u.city, isDemo: !!u.is_demo }
+  const base = { id: u.id, name: u.name, phone: u.phone, role: u.role, avatar: u.avatar, clubName: u.club_name, sportType: u.sport_type, sportTypes: u.sport_types || [], city: u.city, isDemo: !!u.is_demo, materialCategories: u.material_categories || [], clubId: u.club_id || null, isHeadTrainer: !!u.is_head_trainer }
   if (includeSecrets) base.plainPassword = u.plain_password || ''
   return base
 }
+function mapClub(c) {
+  return { id: c.id, name: c.name, city: c.city || '', sportTypes: c.sport_types || [], headTrainerId: c.head_trainer_id || null, createdAt: c.created_at }
+}
 function mapInternalTournament(t) {
-  return { id: t.id, trainerId: t.trainer_id, title: t.title, date: t.date, status: t.status, brackets: t.brackets, createdAt: t.created_at }
+  return { id: t.id, trainerId: t.trainer_id, title: t.title, date: t.date, status: t.status, brackets: t.brackets, sportType: t.sport_type || null, createdAt: t.created_at }
 }
 function mapStudent(s, includeSecrets = false) {
   const base = {
@@ -29,7 +32,7 @@ function mapStudent(s, includeSecrets = false) {
   return base
 }
 function mapGroup(g) {
-  return { id: g.id, trainerId: g.trainer_id, name: g.name, schedule: g.schedule, subscriptionCost: g.subscription_cost, attendanceEnabled: !!g.attendance_enabled }
+  return { id: g.id, trainerId: g.trainer_id, name: g.name, schedule: g.schedule, subscriptionCost: g.subscription_cost, attendanceEnabled: !!g.attendance_enabled, sportType: g.sport_type || null, pinnedMaterialId: g.pinned_material_id || null }
 }
 function mapAttendance(a) {
   return { id: a.id, groupId: a.group_id, studentId: a.student_id, date: a.date, present: a.present }
@@ -44,7 +47,7 @@ function mapNews(n) {
   return { id: n.id, trainerId: n.trainer_id, groupId: n.group_id, title: n.title, content: n.content, date: n.date }
 }
 function mapMaterial(m) {
-  return { id: m.id, trainerId: m.trainer_id, title: m.title, description: m.description, videoUrl: m.video_url, groupIds: m.group_ids || [], category: m.category || 'other', createdAt: m.created_at }
+  return { id: m.id, trainerId: m.trainer_id, title: m.title, description: m.description, videoUrl: m.video_url, groupIds: m.group_ids || [], category: m.category || 'other', customThumb: m.custom_thumb || '', createdAt: m.created_at }
 }
 function mapAuthor(a) {
   return a ? { name: a.name, instagram: a.instagram, website: a.website, description: a.description, phone: a.phone } : {}
@@ -65,11 +68,12 @@ router.get('/', authMiddleware, async (req, res) => {
     pool.query('SELECT * FROM internal_tournaments ORDER BY created_at DESC'),
     pool.query('SELECT * FROM attendance ORDER BY date DESC'),
     pool.query('SELECT * FROM materials ORDER BY created_at DESC'),
+    pool.query('SELECT * FROM clubs ORDER BY created_at DESC'),
   ]
   if (role === 'superadmin') queries.push(pool.query("SELECT * FROM pending_registrations WHERE status = 'pending' ORDER BY created_at DESC"))
   const results = await Promise.all(queries)
-  const [users, groups, students, transactions, tournaments, news, regs, author, intTournaments, attendance, materials] = results
-  const pendingRegs = results[11] || { rows: [] }
+  const [users, groups, students, transactions, tournaments, news, regs, author, intTournaments, attendance, materials, clubs] = results
+  const pendingRegs = results[12] || { rows: [] }
 
   const isSuperadmin = role === 'superadmin'
   // Superadmin sees passwords + no demo data; demo users see only their demo data
@@ -94,6 +98,7 @@ router.get('/', authMiddleware, async (req, res) => {
     internalTournaments: filteredIntTournaments.map(mapInternalTournament),
     attendance: attendance.rows.map(mapAttendance),
     materials: filteredMaterials.map(mapMaterial),
+    clubs: clubs.rows.map(mapClub),
     ...(isSuperadmin ? {
       pendingRegistrations: pendingRegs.rows.map(r => ({
         id: r.id, name: r.name, phone: r.phone, clubName: r.club_name,
@@ -146,20 +151,28 @@ router.delete('/students/:id', authMiddleware, async (req, res) => {
 
 // --- Groups ---
 router.post('/groups', authMiddleware, async (req, res) => {
-  const { name, schedule, subscriptionCost, trainerId } = req.body
+  const { name, schedule, subscriptionCost, trainerId, sportType } = req.body
   const id = genId()
-  await pool.query('INSERT INTO groups (id, trainer_id, name, schedule, subscription_cost) VALUES ($1,$2,$3,$4,$5)',
-    [id, trainerId || req.user.userId, name, schedule || '', subscriptionCost || 0])
-  res.json({ id, trainerId: trainerId || req.user.userId, name, schedule: schedule || '', subscriptionCost: subscriptionCost || 0 })
+  await pool.query('INSERT INTO groups (id, trainer_id, name, schedule, subscription_cost, sport_type) VALUES ($1,$2,$3,$4,$5,$6)',
+    [id, trainerId || req.user.userId, name, schedule || '', subscriptionCost || 0, sportType || null])
+  res.json({ id, trainerId: trainerId || req.user.userId, name, schedule: schedule || '', subscriptionCost: subscriptionCost || 0, sportType: sportType || null })
 })
 
 router.put('/groups/:id', authMiddleware, async (req, res) => {
-  const { name, schedule, subscriptionCost, attendanceEnabled } = req.body
+  const { name, schedule, subscriptionCost, attendanceEnabled, sportType, pinnedMaterialId } = req.body
   const sets = ['name = COALESCE($1, name)', 'schedule = COALESCE($2, schedule)', 'subscription_cost = COALESCE($3, subscription_cost)']
   const vals = [name, schedule, subscriptionCost]
   if (attendanceEnabled !== undefined) {
     sets.push(`attendance_enabled = $${vals.length + 1}`)
     vals.push(attendanceEnabled)
+  }
+  if (sportType !== undefined) {
+    sets.push(`sport_type = $${vals.length + 1}`)
+    vals.push(sportType)
+  }
+  if (pinnedMaterialId !== undefined) {
+    sets.push(`pinned_material_id = $${vals.length + 1}`)
+    vals.push(pinnedMaterialId)
   }
   vals.push(req.params.id)
   await pool.query(`UPDATE groups SET ${sets.join(', ')} WHERE id = $${vals.length}`, vals)
@@ -285,19 +298,30 @@ router.delete('/news/:id', authMiddleware, async (req, res) => {
 
 // --- Trainers (admin only) ---
 router.post('/trainers', authMiddleware, async (req, res) => {
-  const { name, phone, password, clubName, avatar, sportType, city } = req.body
+  const { name, phone, password, clubName, avatar, sportType, sportTypes, city } = req.body
   const id = genId()
   const pw = password || 'trainer123'
   const hash = bcrypt.hashSync(pw, 10)
-  await pool.query('INSERT INTO users (id, name, phone, password_hash, role, club_name, avatar, sport_type, city, plain_password) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)',
-    [id, name, phone, hash, 'trainer', clubName || '', avatar || null, sportType || null, city || null, pw])
-  res.json({ id, name, phone, role: 'trainer', clubName, avatar, sportType, city, plainPassword: pw })
+  // Support both sportType (single) and sportTypes (array)
+  const sTypes = sportTypes || (sportType ? [sportType] : [])
+  const sType = sportType || (sTypes[0] || null)
+  await pool.query('INSERT INTO users (id, name, phone, password_hash, role, club_name, avatar, sport_type, sport_types, city, plain_password) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',
+    [id, name, phone, hash, 'trainer', clubName || '', avatar || null, sType, JSON.stringify(sTypes), city || null, pw])
+  res.json({ id, name, phone, role: 'trainer', clubName, avatar, sportType: sType, sportTypes: sTypes, city, plainPassword: pw })
 })
 
 router.put('/trainers/:id', authMiddleware, async (req, res) => {
-  const { name, phone, clubName, avatar, sportType, city, password } = req.body
+  const { name, phone, clubName, avatar, sportType, sportTypes, city, password, materialCategories } = req.body
   const sets = ['name=COALESCE($1,name)', 'phone=COALESCE($2,phone)', 'club_name=COALESCE($3,club_name)', 'avatar=COALESCE($4,avatar)', 'sport_type=COALESCE($5,sport_type)', 'city=COALESCE($6,city)']
   const vals = [name, phone, clubName, avatar, sportType, city]
+  if (sportTypes !== undefined) {
+    sets.push(`sport_types = $${vals.length + 1}`)
+    vals.push(JSON.stringify(sportTypes))
+  }
+  if (materialCategories !== undefined) {
+    sets.push(`material_categories = $${vals.length + 1}`)
+    vals.push(JSON.stringify(materialCategories))
+  }
   if (password) {
     sets.push(`password_hash = $${vals.length + 1}`, `plain_password = $${vals.length + 2}`)
     vals.push(bcrypt.hashSync(password, 10), password)
@@ -332,16 +356,16 @@ router.put('/author', authMiddleware, async (req, res) => {
 
 // --- Internal Tournaments (trainer brackets) ---
 router.post('/internal-tournaments', authMiddleware, async (req, res) => {
-  const { title, date, brackets } = req.body
+  const { title, date, brackets, sportType } = req.body
   const id = genId()
-  await pool.query('INSERT INTO internal_tournaments (id, trainer_id, title, date, brackets) VALUES ($1,$2,$3,$4,$5)',
-    [id, req.user.userId, title, date || null, JSON.stringify(brackets || {})])
+  await pool.query('INSERT INTO internal_tournaments (id, trainer_id, title, date, brackets, sport_type) VALUES ($1,$2,$3,$4,$5,$6)',
+    [id, req.user.userId, title, date || null, JSON.stringify(brackets || {}), sportType || null])
   const { rows: [t] } = await pool.query('SELECT * FROM internal_tournaments WHERE id = $1', [id])
   res.json(mapInternalTournament(t))
 })
 
 router.put('/internal-tournaments/:id', authMiddleware, async (req, res) => {
-  const { title, date, status, brackets } = req.body
+  const { title, date, status, brackets, sportType } = req.body
   const sets = []
   const vals = []
   let i = 1
@@ -349,6 +373,7 @@ router.put('/internal-tournaments/:id', authMiddleware, async (req, res) => {
   if (date !== undefined) { sets.push(`date = $${i++}`); vals.push(date) }
   if (status !== undefined) { sets.push(`status = $${i++}`); vals.push(status) }
   if (brackets !== undefined) { sets.push(`brackets = $${i++}`); vals.push(JSON.stringify(brackets)) }
+  if (sportType !== undefined) { sets.push(`sport_type = $${i++}`); vals.push(sportType) }
   if (sets.length === 0) return res.json({ ok: true })
   vals.push(req.params.id)
   await pool.query(`UPDATE internal_tournaments SET ${sets.join(', ')} WHERE id = $${i}`, vals)
@@ -363,18 +388,18 @@ router.delete('/internal-tournaments/:id', authMiddleware, async (req, res) => {
 
 // --- Materials ---
 router.post('/materials', authMiddleware, async (req, res) => {
-  const { title, description, videoUrl, groupIds, trainerId, category } = req.body
+  const { title, description, videoUrl, groupIds, trainerId, category, customThumb } = req.body
   const id = genId()
   const tid = trainerId || req.user.userId
   await pool.query(
-    'INSERT INTO materials (id, trainer_id, title, description, video_url, group_ids, category, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())',
-    [id, tid, title, description || '', videoUrl, JSON.stringify(groupIds || []), category || 'other']
+    'INSERT INTO materials (id, trainer_id, title, description, video_url, group_ids, category, custom_thumb, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())',
+    [id, tid, title, description || '', videoUrl, JSON.stringify(groupIds || []), category || 'other', customThumb || null]
   )
-  res.json({ id, trainerId: tid, title, description: description || '', videoUrl, groupIds: groupIds || [], category: category || 'other', createdAt: new Date().toISOString() })
+  res.json({ id, trainerId: tid, title, description: description || '', videoUrl, groupIds: groupIds || [], category: category || 'other', customThumb: customThumb || '', createdAt: new Date().toISOString() })
 })
 
 router.put('/materials/:id', authMiddleware, async (req, res) => {
-  const { title, description, videoUrl, groupIds, category } = req.body
+  const { title, description, videoUrl, groupIds, category, customThumb } = req.body
   const sets = []
   const vals = []
   let i = 1
@@ -383,6 +408,7 @@ router.put('/materials/:id', authMiddleware, async (req, res) => {
   if (videoUrl !== undefined) { sets.push(`video_url = $${i++}`); vals.push(videoUrl) }
   if (groupIds !== undefined) { sets.push(`group_ids = $${i++}`); vals.push(JSON.stringify(groupIds)) }
   if (category !== undefined) { sets.push(`category = $${i++}`); vals.push(category) }
+  if (customThumb !== undefined) { sets.push(`custom_thumb = $${i++}`); vals.push(customThumb || null) }
   if (sets.length === 0) return res.json({ ok: true })
   vals.push(req.params.id)
   await pool.query(`UPDATE materials SET ${sets.join(', ')} WHERE id = $${i}`, vals)
@@ -391,6 +417,63 @@ router.put('/materials/:id', authMiddleware, async (req, res) => {
 
 router.delete('/materials/:id', authMiddleware, async (req, res) => {
   await pool.query('DELETE FROM materials WHERE id = $1', [req.params.id])
+  res.json({ ok: true })
+})
+
+// --- Clubs ---
+router.post('/clubs', authMiddleware, async (req, res) => {
+  if (req.user.role !== 'superadmin') return res.status(403).json({ error: 'Нет доступа' })
+  const { name, city, sportTypes, headTrainerId } = req.body
+  const id = genId()
+  await pool.query('INSERT INTO clubs (id, name, city, sport_types, head_trainer_id) VALUES ($1,$2,$3,$4,$5)',
+    [id, name, city || '', JSON.stringify(sportTypes || []), headTrainerId || null])
+  // If head trainer, update their club_id and is_head_trainer
+  if (headTrainerId) {
+    await pool.query('UPDATE users SET club_id = $1, is_head_trainer = true WHERE id = $2', [id, headTrainerId])
+  }
+  res.json({ id, name, city, sportTypes: sportTypes || [], headTrainerId, createdAt: new Date().toISOString() })
+})
+
+router.put('/clubs/:id', authMiddleware, async (req, res) => {
+  const { name, city, sportTypes, headTrainerId } = req.body
+  const sets = []
+  const vals = []
+  let i = 1
+  if (name !== undefined) { sets.push(`name = $${i++}`); vals.push(name) }
+  if (city !== undefined) { sets.push(`city = $${i++}`); vals.push(city) }
+  if (sportTypes !== undefined) { sets.push(`sport_types = $${i++}`); vals.push(JSON.stringify(sportTypes)) }
+  if (headTrainerId !== undefined) {
+    sets.push(`head_trainer_id = $${i++}`); vals.push(headTrainerId)
+    // Update old head trainer
+    await pool.query('UPDATE users SET is_head_trainer = false WHERE club_id = $1 AND is_head_trainer = true', [req.params.id])
+    if (headTrainerId) {
+      await pool.query('UPDATE users SET club_id = $1, is_head_trainer = true WHERE id = $2', [req.params.id, headTrainerId])
+    }
+  }
+  if (sets.length === 0) return res.json({ ok: true })
+  vals.push(req.params.id)
+  await pool.query(`UPDATE clubs SET ${sets.join(', ')} WHERE id = $${i}`, vals)
+  res.json({ ok: true })
+})
+
+router.delete('/clubs/:id', authMiddleware, async (req, res) => {
+  if (req.user.role !== 'superadmin') return res.status(403).json({ error: 'Нет доступа' })
+  await pool.query('UPDATE users SET club_id = NULL, is_head_trainer = false WHERE club_id = $1', [req.params.id])
+  await pool.query('DELETE FROM clubs WHERE id = $1', [req.params.id])
+  res.json({ ok: true })
+})
+
+// Assign trainer to club
+router.post('/clubs/:id/trainers', authMiddleware, async (req, res) => {
+  const { trainerId } = req.body
+  await pool.query('UPDATE users SET club_id = $1 WHERE id = $2', [req.params.id, trainerId])
+  res.json({ ok: true })
+})
+
+// Remove trainer from club
+router.delete('/clubs/:id/trainers/:trainerId', authMiddleware, async (req, res) => {
+  await pool.query('UPDATE users SET club_id = NULL, is_head_trainer = false WHERE id = $1 AND club_id = $2',
+    [req.params.trainerId, req.params.id])
   res.json({ ok: true })
 })
 

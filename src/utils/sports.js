@@ -32,6 +32,64 @@ export function getSportLabel(sportType) {
   return SPORT_TYPES.find(s => s.id === sportType)?.label || sportType || '—'
 }
 
+// Sport-specific victory outcomes
+export const VICTORY_TYPES = {
+  bjj: [
+    { id: 'submission', label: 'Сабмишн' },
+    { id: 'points', label: 'По очкам' },
+    { id: 'advantage', label: 'По преимуществу' },
+    { id: 'dq', label: 'Дисквалификация' },
+  ],
+  grappling: [
+    { id: 'submission', label: 'Сабмишн' },
+    { id: 'points', label: 'По очкам' },
+    { id: 'dq', label: 'Дисквалификация' },
+  ],
+  freestyle: [
+    { id: 'pin', label: 'Туше' },
+    { id: 'tech_sup', label: 'Тех. превосходство' },
+    { id: 'points', label: 'По очкам' },
+    { id: 'dq', label: 'Дисквалификация' },
+  ],
+  grecoroman: [
+    { id: 'pin', label: 'Туше' },
+    { id: 'tech_sup', label: 'Тех. превосходство' },
+    { id: 'points', label: 'По очкам' },
+    { id: 'dq', label: 'Дисквалификация' },
+  ],
+  sambo: [
+    { id: 'submission', label: 'Болевой' },
+    { id: 'throw', label: 'Чистый бросок' },
+    { id: 'points', label: 'По очкам' },
+    { id: 'dq', label: 'Дисквалификация' },
+  ],
+  judo: [
+    { id: 'ippon', label: 'Иппон' },
+    { id: 'wazaari', label: 'Вадза-ари' },
+    { id: 'submission', label: 'Болевой/Удушение' },
+    { id: 'dq', label: 'Дисквалификация' },
+  ],
+  mma: [
+    { id: 'ko', label: 'Нокаут' },
+    { id: 'tko', label: 'ТКО' },
+    { id: 'submission', label: 'Сабмишн' },
+    { id: 'decision', label: 'Решение судей' },
+    { id: 'dq', label: 'Дисквалификация' },
+  ],
+}
+
+export function getVictoryTypes(sportType) {
+  return VICTORY_TYPES[sportType] || [
+    { id: 'points', label: 'По очкам' },
+    { id: 'dq', label: 'Дисквалификация' },
+  ]
+}
+
+export function getVictoryLabel(sportType, victoryType) {
+  const types = getVictoryTypes(sportType)
+  return types.find(t => t.id === victoryType)?.label || victoryType || ''
+}
+
 // Weight categories for internal tournaments
 export const WEIGHT_CLASSES = [
   'До 57 кг', 'До 62 кг', 'До 68 кг', 'До 74 кг',

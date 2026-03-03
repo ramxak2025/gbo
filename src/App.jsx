@@ -24,6 +24,8 @@ import CreateInternalTournament from './pages/CreateInternalTournament'
 import InternalTournamentDetail from './pages/InternalTournamentDetail'
 import Attendance from './pages/Attendance'
 import Materials from './pages/Materials'
+import Clubs from './pages/Clubs'
+import ClubDetail from './pages/ClubDetail'
 
 function AppRoutes() {
   const { auth } = useAuth()
@@ -62,6 +64,8 @@ function AppRoutes() {
       {auth.role === 'superadmin' && <Route path="/add-tournament" element={<AddTournament />} />}
       {auth.role === 'superadmin' && <Route path="/add-trainer" element={<AddTrainer />} />}
       {auth.role === 'superadmin' && <Route path="/trainer/:id" element={<TrainerDetail />} />}
+      {auth.role === 'superadmin' && <Route path="/clubs" element={<Clubs />} />}
+      {auth.role === 'superadmin' && <Route path="/club/:id" element={<ClubDetail />} />}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

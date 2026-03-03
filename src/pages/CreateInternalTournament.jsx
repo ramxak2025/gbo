@@ -9,7 +9,7 @@ import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
 import Avatar from '../components/Avatar'
 import DateButton from '../components/DateButton'
-import { WEIGHT_CLASSES, generateBracket } from '../utils/sports'
+import { WEIGHT_CLASSES, generateBracket, getSportLabel } from '../utils/sports'
 
 export default function CreateInternalTournament() {
   const navigate = useNavigate()
@@ -18,11 +18,16 @@ export default function CreateInternalTournament() {
   const { dark } = useTheme()
 
   const myStudents = data.students.filter(s => s.trainerId === auth.userId)
+  const trainerUser = data.users.find(u => u.id === auth.userId)
+  const trainerSports = trainerUser?.sportTypes?.length > 0
+    ? trainerUser.sportTypes
+    : trainerUser?.sportType ? [trainerUser.sportType] : []
 
   const [step, setStep] = useState(1) // 1=info, 2=add categories, 3=select participants
   const [form, setForm] = useState({
     title: '',
     date: new Date().toISOString().split('T')[0],
+    sportType: trainerSports[0] || '',
   })
   // Each category: { weightClass, participants: Set }
   const [categories, setCategories] = useState([])
@@ -89,6 +94,7 @@ export default function CreateInternalTournament() {
     await addInternalTournament({
       title: form.title || 'Клубный турнир',
       date: form.date,
+      sportType: form.sportType || null,
       brackets: { categories: cats },
     })
     navigate('/tournaments')
@@ -122,6 +128,25 @@ export default function CreateInternalTournament() {
               className={inputCls}
             />
             <DateButton label="Дата турнира" value={form.date} onChange={v => setForm(f => ({ ...f, date: v }))} />
+            {trainerSports.length > 1 && (
+              <div>
+                <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Вид спорта</div>
+                <div className="flex flex-wrap gap-2">
+                  {trainerSports.map(sId => {
+                    const active = form.sportType === sId
+                    return (
+                      <button key={sId} type="button" onClick={() => setForm(f => ({ ...f, sportType: sId }))}
+                        className={`px-3.5 py-2 rounded-2xl text-xs font-bold press-scale transition-all ${
+                          active ? 'bg-accent text-white' : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60'
+                        }`}
+                      >
+                        {getSportLabel(sId)}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
             <button
               onClick={() => setStep(2)}
               className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale mt-2"
