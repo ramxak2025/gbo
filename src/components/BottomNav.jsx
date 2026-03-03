@@ -48,7 +48,7 @@ export default function BottomNav() {
           }
         `}
       >
-        <div className="flex items-center justify-around h-[60px]">
+        <div className="flex items-center justify-around h-[60px] px-2">
           {items.map(({ path, icon: Icon, label }) => {
             const active = location.pathname === path ||
               (path !== '/' && location.pathname.startsWith(path))
