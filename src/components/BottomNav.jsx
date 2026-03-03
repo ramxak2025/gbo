@@ -37,7 +37,7 @@ export default function BottomNav() {
   const items = navConfigs[auth.role] || navConfigs.student
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-[calc(env(safe-area-inset-bottom)+10px)]">
+    <div className="px-4 pb-[calc(env(safe-area-inset-bottom)+10px)] pt-2">
       <nav
         className={`
           rounded-[22px] mx-auto max-w-lg
@@ -48,7 +48,7 @@ export default function BottomNav() {
           }
         `}
       >
-        <div className="flex items-center justify-around h-[60px]">
+        <div className="flex items-center justify-around h-[60px] px-2">
           {items.map(({ path, icon: Icon, label }) => {
             const active = location.pathname === path ||
               (path !== '/' && location.pathname.startsWith(path))
@@ -57,17 +57,17 @@ export default function BottomNav() {
                 key={path}
                 onClick={() => navigate(path)}
                 className={`
-                  flex flex-col items-center gap-0.5 px-3 py-1.5 press-scale relative
+                  flex-1 flex flex-col items-center gap-0.5 py-1.5 press-scale relative
                   transition-all duration-300 rounded-2xl
                   ${active
                     ? dark
                       ? 'text-white bg-white/[0.12]'
                       : 'text-gray-900 bg-black/[0.06]'
-                    : dark ? 'text-white/40' : 'text-gray-500'
+                    : dark ? 'text-gray-500' : 'text-gray-400'
                   }
                 `}
               >
-                <Icon size={22} strokeWidth={active ? 2.5 : 2} />
+                <Icon size={22} strokeWidth={active ? 2.5 : 1.5} />
                 <span className={`text-[9px] leading-tight tracking-wide ${active ? 'font-bold' : 'font-medium'}`}>
                   {label}
                 </span>

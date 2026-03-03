@@ -44,7 +44,7 @@ function mapNews(n) {
   return { id: n.id, trainerId: n.trainer_id, groupId: n.group_id, title: n.title, content: n.content, date: n.date }
 }
 function mapMaterial(m) {
-  return { id: m.id, trainerId: m.trainer_id, title: m.title, description: m.description, videoUrl: m.video_url, groupIds: m.group_ids || [], createdAt: m.created_at }
+  return { id: m.id, trainerId: m.trainer_id, title: m.title, description: m.description, videoUrl: m.video_url, groupIds: m.group_ids || [], category: m.category || 'other', createdAt: m.created_at }
 }
 function mapAuthor(a) {
   return a ? { name: a.name, instagram: a.instagram, website: a.website, description: a.description, phone: a.phone } : {}
@@ -363,18 +363,18 @@ router.delete('/internal-tournaments/:id', authMiddleware, async (req, res) => {
 
 // --- Materials ---
 router.post('/materials', authMiddleware, async (req, res) => {
-  const { title, description, videoUrl, groupIds, trainerId } = req.body
+  const { title, description, videoUrl, groupIds, trainerId, category } = req.body
   const id = genId()
   const tid = trainerId || req.user.userId
   await pool.query(
-    'INSERT INTO materials (id, trainer_id, title, description, video_url, group_ids, created_at) VALUES ($1,$2,$3,$4,$5,$6,NOW())',
-    [id, tid, title, description || '', videoUrl, JSON.stringify(groupIds || [])]
+    'INSERT INTO materials (id, trainer_id, title, description, video_url, group_ids, category, created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())',
+    [id, tid, title, description || '', videoUrl, JSON.stringify(groupIds || []), category || 'other']
   )
-  res.json({ id, trainerId: tid, title, description: description || '', videoUrl, groupIds: groupIds || [], createdAt: new Date().toISOString() })
+  res.json({ id, trainerId: tid, title, description: description || '', videoUrl, groupIds: groupIds || [], category: category || 'other', createdAt: new Date().toISOString() })
 })
 
 router.put('/materials/:id', authMiddleware, async (req, res) => {
-  const { title, description, videoUrl, groupIds } = req.body
+  const { title, description, videoUrl, groupIds, category } = req.body
   const sets = []
   const vals = []
   let i = 1
@@ -382,6 +382,7 @@ router.put('/materials/:id', authMiddleware, async (req, res) => {
   if (description !== undefined) { sets.push(`description = $${i++}`); vals.push(description) }
   if (videoUrl !== undefined) { sets.push(`video_url = $${i++}`); vals.push(videoUrl) }
   if (groupIds !== undefined) { sets.push(`group_ids = $${i++}`); vals.push(JSON.stringify(groupIds)) }
+  if (category !== undefined) { sets.push(`category = $${i++}`); vals.push(category) }
   if (sets.length === 0) return res.json({ ok: true })
   vals.push(req.params.id)
   await pool.query(`UPDATE materials SET ${sets.join(', ')} WHERE id = $${i}`, vals)
