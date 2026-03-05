@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Shield, Users, Trash2, Plus, Crown, UserMinus, ChevronRight, MapPin, Award, Dumbbell, TrendingUp } from 'lucide-react'
+import { Shield, Users, Trash2, Plus, Crown, UserMinus, ChevronRight, MapPin, Award, Dumbbell, TrendingUp, Edit3 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -24,6 +24,7 @@ export default function ClubDetail() {
   const { dark } = useTheme()
 
   const [showAddTrainer, setShowAddTrainer] = useState(false)
+  const [showHeadPicker, setShowHeadPicker] = useState(false)
 
   const club = (data.clubs || []).find(c => c.id === id)
   const isSuperadmin = auth.role === 'superadmin'
@@ -62,7 +63,12 @@ export default function ClubDetail() {
 
   const handleSetHead = (trainerId) => {
     updateClub(id, { headTrainerId: trainerId })
-    // Optimistic update
+    setShowHeadPicker(false)
+  }
+
+  const handleRemoveHead = () => {
+    updateClub(id, { headTrainerId: null })
+    setShowHeadPicker(false)
   }
 
   const handleAddTrainer = (trainerId) => {
@@ -142,11 +148,21 @@ export default function ClubDetail() {
           ))}
         </div>
 
-        {/* Head trainer */}
+        {/* Head trainer — tappable to change */}
         <div>
-          <h3 className={`text-xs uppercase font-bold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Главный тренер</h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className={`text-xs uppercase font-bold ${dark ? 'text-white/40' : 'text-gray-500'}`}>Главный тренер</h3>
+            {(isSuperadmin || isHead) && clubTrainers.length > 0 && (
+              <button onClick={() => setShowHeadPicker(true)} className="press-scale p-1">
+                <Edit3 size={14} className="text-accent" />
+              </button>
+            )}
+          </div>
           {headTrainer ? (
-            <GlassCard className="flex items-center gap-3">
+            <GlassCard
+              onClick={() => (isSuperadmin || isHead) && clubTrainers.length > 0 && setShowHeadPicker(true)}
+              className={`flex items-center gap-3 ${(isSuperadmin || isHead) ? 'cursor-pointer' : ''}`}
+            >
               <Avatar name={headTrainer.name} src={headTrainer.avatar} size={44} />
               <div className="min-w-0 flex-1">
                 <div className="font-bold text-sm truncate">{headTrainer.name}</div>
@@ -157,7 +173,14 @@ export default function ClubDetail() {
               <Crown size={18} className="text-yellow-400 shrink-0" />
             </GlassCard>
           ) : (
-            <p className={`text-center py-4 text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>Не назначен</p>
+            <GlassCard
+              onClick={() => (isSuperadmin || isHead) && clubTrainers.length > 0 && setShowHeadPicker(true)}
+              className={`text-center py-3 ${(isSuperadmin || isHead) && clubTrainers.length > 0 ? 'cursor-pointer' : ''}`}
+            >
+              <p className={`text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>
+                {clubTrainers.length > 0 ? 'Нажмите, чтобы назначить' : 'Сначала добавьте тренеров'}
+              </p>
+            </GlassCard>
           )}
         </div>
 
@@ -192,14 +215,9 @@ export default function ClubDetail() {
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       {(isSuperadmin || isHead) && !t.isHeadTrainer && (
-                        <>
-                          <button onClick={(e) => { e.stopPropagation(); handleSetHead(t.id) }} className="press-scale p-1.5" title="Назначить главным">
-                            <Crown size={14} className={dark ? 'text-white/20' : 'text-gray-300'} />
-                          </button>
-                          <button onClick={(e) => { e.stopPropagation(); handleRemoveTrainer(t.id) }} className="press-scale p-1.5">
-                            <UserMinus size={14} className="text-red-400" />
-                          </button>
-                        </>
+                        <button onClick={(e) => { e.stopPropagation(); handleRemoveTrainer(t.id) }} className="press-scale p-1.5">
+                          <UserMinus size={14} className="text-red-400" />
+                        </button>
                       )}
                       {isSuperadmin && <ChevronRight size={16} className={dark ? 'text-white/15' : 'text-gray-300'} />}
                     </div>
@@ -210,6 +228,58 @@ export default function ClubDetail() {
           </div>
         </div>
       </div>
+
+      {/* Head trainer picker modal */}
+      <Modal open={showHeadPicker} onClose={() => setShowHeadPicker(false)} title="Назначить главного тренера">
+        <div className="space-y-2">
+          {clubTrainers.map(t => {
+            const isCurrentHead = t.isHeadTrainer
+            return (
+              <button
+                key={t.id}
+                onClick={() => !isCurrentHead && handleSetHead(t.id)}
+                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-[16px] press-scale transition-all text-left ${
+                  isCurrentHead
+                    ? dark
+                      ? 'bg-yellow-500/10 border-2 border-yellow-500/30'
+                      : 'bg-yellow-50 border-2 border-yellow-400/40'
+                    : dark
+                      ? 'bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08]'
+                      : 'bg-white/60 border border-white/50 hover:bg-white/80'
+                }`}
+              >
+                <Avatar name={t.name} src={t.avatar} size={40} />
+                <div className="min-w-0 flex-1">
+                  <div className="font-bold text-sm truncate">{t.name}</div>
+                  <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-500'}`}>
+                    {t.sportTypes?.map(st => getSportLabel(st)).join(', ') || getSportLabel(t.sportType)}
+                  </div>
+                </div>
+                {isCurrentHead ? (
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className={`text-[10px] font-bold uppercase ${dark ? 'text-yellow-400' : 'text-yellow-600'}`}>Главный</span>
+                    <Crown size={16} className="text-yellow-400" />
+                  </div>
+                ) : (
+                  <Crown size={16} className={dark ? 'text-white/15' : 'text-gray-200'} />
+                )}
+              </button>
+            )
+          })}
+
+          {/* Remove head trainer option */}
+          {headTrainer && (
+            <button
+              onClick={handleRemoveHead}
+              className={`w-full py-3 rounded-[16px] text-sm font-medium press-scale mt-2 ${
+                dark ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-red-50 text-red-500 border border-red-200'
+              }`}
+            >
+              Снять главного тренера
+            </button>
+          )}
+        </div>
+      </Modal>
 
       {/* Add Trainer Modal */}
       <Modal open={showAddTrainer} onClose={() => setShowAddTrainer(false)} title="Добавить тренера в клуб">

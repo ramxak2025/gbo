@@ -241,10 +241,22 @@ export function DataProvider({ children }) {
 
   const updateClub = useCallback(async (id, changes) => {
     await api.updateClub(id, changes)
-    setData(d => ({
-      ...d,
-      clubs: d.clubs.map(c => c.id === id ? { ...c, ...changes } : c)
-    }))
+    setData(d => {
+      let users = d.users
+      // If headTrainerId changed, update isHeadTrainer flags on users
+      if ('headTrainerId' in changes) {
+        users = d.users.map(u => {
+          if (u.clubId === id && u.isHeadTrainer) return { ...u, isHeadTrainer: false }
+          if (u.id === changes.headTrainerId) return { ...u, isHeadTrainer: true, clubId: id }
+          return u
+        })
+      }
+      return {
+        ...d,
+        clubs: d.clubs.map(c => c.id === id ? { ...c, ...changes } : c),
+        users,
+      }
+    })
   }, [])
 
   const deleteClub = useCallback(async (id) => {
