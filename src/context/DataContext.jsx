@@ -258,17 +258,20 @@ export function DataProvider({ children }) {
 
   const assignTrainerToClub = useCallback(async (clubId, trainerId) => {
     await api.assignTrainerToClub(clubId, trainerId)
-    setData(d => ({
-      ...d,
-      users: d.users.map(u => u.id === trainerId ? { ...u, clubId } : u)
-    }))
+    setData(d => {
+      const club = d.clubs.find(c => c.id === clubId)
+      return {
+        ...d,
+        users: d.users.map(u => u.id === trainerId ? { ...u, clubId, clubName: club?.name || '' } : u)
+      }
+    })
   }, [])
 
   const removeTrainerFromClub = useCallback(async (clubId, trainerId) => {
     await api.removeTrainerFromClub(clubId, trainerId)
     setData(d => ({
       ...d,
-      users: d.users.map(u => u.id === trainerId ? { ...u, clubId: null, isHeadTrainer: false } : u)
+      users: d.users.map(u => u.id === trainerId ? { ...u, clubId: null, isHeadTrainer: false, clubName: '' } : u)
     }))
   }, [])
 

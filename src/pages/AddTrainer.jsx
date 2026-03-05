@@ -10,14 +10,16 @@ import { SPORT_TYPES } from '../utils/sports'
 
 export default function AddTrainer() {
   const navigate = useNavigate()
-  const { data, addTrainer } = useData()
+  const { data, addTrainer, assignTrainerToClub } = useData()
   const { dark } = useTheme()
+
+  const clubs = data.clubs || []
 
   const [form, setForm] = useState({
     name: '',
     password: 'trainer123',
     phone: '',
-    clubName: '',
+    clubId: '',
     city: '',
     sportTypes: [],
   })
@@ -31,21 +33,30 @@ export default function AddTrainer() {
     }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     const phoneDigits = cleanPhone(form.phone)
     if (!form.name.trim() || phoneDigits.length < 11) return
     if (form.sportTypes.length === 0) return
-    addTrainer({
+
+    const selectedClub = clubs.find(c => c.id === form.clubId)
+
+    const trainerId = await addTrainer({
       name: form.name.trim(),
       password: form.password,
       phone: phoneDigits,
-      clubName: form.clubName.trim(),
+      clubName: selectedClub?.name || '',
       city: form.city.trim(),
       sportType: form.sportTypes[0],
       sportTypes: form.sportTypes,
       avatar: null,
     })
+
+    // Auto-assign to selected club
+    if (form.clubId && trainerId) {
+      await assignTrainerToClub(form.clubId, trainerId)
+    }
+
     navigate(-1)
   }
 
@@ -70,13 +81,16 @@ export default function AddTrainer() {
             className={inputCls}
             required
           />
-          <input
-            type="text"
-            placeholder="Название клуба"
-            value={form.clubName}
-            onChange={e => setForm(f => ({ ...f, clubName: e.target.value }))}
+          <select
+            value={form.clubId}
+            onChange={e => setForm(f => ({ ...f, clubId: e.target.value }))}
             className={inputCls}
-          />
+          >
+            <option value="">— Клуб —</option>
+            {clubs.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
           <div className="relative">
             <input
               type="text"

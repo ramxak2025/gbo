@@ -1,12 +1,12 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Calendar, MapPin, Trophy, Swords, Check } from 'lucide-react'
+import { Plus, Calendar, MapPin, Trophy, Swords, Check, Archive, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
-import Avatar from '../components/Avatar'
 
 function formatDate(iso) {
   if (!iso) return '—'
@@ -18,11 +18,12 @@ export default function Tournaments() {
   const { data } = useData()
   const { dark } = useTheme()
   const navigate = useNavigate()
+  const [showArchive, setShowArchive] = useState(false)
 
   const sorted = [...data.tournaments].sort((a, b) => new Date(a.date) - new Date(b.date))
 
   // Internal tournaments — trainers see own, students see their trainer's
-  const myInternalTournaments = (data.internalTournaments || [])
+  const allInternal = (data.internalTournaments || [])
     .filter(t => {
       if (auth.role === 'trainer') return t.trainerId === auth.userId
       if (auth.role === 'student') {
@@ -32,6 +33,54 @@ export default function Tournaments() {
       return true // superadmin sees all
     })
     .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
+
+  // Split into active and archived
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+  const activeInternalTournaments = allInternal.filter(t => t.status !== 'completed')
+  const archivedInternalTournaments = allInternal.filter(t => {
+    if (t.status !== 'completed') return false
+    const tournDate = new Date(t.date || 0)
+    return tournDate >= thirtyDaysAgo
+  })
+
+  const renderTournamentCard = (t) => {
+    const cats = t.brackets?.categories || []
+    const isLegacy = !cats.length && t.brackets?.rounds
+    const totalParticipants = isLegacy
+      ? (t.brackets?.participants?.length || 0)
+      : cats.reduce((s, c) => s + (c.participants?.length || 0), 0)
+    const catCount = isLegacy ? 1 : cats.length
+    return (
+      <GlassCard
+        key={t.id}
+        onClick={() => navigate(`/internal-tournament/${t.id}`)}
+        className={`border ${t.status === 'completed' ? 'border-white/[0.06]' : 'border-accent/20'}`}
+      >
+        <div className="flex items-center justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-sm truncate">{t.title}</h3>
+              {t.status === 'completed' && (
+                <span className="shrink-0 w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <Check size={12} className="text-green-400" />
+                </span>
+              )}
+            </div>
+            <div className={`flex items-center gap-2 mt-1 text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+              <Calendar size={11} />
+              <span>{formatDate(t.date)}</span>
+              <span>•</span>
+              <span>{catCount} {catCount === 1 ? 'весовая' : 'весовых'}</span>
+              <span>•</span>
+              <span>{totalParticipants} чел.</span>
+            </div>
+          </div>
+        </div>
+      </GlassCard>
+    )
+  }
 
   return (
     <Layout>
@@ -51,57 +100,43 @@ export default function Tournaments() {
       </PageHeader>
 
       <div className="px-4 space-y-4 slide-in">
-        {/* Internal tournaments */}
-        {myInternalTournaments.length > 0 && (
+        {/* Active internal tournaments */}
+        {activeInternalTournaments.length > 0 && (
           <div>
             <h2 className={`text-sm uppercase font-bold mb-3 flex items-center gap-2 ${dark ? 'text-white/50' : 'text-gray-500'}`}>
               <Swords size={14} className="text-accent" /> Клубные турниры
             </h2>
             <div className="space-y-2">
-              {myInternalTournaments.map(t => {
-                const cats = t.brackets?.categories || []
-                const isLegacy = !cats.length && t.brackets?.rounds
-                const totalParticipants = isLegacy
-                  ? (t.brackets?.participants?.length || 0)
-                  : cats.reduce((s, c) => s + (c.participants?.length || 0), 0)
-                const catCount = isLegacy ? 1 : cats.length
-                return (
-                  <GlassCard
-                    key={t.id}
-                    onClick={() => navigate(`/internal-tournament/${t.id}`)}
-                    className="border border-accent/20"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-sm truncate">{t.title}</h3>
-                          {t.status === 'completed' && (
-                            <span className="shrink-0 w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
-                              <Check size={12} className="text-green-400" />
-                            </span>
-                          )}
-                        </div>
-                        <div className={`flex items-center gap-2 mt-1 text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>
-                          <Calendar size={11} />
-                          <span>{formatDate(t.date)}</span>
-                          <span>•</span>
-                          <span>{catCount} {catCount === 1 ? 'весовая' : 'весовых'}</span>
-                          <span>•</span>
-                          <span>{totalParticipants} чел.</span>
-                        </div>
-                      </div>
-                    </div>
-                  </GlassCard>
-                )
-              })}
+              {activeInternalTournaments.map(renderTournamentCard)}
             </div>
+          </div>
+        )}
+
+        {/* Archived internal tournaments (last 30 days) */}
+        {archivedInternalTournaments.length > 0 && (
+          <div>
+            <button
+              onClick={() => setShowArchive(!showArchive)}
+              className={`w-full flex items-center justify-between py-2 text-sm uppercase font-bold ${dark ? 'text-white/40' : 'text-gray-400'}`}
+            >
+              <div className="flex items-center gap-2">
+                <Archive size={14} className={dark ? 'text-white/30' : 'text-gray-400'} />
+                <span>Архив ({archivedInternalTournaments.length})</span>
+              </div>
+              {showArchive ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+            {showArchive && (
+              <div className="space-y-2 mt-2">
+                {archivedInternalTournaments.map(renderTournamentCard)}
+              </div>
+            )}
           </div>
         )}
 
         {/* Official tournaments */}
         {sorted.length > 0 && (
           <div>
-            {myInternalTournaments.length > 0 && (
+            {(activeInternalTournaments.length > 0 || archivedInternalTournaments.length > 0) && (
               <h2 className={`text-sm uppercase font-bold mb-3 flex items-center gap-2 ${dark ? 'text-white/50' : 'text-gray-500'}`}>
                 <Trophy size={14} className="text-orange-400" /> Официальные турниры
               </h2>
@@ -156,7 +191,7 @@ export default function Tournaments() {
           </div>
         )}
 
-        {sorted.length === 0 && myInternalTournaments.length === 0 && (
+        {sorted.length === 0 && allInternal.length === 0 && (
           <div className="text-center py-12">
             <Swords size={48} className={`mx-auto mb-3 ${dark ? 'text-white/10' : 'text-gray-200'}`} />
             <p className={`text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>

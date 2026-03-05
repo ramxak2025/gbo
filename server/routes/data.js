@@ -467,13 +467,14 @@ router.delete('/clubs/:id', authMiddleware, async (req, res) => {
 // Assign trainer to club
 router.post('/clubs/:id/trainers', authMiddleware, async (req, res) => {
   const { trainerId } = req.body
-  await pool.query('UPDATE users SET club_id = $1 WHERE id = $2', [req.params.id, trainerId])
+  const { rows: [club] } = await pool.query('SELECT name FROM clubs WHERE id = $1', [req.params.id])
+  await pool.query('UPDATE users SET club_id = $1, club_name = $2 WHERE id = $3', [req.params.id, club?.name || '', trainerId])
   res.json({ ok: true })
 })
 
 // Remove trainer from club
 router.delete('/clubs/:id/trainers/:trainerId', authMiddleware, async (req, res) => {
-  await pool.query('UPDATE users SET club_id = NULL, is_head_trainer = false WHERE id = $1 AND club_id = $2',
+  await pool.query('UPDATE users SET club_id = NULL, is_head_trainer = false, club_name = NULL WHERE id = $1 AND club_id = $2',
     [req.params.trainerId, req.params.id])
   res.json({ ok: true })
 })

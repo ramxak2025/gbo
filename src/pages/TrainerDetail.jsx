@@ -16,7 +16,7 @@ export default function TrainerDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { auth } = useAuth()
-  const { data, updateTrainer, deleteTrainer, updateStudent } = useData()
+  const { data, updateTrainer, deleteTrainer, updateStudent, assignTrainerToClub, removeTrainerFromClub } = useData()
   const { dark } = useTheme()
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState(null)
@@ -36,22 +36,34 @@ export default function TrainerDetail() {
   const students = data.students.filter(s => s.trainerId === id)
   const groups = data.groups.filter(g => g.trainerId === id)
 
+  const clubs = data.clubs || []
+
   const startEdit = () => {
-    setForm({ ...trainer, phone: formatPhone(trainer.phone || '') })
+    setForm({ ...trainer, phone: formatPhone(trainer.phone || ''), selectedClubId: trainer.clubId || '' })
     setEditing(true)
   }
 
-  const saveEdit = (e) => {
+  const saveEdit = async (e) => {
     e.preventDefault()
+    const selectedClub = clubs.find(c => c.id === form.selectedClubId)
     const changes = {
       name: form.name,
       phone: cleanPhone(form.phone),
-      clubName: form.clubName,
+      clubName: selectedClub?.name || '',
       city: form.city,
       sportType: form.sportType,
     }
     if (form.newPassword) changes.password = form.newPassword
-    updateTrainer(id, changes)
+    await updateTrainer(id, changes)
+
+    // Handle club assignment change
+    const oldClubId = trainer.clubId || null
+    const newClubId = form.selectedClubId || null
+    if (oldClubId !== newClubId) {
+      if (oldClubId) await removeTrainerFromClub(oldClubId, id)
+      if (newClubId) await assignTrainerToClub(newClubId, id)
+    }
+
     setEditing(false)
   }
 
@@ -89,7 +101,9 @@ export default function TrainerDetail() {
         <div className="flex flex-col items-center text-center">
           <Avatar name={trainer.name} src={trainer.avatar} size={72} />
           <h2 className="text-xl font-bold mt-3">{trainer.name}</h2>
-          <p className={`text-sm ${dark ? 'text-white/40' : 'text-gray-500'}`}>{trainer.clubName}</p>
+          <p className={`text-sm ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+            {trainer.clubId ? (clubs.find(c => c.id === trainer.clubId)?.name || trainer.clubName) : (trainer.clubName || '—')}
+          </p>
         </div>
 
         {trainer.phone && (
@@ -166,7 +180,10 @@ export default function TrainerDetail() {
         {form && (
           <form onSubmit={saveEdit} className="space-y-3">
             <input type="text" placeholder="ФИО" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} />
-            <input type="text" placeholder="Клуб" value={form.clubName} onChange={e => setForm(f => ({ ...f, clubName: e.target.value }))} className={inputCls} />
+            <select value={form.selectedClubId} onChange={e => setForm(f => ({ ...f, selectedClubId: e.target.value }))} className={inputCls}>
+              <option value="">— Клуб —</option>
+              {clubs.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
             <div className="relative">
               <input type="text" placeholder="Город" value={form.city || ''} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} className={inputCls} list="city-edit-list" />
               <datalist id="city-edit-list">
