@@ -302,21 +302,6 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Club Management Button */}
-            <button
-              onClick={() => navigate(`/club/${user.clubId}`)}
-              className={`w-full py-3.5 rounded-[20px] font-bold text-sm press-scale flex items-center gap-3 px-5 backdrop-blur-xl transition-all ${
-                dark
-                  ? 'bg-yellow-500/[0.08] border border-yellow-500/15 text-yellow-300 hover:bg-yellow-500/15'
-                  : 'bg-yellow-50/80 border border-yellow-200 text-yellow-700 shadow-sm hover:bg-yellow-50'
-              }`}
-            >
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${dark ? 'bg-yellow-500/15' : 'bg-yellow-100'}`}>
-                <Shield size={17} className={dark ? 'text-yellow-400' : 'text-yellow-600'} />
-              </div>
-              <span className="flex-1 text-left">Управление клубом</span>
-              <ChevronRight size={16} className={dark ? 'text-yellow-400/30' : 'text-yellow-400'} />
-            </button>
           </>
         )}
 
