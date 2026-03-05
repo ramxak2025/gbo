@@ -65,7 +65,7 @@ function AppRoutes() {
       {auth.role === 'superadmin' && <Route path="/add-trainer" element={<AddTrainer />} />}
       {auth.role === 'superadmin' && <Route path="/trainer/:id" element={<TrainerDetail />} />}
       {auth.role === 'superadmin' && <Route path="/clubs" element={<Clubs />} />}
-      {auth.role === 'superadmin' && <Route path="/club/:id" element={<ClubDetail />} />}
+      {(auth.role === 'superadmin' || (auth.role === 'trainer' && auth.user?.isHeadTrainer)) && <Route path="/club/:id" element={<ClubDetail />} />}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

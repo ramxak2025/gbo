@@ -1,5 +1,5 @@
-import { Camera, LogOut, Bell, MapPin, Shield, Award, Users, ChevronRight, Dumbbell, Calendar, Phone, CreditCard, Scale } from 'lucide-react'
-import { useMemo } from 'react'
+import { useState, useMemo } from 'react'
+import { Camera, LogOut, Bell, MapPin, Shield, Award, Users, ChevronRight, Dumbbell, Calendar, Phone, CreditCard, Scale, Crown, Plus, UserMinus, TrendingUp } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
@@ -8,6 +8,8 @@ import { api } from '../utils/api'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import Avatar from '../components/Avatar'
+import GlassCard from '../components/GlassCard'
+import Modal from '../components/Modal'
 import { getSportLabel, getRankLabel } from '../utils/sports'
 
 function formatDate(iso) {
@@ -22,9 +24,10 @@ function isExpired(dateStr) {
 
 export default function Profile() {
   const { auth, logout } = useAuth()
-  const { data, updateStudent, updateTrainer } = useData()
+  const { data, updateStudent, updateTrainer, assignTrainerToClub, removeTrainerFromClub } = useData()
   const { dark } = useTheme()
   const navigate = useNavigate()
+  const [showAddTrainer, setShowAddTrainer] = useState(false)
 
   const user = auth.user
   const student = auth.role === 'student' ? data.students.find(s => s.id === auth.studentId) : null
@@ -34,6 +37,21 @@ export default function Profile() {
 
   const myGroups = auth.role === 'trainer' ? data.groups.filter(g => g.trainerId === auth.userId) : []
   const myStudents = auth.role === 'trainer' ? data.students.filter(s => s.trainerId === auth.userId) : []
+
+  // Head trainer admin data
+  const isHeadTrainer = auth.role === 'trainer' && user?.isHeadTrainer && user?.clubId
+  const myClub = isHeadTrainer ? (data.clubs || []).find(c => c.id === user.clubId) : null
+  const clubTrainers = isHeadTrainer ? data.users.filter(u => u.role === 'trainer' && u.clubId === user.clubId) : []
+  const availableTrainers = isHeadTrainer ? data.users.filter(u => u.role === 'trainer' && !u.clubId) : []
+
+  const clubStats = useMemo(() => {
+    if (!isHeadTrainer) return null
+    const trainerIds = new Set(clubTrainers.map(t => t.id))
+    const allStudents = data.students.filter(s => trainerIds.has(s.trainerId))
+    const active = allStudents.filter(s => !isExpired(s.subscriptionExpiresAt)).length
+    const allGroups = data.groups.filter(g => trainerIds.has(g.trainerId))
+    return { trainers: clubTrainers.length, students: allStudents.length, active, groups: allGroups.length }
+  }, [isHeadTrainer, clubTrainers, data.students, data.groups])
 
   const trainerStats = useMemo(() => {
     if (auth.role !== 'trainer') return null
@@ -61,6 +79,17 @@ export default function Profile() {
     }
   }
 
+  const handleAddTrainerToClub = (trainerId) => {
+    assignTrainerToClub(user.clubId, trainerId)
+    setShowAddTrainer(false)
+  }
+
+  const handleRemoveTrainerFromClub = (trainerId) => {
+    if (confirm('Убрать тренера из клуба?')) {
+      removeTrainerFromClub(user.clubId, trainerId)
+    }
+  }
+
   return (
     <Layout>
       <PageHeader title="Профиль" />
@@ -72,7 +101,6 @@ export default function Profile() {
             ? 'bg-gradient-to-br from-purple-500/15 via-white/[0.04] to-accent/15 border border-white/[0.08]'
             : 'bg-gradient-to-br from-purple-50 via-white/80 to-red-50 border border-white/70 shadow-[0_8px_32px_rgba(0,0,0,0.06)]'
         }`}>
-          {/* Decorative circles */}
           <div className={`absolute -top-12 -right-12 w-32 h-32 rounded-full ${dark ? 'bg-purple-500/5' : 'bg-purple-100/40'}`} />
           <div className={`absolute -bottom-8 -left-8 w-24 h-24 rounded-full ${dark ? 'bg-accent/5' : 'bg-red-100/30'}`} />
 
@@ -101,6 +129,13 @@ export default function Profile() {
               }`}>
                 {auth.role === 'superadmin' ? 'Админ' : auth.role === 'trainer' ? 'Тренер' : 'Спортсмен'}
               </span>
+              {isHeadTrainer && (
+                <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wide flex items-center gap-1 ${
+                  dark ? 'bg-yellow-500/15 text-yellow-300 border border-yellow-500/20' : 'bg-yellow-50 text-yellow-600 border border-yellow-200'
+                }`}>
+                  <Crown size={11} /> Главный тренер
+                </span>
+              )}
               {sportLabel && (
                 <span className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase ${
                   dark ? 'bg-accent/15 text-accent-light border border-accent/20' : 'bg-red-50 text-red-600'
@@ -108,7 +143,6 @@ export default function Profile() {
               )}
             </div>
 
-            {/* Club & City info */}
             {(auth.role === 'trainer' || auth.role === 'student') && (
               <div className={`flex items-center gap-3 mt-3 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
                 {(auth.role === 'trainer' ? user?.clubName : trainer?.clubName) && (
@@ -127,6 +161,106 @@ export default function Profile() {
             )}
           </div>
         </div>
+
+        {/* ========= HEAD TRAINER ADMIN PANEL ========= */}
+        {isHeadTrainer && myClub && (
+          <>
+            <div className={`rounded-[24px] p-5 relative overflow-hidden ${
+              dark
+                ? 'bg-gradient-to-br from-yellow-500/10 via-white/[0.03] to-amber-500/10 border border-yellow-500/20'
+                : 'bg-gradient-to-br from-yellow-50 via-amber-50/50 to-orange-50 border border-yellow-200/60 shadow-[0_6px_24px_rgba(234,179,8,0.08)]'
+            }`}>
+              <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full ${dark ? 'bg-yellow-500/5' : 'bg-yellow-100/40'}`} />
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`w-12 h-12 rounded-[16px] flex items-center justify-center ${
+                    dark ? 'bg-gradient-to-br from-yellow-500/20 to-amber-500/20' : 'bg-gradient-to-br from-yellow-100 to-amber-100'
+                  }`}>
+                    <Crown size={22} className={dark ? 'text-yellow-400' : 'text-yellow-600'} />
+                  </div>
+                  <div>
+                    <div className={`text-[10px] uppercase font-bold tracking-wider ${dark ? 'text-yellow-400/60' : 'text-yellow-600/70'}`}>
+                      Управление клубом
+                    </div>
+                    <div className="font-black text-base">{myClub.name}</div>
+                  </div>
+                </div>
+
+                {clubStats && (
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { icon: Users, label: 'Тренеры', value: clubStats.trainers, color: 'text-blue-500' },
+                      { icon: Award, label: 'Ученики', value: clubStats.students, color: 'text-accent' },
+                      { icon: TrendingUp, label: 'Активных', value: clubStats.active, color: 'text-green-500' },
+                      { icon: Dumbbell, label: 'Групп', value: clubStats.groups, color: 'text-purple-500' },
+                    ].map(({ icon: Icon, label, value, color }) => (
+                      <div key={label} className={`rounded-[12px] p-2 text-center ${dark ? 'bg-black/20' : 'bg-white/60'}`}>
+                        <Icon size={13} className={`mx-auto mb-0.5 ${color}`} />
+                        <div className="text-base font-black">{value}</div>
+                        <div className={`text-[8px] uppercase font-semibold ${dark ? 'text-white/25' : 'text-gray-400'}`}>{label}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className={`text-xs uppercase font-bold ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+                  Тренеры клуба ({clubTrainers.length})
+                </h3>
+                <button onClick={() => setShowAddTrainer(true)} className="press-scale p-1">
+                  <Plus size={18} className="text-accent" />
+                </button>
+              </div>
+              <div className="space-y-2">
+                {clubTrainers.map(t => {
+                  const tStudents = data.students.filter(s => s.trainerId === t.id)
+                  const tActive = tStudents.filter(s => !isExpired(s.subscriptionExpiresAt)).length
+                  const isMe = t.id === auth.userId
+                  return (
+                    <GlassCard key={t.id} className={isMe ? 'border border-yellow-500/20' : ''}>
+                      <div className="flex items-center gap-3">
+                        <Avatar name={t.name} src={t.avatar} size={40} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-sm truncate">{t.name}</span>
+                            {t.isHeadTrainer && <Crown size={11} className="text-yellow-400 shrink-0" />}
+                            {isMe && <span className={`text-[9px] font-bold uppercase ${dark ? 'text-white/20' : 'text-gray-300'}`}>вы</span>}
+                          </div>
+                          <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-500'}`}>
+                            {tStudents.length} уч. · {tActive} акт.
+                          </div>
+                        </div>
+                        {!t.isHeadTrainer && (
+                          <button onClick={() => handleRemoveTrainerFromClub(t.id)} className="press-scale p-1.5">
+                            <UserMinus size={14} className="text-red-400" />
+                          </button>
+                        )}
+                      </div>
+                    </GlassCard>
+                  )
+                })}
+              </div>
+            </div>
+
+            <button
+              onClick={() => navigate(`/club/${user.clubId}`)}
+              className={`w-full py-3.5 rounded-[20px] font-bold text-sm press-scale flex items-center gap-3 px-5 backdrop-blur-xl transition-all ${
+                dark
+                  ? 'bg-yellow-500/[0.08] border border-yellow-500/15 text-yellow-300 hover:bg-yellow-500/15'
+                  : 'bg-yellow-50/80 border border-yellow-200 text-yellow-700 shadow-sm hover:bg-yellow-50'
+              }`}
+            >
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${dark ? 'bg-yellow-500/15' : 'bg-yellow-100'}`}>
+                <Shield size={17} className={dark ? 'text-yellow-400' : 'text-yellow-600'} />
+              </div>
+              <span className="flex-1 text-left">Управление клубом</span>
+              <ChevronRight size={16} className={dark ? 'text-yellow-400/30' : 'text-yellow-400'} />
+            </button>
+          </>
+        )}
 
         {/* Trainer Stats */}
         {auth.role === 'trainer' && trainerStats && (
@@ -158,7 +292,6 @@ export default function Profile() {
         {/* Student Info Cards */}
         {auth.role === 'student' && student && (
           <>
-            {/* Group & Subscription row */}
             <div className="grid grid-cols-2 gap-2">
               <div className={`rounded-[20px] p-4 backdrop-blur-xl ${
                 dark ? 'bg-white/[0.05] border border-white/[0.07]' : 'bg-white/70 border border-white/60 shadow-sm'
@@ -182,7 +315,6 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Details */}
             <div className={`rounded-[20px] overflow-hidden backdrop-blur-xl ${
               dark ? 'bg-white/[0.05] border border-white/[0.07]' : 'bg-white/70 border border-white/60 shadow-sm'
             }`}>
@@ -208,7 +340,6 @@ export default function Profile() {
               ))}
             </div>
 
-            {/* Trainer info */}
             {trainer && (
               <div className={`rounded-[20px] p-4 flex items-center gap-3 backdrop-blur-xl ${
                 dark ? 'bg-white/[0.05] border border-white/[0.07]' : 'bg-white/70 border border-white/60 shadow-sm'
@@ -224,7 +355,6 @@ export default function Profile() {
           </>
         )}
 
-        {/* Shared Info */}
         {user?.phone && (
           <div className={`rounded-[20px] p-4 flex items-center gap-3 backdrop-blur-xl ${
             dark ? 'bg-white/[0.05] border border-white/[0.07]' : 'bg-white/70 border border-white/60 shadow-sm'
@@ -237,7 +367,6 @@ export default function Profile() {
           </div>
         )}
 
-        {/* Actions */}
         <div className="space-y-2 pt-1">
           <button
             onClick={() => navigate('/notifications')}
@@ -270,6 +399,34 @@ export default function Profile() {
 
         <div className="h-4" />
       </div>
+
+      {/* Add trainer to club modal (head trainer) */}
+      <Modal open={showAddTrainer} onClose={() => setShowAddTrainer(false)} title="Добавить тренера в клуб">
+        <div className="space-y-2">
+          {availableTrainers.length === 0 ? (
+            <p className={`text-center py-6 text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>
+              Нет свободных тренеров
+            </p>
+          ) : (
+            availableTrainers.map(t => (
+              <button key={t.id} onClick={() => handleAddTrainerToClub(t.id)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-[16px] press-scale transition-all text-left ${
+                  dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white/60 border border-white/50'
+                }`}
+              >
+                <Avatar name={t.name} src={t.avatar} size={36} />
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-sm truncate">{t.name}</div>
+                  <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-500'}`}>
+                    {t.sportTypes?.map(st => getSportLabel(st)).join(', ') || getSportLabel(t.sportType)}
+                  </div>
+                </div>
+                <Plus size={16} className="text-accent shrink-0" />
+              </button>
+            ))
+          )}
+        </div>
+      </Modal>
     </Layout>
   )
 }
