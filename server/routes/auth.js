@@ -28,7 +28,7 @@ router.post('/login', async (req, res) => {
       token,
       userId: user.id,
       role: user.role,
-      user: { id: user.id, name: user.name, phone: user.phone, role: user.role, avatar: user.avatar, clubName: user.club_name },
+      user: { id: user.id, name: user.name, phone: user.phone, role: user.role, avatar: user.avatar, clubName: user.club_name, clubId: user.club_id || null, isHeadTrainer: !!user.is_head_trainer, sportType: user.sport_type, sportTypes: user.sport_types || [], city: user.city },
     })
   }
 
@@ -109,7 +109,7 @@ router.get('/me', async (req, res) => {
       userId: decoded.userId,
       role: decoded.role,
       studentId: decoded.studentId || null,
-      user: { id: user.id, name: user.name, phone: user.phone, role: user.role, avatar: user.avatar, clubName: user.club_name },
+      user: { id: user.id, name: user.name, phone: user.phone, role: user.role, avatar: user.avatar, clubName: user.club_name, clubId: user.club_id || null, isHeadTrainer: !!user.is_head_trainer, sportType: user.sport_type, sportTypes: user.sport_types || [], city: user.city },
     }
 
     if (decoded.studentId) {

@@ -29,7 +29,9 @@ export default function Profile() {
   const navigate = useNavigate()
   const [showAddTrainer, setShowAddTrainer] = useState(false)
 
-  const user = auth.user
+  const authUser = auth.user
+  // For trainers, prefer data.users (has full fields like isHeadTrainer, clubId) over auth.user
+  const user = auth.role === 'trainer' ? (data.users.find(u => u.id === auth.userId) || authUser) : authUser
   const student = auth.role === 'student' ? data.students.find(s => s.id === auth.studentId) : null
   const trainer = auth.role === 'student' ? data.users.find(u => u.id === auth.userId) : null
   const displayName = auth.role === 'student' ? student?.name : user?.name
