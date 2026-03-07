@@ -1,83 +1,61 @@
 import * as SecureStore from 'expo-secure-store';
 
-// IMPORTANT: Change this to your server's URL
-const BASE_URL = 'https://iborcuha.ru';
-const API = `${BASE_URL}/api`;
+// Change this to your server URL
+const BASE = 'https://iborcuha.ru/api';
+
+async function getToken() {
+  try {
+    return await SecureStore.getItemAsync('iborcuha_token');
+  } catch {
+    return null;
+  }
+}
 
 async function request(url, options = {}) {
-  const token = await SecureStore.getItemAsync('iborcuha_token');
+  const token = await getToken();
   const headers = { 'Content-Type': 'application/json', ...options.headers };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  let res;
-  try {
-    res = await fetch(`${API}${url}`, { ...options, headers });
-  } catch (e) {
-    throw new Error('Нет подключения к серверу');
-  }
+  const res = await fetch(`${BASE}${url}`, { ...options, headers });
   if (res.status === 401) {
     await SecureStore.deleteItemAsync('iborcuha_token');
     await SecureStore.deleteItemAsync('iborcuha_auth');
     throw new Error('Unauthorized');
   }
-  let data;
-  try {
-    data = await res.json();
-  } catch {
-    throw new Error('Ошибка ответа сервера');
-  }
-  if (!res.ok) throw new Error(data.error || 'Server error');
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Ошибка сервера');
   return data;
 }
 
 async function uploadFile(uri) {
-  const token = await SecureStore.getItemAsync('iborcuha_token');
+  const token = await getToken();
   const formData = new FormData();
   const filename = uri.split('/').pop();
   const match = /\.(\w+)$/.exec(filename);
   const type = match ? `image/${match[1]}` : 'image/jpeg';
   formData.append('file', { uri, name: filename, type });
 
-  const res = await fetch(`${API}/upload`, {
+  const res = await fetch(`${BASE}/upload`, {
     method: 'POST',
     headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     body: formData,
   });
   if (!res.ok) throw new Error('Upload failed');
   const data = await res.json();
-  // Return full URL for images
-  return data.url.startsWith('http') ? data.url : `${BASE_URL}${data.url}`;
-}
-
-export function getFullUrl(path) {
-  if (!path) return null;
-  if (path.startsWith('http')) return path;
-  return `${BASE_URL}${path}`;
+  return data.url;
 }
 
 export const api = {
   uploadFile,
-
   login: async (phone, password) => {
-    const token = await SecureStore.getItemAsync('iborcuha_token');
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    let res;
-    try {
-      res = await fetch(`${API}/auth/login`, {
-        method: 'POST', headers, body: JSON.stringify({ phone, password }),
-      });
-    } catch (e) {
-      throw new Error('Нет подключения к серверу');
-    }
-    let data;
-    try {
-      data = await res.json();
-    } catch {
-      throw new Error('Ошибка ответа сервера');
-    }
+    const res = await fetch(`${BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, password }),
+    });
+    const data = await res.json();
     if (!res.ok) {
-      const err = new Error(data.error || 'Login error');
+      const err = new Error(data.error || 'Ошибка входа');
       err.errorType = data.errorType || null;
       throw err;
     }
@@ -85,58 +63,38 @@ export const api = {
   },
   logout: () => request('/auth/logout', { method: 'POST' }),
   me: () => request('/auth/me'),
-
   getData: () => request('/data'),
-
-  addStudent: (data) => request('/data/students', { method: 'POST', body: JSON.stringify(data) }),
-  updateStudent: (id, data) => request(`/data/students/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  addStudent: (d) => request('/data/students', { method: 'POST', body: JSON.stringify(d) }),
+  updateStudent: (id, d) => request(`/data/students/${id}`, { method: 'PUT', body: JSON.stringify(d) }),
   deleteStudent: (id) => request(`/data/students/${id}`, { method: 'DELETE' }),
-
-  addGroup: (data) => request('/data/groups', { method: 'POST', body: JSON.stringify(data) }),
-  updateGroup: (id, data) => request(`/data/groups/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  addGroup: (d) => request('/data/groups', { method: 'POST', body: JSON.stringify(d) }),
+  updateGroup: (id, d) => request(`/data/groups/${id}`, { method: 'PUT', body: JSON.stringify(d) }),
   deleteGroup: (id) => request(`/data/groups/${id}`, { method: 'DELETE' }),
-
-  addTransaction: (data) => request('/data/transactions', { method: 'POST', body: JSON.stringify(data) }),
-  updateTransaction: (id, data) => request(`/data/transactions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  addTransaction: (d) => request('/data/transactions', { method: 'POST', body: JSON.stringify(d) }),
+  updateTransaction: (id, d) => request(`/data/transactions/${id}`, { method: 'PUT', body: JSON.stringify(d) }),
   deleteTransaction: (id) => request(`/data/transactions/${id}`, { method: 'DELETE' }),
-
-  addTournament: (data) => request('/data/tournaments', { method: 'POST', body: JSON.stringify(data) }),
-  updateTournament: (id, data) => request(`/data/tournaments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  addTournament: (d) => request('/data/tournaments', { method: 'POST', body: JSON.stringify(d) }),
+  updateTournament: (id, d) => request(`/data/tournaments/${id}`, { method: 'PUT', body: JSON.stringify(d) }),
   deleteTournament: (id) => request(`/data/tournaments/${id}`, { method: 'DELETE' }),
-
-  registerTournament: (tournamentId, studentId) => request('/data/tournament-registrations', { method: 'POST', body: JSON.stringify({ tournamentId, studentId }) }),
-  unregisterTournament: (tournamentId, studentId) => request('/data/tournament-registrations', { method: 'DELETE', body: JSON.stringify({ tournamentId, studentId }) }),
-
-  addNews: (data) => request('/data/news', { method: 'POST', body: JSON.stringify(data) }),
+  registerTournament: (tId, sId) => request('/data/tournament-registrations', { method: 'POST', body: JSON.stringify({ tournamentId: tId, studentId: sId }) }),
+  unregisterTournament: (tId, sId) => request('/data/tournament-registrations', { method: 'DELETE', body: JSON.stringify({ tournamentId: tId, studentId: sId }) }),
+  addNews: (d) => request('/data/news', { method: 'POST', body: JSON.stringify(d) }),
   deleteNews: (id) => request(`/data/news/${id}`, { method: 'DELETE' }),
-
-  addTrainer: (data) => request('/data/trainers', { method: 'POST', body: JSON.stringify(data) }),
-  updateTrainer: (id, data) => request(`/data/trainers/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  addTrainer: (d) => request('/data/trainers', { method: 'POST', body: JSON.stringify(d) }),
+  updateTrainer: (id, d) => request(`/data/trainers/${id}`, { method: 'PUT', body: JSON.stringify(d) }),
   deleteTrainer: (id) => request(`/data/trainers/${id}`, { method: 'DELETE' }),
-
-  updateAuthor: (data) => request('/data/author', { method: 'PUT', body: JSON.stringify(data) }),
-
-  addInternalTournament: (data) => request('/data/internal-tournaments', { method: 'POST', body: JSON.stringify(data) }),
-  updateInternalTournament: (id, data) => request(`/data/internal-tournaments/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  updateAuthor: (d) => request('/data/author', { method: 'PUT', body: JSON.stringify(d) }),
+  addInternalTournament: (d) => request('/data/internal-tournaments', { method: 'POST', body: JSON.stringify(d) }),
+  updateInternalTournament: (id, d) => request(`/data/internal-tournaments/${id}`, { method: 'PUT', body: JSON.stringify(d) }),
   deleteInternalTournament: (id) => request(`/data/internal-tournaments/${id}`, { method: 'DELETE' }),
-
-  saveAttendanceBulk: (data) => request('/data/attendance/bulk', { method: 'POST', body: JSON.stringify(data) }),
-
-  addMaterial: (data) => request('/data/materials', { method: 'POST', body: JSON.stringify(data) }),
-  updateMaterial: (id, data) => request(`/data/materials/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  saveAttendanceBulk: (d) => request('/data/attendance/bulk', { method: 'POST', body: JSON.stringify(d) }),
+  addMaterial: (d) => request('/data/materials', { method: 'POST', body: JSON.stringify(d) }),
+  updateMaterial: (id, d) => request(`/data/materials/${id}`, { method: 'PUT', body: JSON.stringify(d) }),
   deleteMaterial: (id) => request(`/data/materials/${id}`, { method: 'DELETE' }),
-
-  addClub: (data) => request('/data/clubs', { method: 'POST', body: JSON.stringify(data) }),
-  updateClub: (id, data) => request(`/data/clubs/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  addClub: (d) => request('/data/clubs', { method: 'POST', body: JSON.stringify(d) }),
+  updateClub: (id, d) => request(`/data/clubs/${id}`, { method: 'PUT', body: JSON.stringify(d) }),
   deleteClub: (id) => request(`/data/clubs/${id}`, { method: 'DELETE' }),
-  assignTrainerToClub: (clubId, trainerId) => request(`/data/clubs/${clubId}/trainers`, { method: 'POST', body: JSON.stringify({ trainerId }) }),
-  removeTrainerFromClub: (clubId, trainerId) => request(`/data/clubs/${clubId}/trainers/${trainerId}`, { method: 'DELETE' }),
-
-  register: (data) => {
-    const headers = { 'Content-Type': 'application/json' };
-    return fetch(`${API}/auth/register`, { method: 'POST', headers, body: JSON.stringify(data) })
-      .then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error || 'Error'); return d; });
-  },
-  approveRegistration: (id) => request(`/data/registrations/${id}/approve`, { method: 'POST' }),
-  rejectRegistration: (id) => request(`/data/registrations/${id}/reject`, { method: 'POST' }),
+  assignTrainerToClub: (cId, tId) => request(`/data/clubs/${cId}/trainers`, { method: 'POST', body: JSON.stringify({ trainerId: tId }) }),
+  removeTrainerFromClub: (cId, tId) => request(`/data/clubs/${cId}/trainers/${tId}`, { method: 'DELETE' }),
+  register: (d) => fetch(`${BASE}/auth/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }).then(async r => { const data = await r.json(); if (!r.ok) throw new Error(data.error || 'Ошибка'); return data; }),
 };

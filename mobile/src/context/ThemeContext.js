@@ -1,27 +1,16 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import * as SecureStore from 'expo-secure-store';
+import React, { createContext, useContext, useState } from 'react';
+import { colors } from '../utils/theme';
 
 const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
   const [dark, setDark] = useState(true);
 
-  useEffect(() => {
-    SecureStore.getItemAsync('iborcuha_theme').then(saved => {
-      if (saved !== null) setDark(saved === 'dark');
-    });
-  }, []);
-
-  const toggle = () => {
-    setDark(d => {
-      const next = !d;
-      SecureStore.setItemAsync('iborcuha_theme', next ? 'dark' : 'light');
-      return next;
-    });
-  };
+  const toggle = () => setDark(d => !d);
+  const t = dark ? colors.dark : colors.light;
 
   return (
-    <ThemeContext.Provider value={{ dark, toggle }}>
+    <ThemeContext.Provider value={{ dark, toggle, t }}>
       {children}
     </ThemeContext.Provider>
   );

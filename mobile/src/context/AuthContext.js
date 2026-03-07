@@ -1,10 +1,10 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { api } from '../utils/api';
 
 const AuthContext = createContext();
 
-export function AuthProvider({ children, onAuth }) {
+export function AuthProvider({ children }) {
   const [auth, setAuth] = useState(undefined);
 
   useEffect(() => {
@@ -24,7 +24,9 @@ export function AuthProvider({ children, onAuth }) {
               await SecureStore.deleteItemAsync('iborcuha_auth');
               await SecureStore.deleteItemAsync('iborcuha_token');
             }
-          } catch {}
+          } catch {
+            // keep cached auth
+          }
         } else {
           setAuth(null);
         }
@@ -46,9 +48,8 @@ export function AuthProvider({ children, onAuth }) {
     };
     await SecureStore.setItemAsync('iborcuha_auth', JSON.stringify(authData));
     setAuth(authData);
-    if (onAuth) onAuth();
     return result;
-  }, [onAuth]);
+  }, []);
 
   const logout = useCallback(async () => {
     try { await api.logout(); } catch {}

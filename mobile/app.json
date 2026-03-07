@@ -4,33 +4,18 @@
     "slug": "iborcuha",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#050505"
-    },
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.iborcuha.app"
+      "backgroundColor": "#1a1a2e"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#050505",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#1a1a2e"
       },
       "package": "com.iborcuha.app"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "93f016a7-8af0-4dc9-a653-377fa2886f2a"
-      }
-    }
+    "plugins": [
+      "expo-secure-store"
+    ]
   }
 }

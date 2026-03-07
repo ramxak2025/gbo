@@ -1,65 +1,46 @@
 import React from 'react';
-import { View, Image, Text, StyleSheet } from 'react-native';
-import { getFullUrl } from '../utils/api';
+import { View, Text, Image, StyleSheet } from 'react-native';
 
-function getInitials(name) {
-  if (!name) return '?';
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return parts[0][0].toUpperCase();
-}
-
-export default function Avatar({ src, name, size = 40 }) {
-  const resolvedSrc = getFullUrl(src);
-  const fontSize = size * 0.4;
-
-  if (resolvedSrc) {
+export default function Avatar({ name, src, size = 44 }) {
+  if (src) {
     return (
       <Image
-        source={{ uri: resolvedSrc }}
-        style={[
-          styles.image,
-          {
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-          },
-        ]}
+        source={{ uri: src }}
+        style={[styles.image, { width: size, height: size, borderRadius: size / 2 }]}
       />
     );
   }
 
+  const initials = (name || '?')
+    .split(' ')
+    .slice(0, 2)
+    .map(w => w[0])
+    .join('')
+    .toUpperCase();
+
+  const hue = name
+    ? name.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 360
+    : 200;
+
   return (
     <View
       style={[
-        styles.initialsContainer,
+        styles.container,
         {
           width: size,
           height: size,
           borderRadius: size / 2,
+          backgroundColor: `hsl(${hue}, 60%, 35%)`,
         },
       ]}
     >
-      <Text style={[styles.initialsText, { fontSize }]}>
-        {getInitials(name)}
-      </Text>
+      <Text style={[styles.text, { fontSize: size * 0.38 }]}>{initials}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  image: {
-    resizeMode: 'cover',
-  },
-  initialsContainer: {
-    backgroundColor: '#ef4444',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  initialsText: {
-    color: '#ffffff',
-    fontWeight: '700',
-  },
+  image: { resizeMode: 'cover' },
+  container: { alignItems: 'center', justifyContent: 'center' },
+  text: { color: '#fff', fontWeight: '700' },
 });
