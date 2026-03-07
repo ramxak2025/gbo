@@ -30,6 +30,16 @@ app.use('/api/data', dataRoutes)
 app.use('/api/upload', uploadRoutes)
 app.use('/api/push', pushRoutes)
 
+// Serve APK download
+app.get('/download/iborcuha.apk', (req, res) => {
+  const apkPath = path.join(__dirname, '..', 'public', 'download', 'iborcuha.apk')
+  res.download(apkPath, 'iborcuha.apk', (err) => {
+    if (err && !res.headersSent) {
+      res.status(404).json({ error: 'APK not found' })
+    }
+  })
+})
+
 // Serve React build
 const distPath = path.join(__dirname, '..', 'dist')
 
