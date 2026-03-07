@@ -2,6 +2,9 @@ import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
+import crypto from 'crypto'
+import { createWriteStream } from 'fs'
+import { pipeline } from 'stream/promises'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { initDB } from './db.js'
@@ -29,6 +32,41 @@ app.use('/api/auth', authRoutes)
 app.use('/api/data', dataRoutes)
 app.use('/api/upload', uploadRoutes)
 app.use('/api/push', pushRoutes)
+
+// EAS Build webhook - auto-download APK when build completes
+app.post('/api/eas-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  const secret = process.env.EAS_WEBHOOK_SECRET
+  if (!secret) return res.status(500).json({ error: 'Webhook secret not configured' })
+
+  // Verify signature from Expo
+  const sig = req.headers['expo-signature']
+  if (!sig) return res.status(401).json({ error: 'Missing signature' })
+
+  const hmac = crypto.createHmac('sha1', secret).update(req.body).digest('hex')
+  if (sig !== `sha1=${hmac}`) return res.status(401).json({ error: 'Invalid signature' })
+
+  const payload = JSON.parse(req.body)
+
+  // Only process successful Android builds
+  if (payload.status !== 'finished' || payload.platform !== 'android') {
+    return res.json({ ok: true, skipped: true })
+  }
+
+  const artifactUrl = payload.artifacts?.buildUrl
+  if (!artifactUrl) return res.status(400).json({ error: 'No artifact URL' })
+
+  try {
+    const apkPath = path.join(__dirname, '..', 'public', 'download', 'iborcuha.apk')
+    const response = await fetch(artifactUrl)
+    if (!response.ok) throw new Error(`Download failed: ${response.status}`)
+    await pipeline(response.body, createWriteStream(apkPath))
+    console.log('APK updated from EAS build:', payload.id)
+    res.json({ ok: true, updated: true })
+  } catch (err) {
+    console.error('Failed to download APK:', err)
+    res.status(500).json({ error: 'Download failed' })
+  }
+})
 
 // Serve APK download
 app.get('/download/iborcuha.apk', (req, res) => {
