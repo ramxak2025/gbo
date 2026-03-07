@@ -32,6 +32,8 @@ import {
   Square,
   CheckSquare,
 } from 'lucide-react-native';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
@@ -92,6 +94,7 @@ export default function LoginScreen({ onLogin }) {
       if (onLogin) onLogin();
     } catch (err) {
       setError(err.message || 'Ошибка демо-входа');
+      setErrorType(err.errorType || null);
     } finally {
       setLoading(false);
     }
@@ -303,12 +306,18 @@ export default function LoginScreen({ onLogin }) {
       <View
         style={[
           styles.card,
+          styles.glassCard,
           {
-            backgroundColor: cardBg,
-            borderColor: cardBorder,
+            borderColor: dark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.7)',
           },
         ]}
       >
+        <BlurView
+          intensity={dark ? 40 : 30}
+          tint={dark ? 'dark' : 'light'}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: cardBg }]} />
         {renderInput({
           icon: Phone,
           placeholder: '8 (900) 123-45-67',
@@ -368,14 +377,21 @@ export default function LoginScreen({ onLogin }) {
           disabled={loading}
           activeOpacity={0.8}
         >
-          {loading ? (
-            <ActivityIndicator size="small" color="#ffffff" />
-          ) : (
-            <View style={styles.buttonContent}>
-              <LogIn size={18} color="#ffffff" />
-              <Text style={styles.primaryButtonText}>Войти</Text>
-            </View>
-          )}
+          <LinearGradient
+            colors={['#7c3aed', '#a855f7']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.gradientButton}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <View style={styles.buttonContent}>
+                <LogIn size={18} color="#ffffff" />
+                <Text style={styles.primaryButtonText}>Войти</Text>
+              </View>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
       </View>
 
@@ -384,13 +400,18 @@ export default function LoginScreen({ onLogin }) {
         style={[
           styles.registerButton,
           {
-            backgroundColor: cardBg,
-            borderColor: cardBorder,
+            borderColor: dark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.7)',
           },
         ]}
         onPress={switchToRegister}
         activeOpacity={0.7}
       >
+        <BlurView
+          intensity={dark ? 30 : 20}
+          tint={dark ? 'dark' : 'light'}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: cardBg }]} />
         <UserPlus size={15} color={textSecondary} />
         <Text style={[styles.registerButtonText, { color: textSecondary }]}>
           Я тренер — хочу зарегистрироваться
@@ -521,12 +542,18 @@ export default function LoginScreen({ onLogin }) {
       <View
         style={[
           styles.card,
+          styles.glassCard,
           {
-            backgroundColor: cardBg,
-            borderColor: cardBorder,
+            borderColor: dark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.7)',
           },
         ]}
       >
+        <BlurView
+          intensity={dark ? 40 : 30}
+          tint={dark ? 'dark' : 'light'}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: cardBg }]} />
         {renderInput({
           icon: User,
           placeholder: 'ФИО *',
@@ -767,14 +794,21 @@ export default function LoginScreen({ onLogin }) {
           disabled={loading}
           activeOpacity={0.8}
         >
-          {loading ? (
-            <ActivityIndicator size="small" color="#ffffff" />
-          ) : (
-            <View style={styles.buttonContent}>
-              <Send size={16} color="#ffffff" />
-              <Text style={styles.primaryButtonText}>Отправить заявку</Text>
-            </View>
-          )}
+          <LinearGradient
+            colors={['#7c3aed', '#a855f7']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.gradientButton}
+          >
+            {loading ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <View style={styles.buttonContent}>
+                <Send size={16} color="#ffffff" />
+                <Text style={styles.primaryButtonText}>Отправить заявку</Text>
+              </View>
+            )}
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     </View>
@@ -820,10 +854,17 @@ export default function LoginScreen({ onLogin }) {
         onPress={goBack}
         activeOpacity={0.8}
       >
-        <View style={styles.buttonContent}>
-          <LogIn size={16} color="#ffffff" />
-          <Text style={styles.primaryButtonText}>Вернуться к входу</Text>
-        </View>
+        <LinearGradient
+          colors={['#16a34a', '#22c55e']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientButton}
+        >
+          <View style={styles.buttonContent}>
+            <LogIn size={16} color="#ffffff" />
+            <Text style={styles.primaryButtonText}>Вернуться к входу</Text>
+          </View>
+        </LinearGradient>
       </TouchableOpacity>
     </View>
   );
@@ -1044,6 +1085,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
   },
+  glassCard: {
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#a855f7',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
 
   // Input
   inputContainer: {
@@ -1078,25 +1133,26 @@ const styles = StyleSheet.create({
   // Primary button
   primaryButton: {
     width: '100%',
-    paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: '#7c3aed',
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
     marginTop: 16,
-    // Gradient simulation with a solid purple
-    // Using a linear gradient would require expo-linear-gradient
     ...Platform.select({
       ios: {
         shadowColor: '#7c3aed',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.35,
-        shadowRadius: 12,
+        shadowOpacity: 0.4,
+        shadowRadius: 16,
       },
       android: {
-        elevation: 6,
+        elevation: 8,
       },
     }),
+  },
+  gradientButton: {
+    width: '100%',
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   buttonDisabled: {
     opacity: 0.5,
@@ -1122,6 +1178,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     marginBottom: 4,
+    overflow: 'hidden',
   },
   registerButtonText: {
     fontSize: 13,

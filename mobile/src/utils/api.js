@@ -9,13 +9,23 @@ async function request(url, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...options.headers };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API}${url}`, { ...options, headers });
+  let res;
+  try {
+    res = await fetch(`${API}${url}`, { ...options, headers });
+  } catch (e) {
+    throw new Error('Нет подключения к серверу');
+  }
   if (res.status === 401) {
     await SecureStore.deleteItemAsync('iborcuha_token');
     await SecureStore.deleteItemAsync('iborcuha_auth');
     throw new Error('Unauthorized');
   }
-  const data = await res.json();
+  let data;
+  try {
+    data = await res.json();
+  } catch {
+    throw new Error('Ошибка ответа сервера');
+  }
   if (!res.ok) throw new Error(data.error || 'Server error');
   return data;
 }
@@ -52,10 +62,20 @@ export const api = {
     const token = await SecureStore.getItemAsync('iborcuha_token');
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    const res = await fetch(`${API}/auth/login`, {
-      method: 'POST', headers, body: JSON.stringify({ phone, password }),
-    });
-    const data = await res.json();
+    let res;
+    try {
+      res = await fetch(`${API}/auth/login`, {
+        method: 'POST', headers, body: JSON.stringify({ phone, password }),
+      });
+    } catch (e) {
+      throw new Error('Нет подключения к серверу');
+    }
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error('Ошибка ответа сервера');
+    }
     if (!res.ok) {
       const err = new Error(data.error || 'Login error');
       err.errorType = data.errorType || null;

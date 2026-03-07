@@ -1,7 +1,9 @@
 import React from 'react';
+import { StyleSheet, View, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Home, Wallet, Users, Trophy, User, Film, Shield } from 'lucide-react-native';
+import { BlurView } from 'expo-blur';
+import { Home, Wallet, Users, Trophy, User, Film } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getColors } from '../utils/theme';
@@ -21,60 +23,66 @@ import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
+function GlassTabBar(props) {
+  const { dark } = useTheme();
+  return (
+    <BlurView
+      intensity={dark ? 60 : 50}
+      tint={dark ? 'dark' : 'light'}
+      style={styles.blurTabBar}
+    >
+      <View style={[
+        styles.tabBarOverlay,
+        dark ? styles.tabBarDark : styles.tabBarLight,
+      ]}>
+        {props.children}
+      </View>
+    </BlurView>
+  );
+}
+
+function getTabScreenOptions(dark) {
+  const c = getColors(dark);
+  return {
+    headerShown: false,
+    tabBarStyle: {
+      position: 'absolute',
+      backgroundColor: 'transparent',
+      borderTopWidth: 0,
+      elevation: 0,
+      height: 70,
+      paddingBottom: 10,
+      paddingTop: 6,
+    },
+    tabBarBackground: () => <GlassTabBar />,
+    tabBarActiveTintColor: dark ? '#ffffff' : '#111827',
+    tabBarInactiveTintColor: dark ? 'rgba(255,255,255,0.35)' : '#9ca3af',
+    tabBarLabelStyle: { fontSize: 9, fontWeight: '700', letterSpacing: 0.3 },
+  };
+}
+
 function TrainerTabs() {
   const { dark } = useTheme();
-  const c = getColors(dark);
   return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: c.navBg,
-          borderTopColor: c.separator,
-          borderTopWidth: 1,
-          height: 65,
-          paddingBottom: 8,
-          paddingTop: 4,
-        },
-        tabBarActiveTintColor: dark ? '#ffffff' : '#111827',
-        tabBarInactiveTintColor: dark ? '#6b7280' : '#9ca3af',
-        tabBarLabelStyle: { fontSize: 9, fontWeight: '600' },
-      }}
-    >
+    <Tab.Navigator screenOptions={getTabScreenOptions(dark)}>
       <Tab.Screen name="Home" component={DashboardScreen}
-        options={{ tabBarLabel: 'Главная', tabBarIcon: ({ color, size }) => <Home size={22} color={color} /> }} />
+        options={{ tabBarLabel: 'Главная', tabBarIcon: ({ color }) => <Home size={22} color={color} /> }} />
       <Tab.Screen name="Cash" component={CashScreen}
-        options={{ tabBarLabel: 'Касса', tabBarIcon: ({ color, size }) => <Wallet size={22} color={color} /> }} />
+        options={{ tabBarLabel: 'Касса', tabBarIcon: ({ color }) => <Wallet size={22} color={color} /> }} />
       <Tab.Screen name="Team" component={TeamScreen}
-        options={{ tabBarLabel: 'Команда', tabBarIcon: ({ color, size }) => <Users size={22} color={color} /> }} />
+        options={{ tabBarLabel: 'Команда', tabBarIcon: ({ color }) => <Users size={22} color={color} /> }} />
       <Tab.Screen name="Tournaments" component={TournamentsScreen}
-        options={{ tabBarLabel: 'Турниры', tabBarIcon: ({ color, size }) => <Trophy size={22} color={color} /> }} />
+        options={{ tabBarLabel: 'Турниры', tabBarIcon: ({ color }) => <Trophy size={22} color={color} /> }} />
       <Tab.Screen name="Materials" component={MaterialsScreen}
-        options={{ tabBarLabel: 'Материалы', tabBarIcon: ({ color, size }) => <Film size={22} color={color} /> }} />
+        options={{ tabBarLabel: 'Материалы', tabBarIcon: ({ color }) => <Film size={22} color={color} /> }} />
     </Tab.Navigator>
   );
 }
 
 function StudentTabs() {
   const { dark } = useTheme();
-  const c = getColors(dark);
   return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: c.navBg,
-          borderTopColor: c.separator,
-          borderTopWidth: 1,
-          height: 65,
-          paddingBottom: 8,
-          paddingTop: 4,
-        },
-        tabBarActiveTintColor: dark ? '#ffffff' : '#111827',
-        tabBarInactiveTintColor: dark ? '#6b7280' : '#9ca3af',
-        tabBarLabelStyle: { fontSize: 9, fontWeight: '600' },
-      }}
-    >
+    <Tab.Navigator screenOptions={getTabScreenOptions(dark)}>
       <Tab.Screen name="Home" component={DashboardScreen}
         options={{ tabBarLabel: 'Главная', tabBarIcon: ({ color }) => <Home size={22} color={color} /> }} />
       <Tab.Screen name="Team" component={TeamScreen}
@@ -91,24 +99,8 @@ function StudentTabs() {
 
 function SuperadminTabs() {
   const { dark } = useTheme();
-  const c = getColors(dark);
   return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: c.navBg,
-          borderTopColor: c.separator,
-          borderTopWidth: 1,
-          height: 65,
-          paddingBottom: 8,
-          paddingTop: 4,
-        },
-        tabBarActiveTintColor: dark ? '#ffffff' : '#111827',
-        tabBarInactiveTintColor: dark ? '#6b7280' : '#9ca3af',
-        tabBarLabelStyle: { fontSize: 9, fontWeight: '600' },
-      }}
-    >
+    <Tab.Navigator screenOptions={getTabScreenOptions(dark)}>
       <Tab.Screen name="Home" component={DashboardScreen}
         options={{ tabBarLabel: 'Главная', tabBarIcon: ({ color }) => <Home size={22} color={color} /> }} />
       <Tab.Screen name="Team" component={TeamScreen}
@@ -148,3 +140,33 @@ export default function AppNavigator() {
     </Stack.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  blurTabBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+      },
+    }),
+  },
+  tabBarOverlay: {
+    flexDirection: 'row',
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  tabBarDark: {
+    backgroundColor: 'rgba(10,10,15,0.65)',
+    borderTopColor: 'rgba(255,255,255,0.08)',
+  },
+  tabBarLight: {
+    backgroundColor: 'rgba(255,255,255,0.55)',
+    borderTopColor: 'rgba(0,0,0,0.06)',
+  },
+});
