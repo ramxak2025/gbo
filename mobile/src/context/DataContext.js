@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { api } from '../utils/api';
 
 const DataContext = createContext();
@@ -25,7 +25,7 @@ export function DataProvider({ children }) {
 
   useEffect(() => {
     (async () => {
-      const token = await AsyncStorage.getItem('iborcuha_token');
+      const token = await SecureStore.getItemAsync('iborcuha_token');
       if (token) reload();
       else setLoading(false);
     })();

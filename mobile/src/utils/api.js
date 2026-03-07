@@ -1,18 +1,18 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
 // IMPORTANT: Change this to your server's URL
 const BASE_URL = 'https://iborcuha.ru';
 const API = `${BASE_URL}/api`;
 
 async function request(url, options = {}) {
-  const token = await AsyncStorage.getItem('iborcuha_token');
+  const token = await SecureStore.getItemAsync('iborcuha_token');
   const headers = { 'Content-Type': 'application/json', ...options.headers };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${API}${url}`, { ...options, headers });
   if (res.status === 401) {
-    await AsyncStorage.removeItem('iborcuha_token');
-    await AsyncStorage.removeItem('iborcuha_auth');
+    await SecureStore.deleteItemAsync('iborcuha_token');
+    await SecureStore.deleteItemAsync('iborcuha_auth');
     throw new Error('Unauthorized');
   }
   const data = await res.json();
@@ -21,7 +21,7 @@ async function request(url, options = {}) {
 }
 
 async function uploadFile(uri) {
-  const token = await AsyncStorage.getItem('iborcuha_token');
+  const token = await SecureStore.getItemAsync('iborcuha_token');
   const formData = new FormData();
   const filename = uri.split('/').pop();
   const match = /\.(\w+)$/.exec(filename);
@@ -49,7 +49,7 @@ export const api = {
   uploadFile,
 
   login: async (phone, password) => {
-    const token = await AsyncStorage.getItem('iborcuha_token');
+    const token = await SecureStore.getItemAsync('iborcuha_token');
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
     const res = await fetch(`${API}/auth/login`, {

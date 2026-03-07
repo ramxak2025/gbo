@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
 const ThemeContext = createContext();
 
@@ -7,7 +7,7 @@ export function ThemeProvider({ children }) {
   const [dark, setDark] = useState(true);
 
   useEffect(() => {
-    AsyncStorage.getItem('iborcuha_theme').then(saved => {
+    SecureStore.getItemAsync('iborcuha_theme').then(saved => {
       if (saved !== null) setDark(saved === 'dark');
     });
   }, []);
@@ -15,7 +15,7 @@ export function ThemeProvider({ children }) {
   const toggle = () => {
     setDark(d => {
       const next = !d;
-      AsyncStorage.setItem('iborcuha_theme', next ? 'dark' : 'light');
+      SecureStore.setItemAsync('iborcuha_theme', next ? 'dark' : 'light');
       return next;
     });
   };

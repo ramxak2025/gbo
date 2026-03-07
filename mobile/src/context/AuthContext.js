@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { api } from '../utils/api';
 
 const AuthContext = createContext();
@@ -10,7 +10,7 @@ export function AuthProvider({ children, onAuth }) {
   useEffect(() => {
     (async () => {
       try {
-        const saved = await AsyncStorage.getItem('iborcuha_auth');
+        const saved = await SecureStore.getItemAsync('iborcuha_auth');
         if (saved) {
           const parsed = JSON.parse(saved);
           setAuth(parsed);
@@ -18,11 +18,11 @@ export function AuthProvider({ children, onAuth }) {
             const me = await api.me();
             if (me) {
               setAuth(me);
-              await AsyncStorage.setItem('iborcuha_auth', JSON.stringify(me));
+              await SecureStore.setItemAsync('iborcuha_auth', JSON.stringify(me));
             } else {
               setAuth(null);
-              await AsyncStorage.removeItem('iborcuha_auth');
-              await AsyncStorage.removeItem('iborcuha_token');
+              await SecureStore.deleteItemAsync('iborcuha_auth');
+              await SecureStore.deleteItemAsync('iborcuha_token');
             }
           } catch {}
         } else {
@@ -36,7 +36,7 @@ export function AuthProvider({ children, onAuth }) {
 
   const login = useCallback(async (phone, password) => {
     const result = await api.login(phone, password);
-    await AsyncStorage.setItem('iborcuha_token', result.token);
+    await SecureStore.setItemAsync('iborcuha_token', result.token);
     const authData = {
       userId: result.userId,
       role: result.role,
@@ -44,7 +44,7 @@ export function AuthProvider({ children, onAuth }) {
       user: result.user,
       student: result.student || null,
     };
-    await AsyncStorage.setItem('iborcuha_auth', JSON.stringify(authData));
+    await SecureStore.setItemAsync('iborcuha_auth', JSON.stringify(authData));
     setAuth(authData);
     if (onAuth) onAuth();
     return result;
@@ -52,8 +52,8 @@ export function AuthProvider({ children, onAuth }) {
 
   const logout = useCallback(async () => {
     try { await api.logout(); } catch {}
-    await AsyncStorage.removeItem('iborcuha_auth');
-    await AsyncStorage.removeItem('iborcuha_token');
+    await SecureStore.deleteItemAsync('iborcuha_auth');
+    await SecureStore.deleteItemAsync('iborcuha_token');
     setAuth(null);
   }, []);
 
