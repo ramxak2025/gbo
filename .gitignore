@@ -14,7 +14,7 @@ dist-ssr
 .env
 server/uploads/*
 !server/uploads/.gitkeep
-public/download/*.apk
+
 
 # Editor directories and files
 .vscode/*
