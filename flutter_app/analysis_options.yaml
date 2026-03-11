@@ -1,0 +1,34 @@
+# Строгий анализ кода для обеспечения качества
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # Строгая типизация
+    always_declare_return_types: true
+    always_specify_types: false
+    avoid_dynamic_calls: true
+    prefer_typing_uninitialized_variables: true
+
+    # Качество кода
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    prefer_final_fields: true
+    prefer_final_locals: true
+    unnecessary_nullable_for_final_variable_declarations: true
+    use_key_in_widget_constructors: true
+
+    # Именование
+    camel_case_types: true
+    file_names: true
+
+    # Безопасность
+    avoid_print: true
+    avoid_web_libraries_in_flutter: true
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  errors:
+    invalid_annotation_target: ignore
