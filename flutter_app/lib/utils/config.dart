@@ -1,17 +1,15 @@
 /// Конфигурация приложения
 ///
-/// URL бэкенда и другие настройки.
-/// В production нужно заменить на реальный URL.
+/// URL бэкенда — общий с веб-версией (iborcuha.ru).
 library;
 
 /// Конфигурация API
 class AppConfig {
-  /// URL бэкенда (общий с веб-версией)
-  /// Для разработки: http://10.0.2.2:3000 (Android эмулятор)
-  /// Для production: https://your-domain.com
+  /// URL бэкенда (VDS сервер)
+  /// Переопределить: flutter run --dart-define=API_BASE_URL=http://localhost:3000
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:3000',
+    defaultValue: 'https://iborcuha.ru',
   );
 
   /// Название приложения

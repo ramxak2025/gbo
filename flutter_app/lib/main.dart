@@ -141,25 +141,30 @@ class _SplashScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 80,
-                height: 80,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      LiquidGlassColors.primary,
-                      LiquidGlassColors.purple,
-                    ],
-                  ),
                   borderRadius: BorderRadius.circular(24),
-                ),
-                child: const Center(
-                  child: Text(
-                    'iB',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.w700,
+                  boxShadow: [
+                    BoxShadow(
+                      color: isDark
+                          ? const Color(0xFF7C3AED).withValues(alpha: 0.3)
+                          : const Color(0xFFC084FC).withValues(alpha: 0.2),
+                      blurRadius: 40,
+                      spreadRadius: 8,
                     ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Image.asset(
+                    'assets/logo.png',
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
