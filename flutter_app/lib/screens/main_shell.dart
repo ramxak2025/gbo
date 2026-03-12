@@ -91,8 +91,10 @@ class MainShellState extends State<MainShell>
   bool _splashDismissed = false;
   late final AnimationController _fadeController;
 
-  // JS to hide web BottomNav + fake standalone + haptic bridge
+  // JS injected after each page load — each section isolated so one
+  // failure (e.g. defineProperty on iOS) doesn't break the rest.
   static const String _postLoadScript = '''
+    // 1. Fake standalone mode (may throw on iOS — isolated)
     try {
       if (!window.__sp) {
         Object.defineProperty(window.navigator, 'standalone', {
@@ -100,18 +102,46 @@ class MainShellState extends State<MainShell>
         });
         window.__sp = true;
       }
+    } catch(e) {}
+
+    // 2. Dismiss install prompt
+    try {
       localStorage.setItem('iborcuha_install_dismissed', Date.now().toString());
+    } catch(e) {}
+
+    // 3. Hide web BottomNav via CSS
+    try {
       if (!document.getElementById('__fhn')) {
         var s = document.createElement('style');
         s.id = '__fhn';
         s.textContent = 'div.fixed.bottom-0 { display:none!important; }';
         document.head.appendChild(s);
       }
+    } catch(e) {}
+
+    // 4. Flutter ↔ Web bridge (haptic, logout, native flag)
+    try {
       window.__flutterNative = {
         haptic: function(t) { if(window.FlutterBridge) FlutterBridge.postMessage('haptic_'+t); },
         logout: function() { if(window.FlutterBridge) FlutterBridge.postMessage('logout'); },
         isNativeApp: true
       };
+    } catch(e) {}
+
+    // 5. Auto-detect logout: intercept localStorage.removeItem
+    //    When React removes 'iborcuha_auth', Flutter gets notified
+    //    regardless of whether React calls __flutterNative.logout()
+    try {
+      if (!window.__lri) {
+        var _origRemove = localStorage.removeItem.bind(localStorage);
+        localStorage.removeItem = function(key) {
+          _origRemove(key);
+          if (key === 'iborcuha_auth' && window.FlutterBridge) {
+            FlutterBridge.postMessage('logout');
+          }
+        };
+        window.__lri = true;
+      }
     } catch(e) {}
   ''';
 
@@ -174,13 +204,8 @@ class MainShellState extends State<MainShell>
       ..setUserAgent('iBorcuhaApp/1.0')
       ..setNavigationDelegate(
         NavigationDelegate(
-          onPageFinished: (url) {
+          onPageFinished: (_) {
             _controllers[index].runJavaScript(_postLoadScript);
-            // Detect web-side logout: if WebView navigated to /login
-            if (mounted && url.contains('/login')) {
-              context.read<AuthProvider>().logout();
-              return;
-            }
             if (mounted && !_loaded[index]) {
               setState(() {
                 _loaded[index] = true;
