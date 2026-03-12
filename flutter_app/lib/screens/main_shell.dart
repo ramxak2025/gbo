@@ -122,7 +122,11 @@ class MainShellState extends State<MainShell>
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
-    );
+    )..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          setState(() {}); // remove splash from widget tree
+        }
+      });
 
     final auth = context.read<AuthProvider>();
     final authData = auth.authData;
@@ -177,8 +181,8 @@ class MainShellState extends State<MainShell>
                 _loaded[index] = true;
                 _loadedCount++;
               });
-              // Dismiss splash as soon as the first tab (Главная) is ready
-              if (index == 0 && !_splashDismissed) {
+              // Dismiss splash as soon as ANY tab finishes loading
+              if (!_splashDismissed) {
                 _dismissSplash();
               }
             }
@@ -274,13 +278,16 @@ class MainShellState extends State<MainShell>
 
           // Preload splash with progress — fades out when first tab ready
           if (!_splashDismissed || _fadeController.isAnimating)
-            FadeTransition(
-              opacity: Tween<double>(begin: 1.0, end: 0.0)
-                  .animate(_fadeController),
-              child: _PreloadSplash(
-                isDark: isDark,
-                loadedCount: _loadedCount,
-                totalCount: _tabs.length,
+            IgnorePointer(
+              ignoring: _splashDismissed,
+              child: FadeTransition(
+                opacity: Tween<double>(begin: 1.0, end: 0.0)
+                    .animate(_fadeController),
+                child: _PreloadSplash(
+                  isDark: isDark,
+                  loadedCount: _loadedCount,
+                  totalCount: _tabs.length,
+                ),
               ),
             ),
 
