@@ -274,14 +274,9 @@ class MainShellState extends State<MainShell>
 
           // Preload splash with progress — fades out when first tab ready
           if (!_splashDismissed || _fadeController.isAnimating)
-            AnimatedBuilder(
-              animation: _fadeController,
-              builder: (context, child) {
-                return Opacity(
-                  opacity: 1.0 - _fadeController.value,
-                  child: child,
-                );
-              },
+            FadeTransition(
+              opacity: Tween<double>(begin: 1.0, end: 0.0)
+                  .animate(_fadeController),
               child: _PreloadSplash(
                 isDark: isDark,
                 loadedCount: _loadedCount,
