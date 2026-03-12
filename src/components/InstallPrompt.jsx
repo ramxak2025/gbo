@@ -46,8 +46,8 @@ export default function InstallPrompt() {
   const handleInstall = () => {
     if (platform === 'android') {
       const link = document.createElement('a')
-      link.href = '/iborcuha.apk'
-      link.download = 'iborcuha.apk'
+      link.href = 'https://drive.google.com/uc?export=download&id=1zQps_3q2tu3_XnQeeXMXmHAbeFHjnWkV'
+      link.target = '_blank'
       link.click()
       handleDismiss()
       return
