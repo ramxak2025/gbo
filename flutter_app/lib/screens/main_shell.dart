@@ -12,6 +12,7 @@
 /// Splash с прогрессом показывается до готовности первой вкладки.
 library;
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -90,6 +91,7 @@ class MainShellState extends State<MainShell>
   int _loadedCount = 0;
   bool _splashDismissed = false;
   late final AnimationController _fadeController;
+  Timer? _authCheckTimer;
 
   // JS injected after each page load — each section isolated so one
   // failure (e.g. defineProperty on iOS) doesn't break the rest.
@@ -119,30 +121,12 @@ class MainShellState extends State<MainShell>
       }
     } catch(e) {}
 
-    // 4. Flutter ↔ Web bridge (haptic, logout, native flag)
+    // 4. Flutter ↔ Web bridge (haptic + native flag)
     try {
       window.__flutterNative = {
         haptic: function(t) { if(window.FlutterBridge) FlutterBridge.postMessage('haptic_'+t); },
-        logout: function() {
-          if(window.FlutterBridge) setTimeout(function(){ FlutterBridge.postMessage('logout'); }, 0);
-        },
         isNativeApp: true
       };
-    } catch(e) {}
-
-    // 5. Watch for logout: poll localStorage every 300ms
-    //    When 'iborcuha_auth' disappears, notify Flutter.
-    //    Works regardless of how React triggers logout.
-    try {
-      if (localStorage.getItem('iborcuha_auth') && !window.__authPoll) {
-        window.__authPoll = setInterval(function() {
-          if (!localStorage.getItem('iborcuha_auth')) {
-            clearInterval(window.__authPoll);
-            window.__authPoll = null;
-            if (window.FlutterBridge) FlutterBridge.postMessage('logout');
-          }
-        }, 300);
-      }
     } catch(e) {}
   ''';
 
@@ -186,8 +170,32 @@ class MainShellState extends State<MainShell>
 
   @override
   void dispose() {
+    _authCheckTimer?.cancel();
     _fadeController.dispose();
     super.dispose();
+  }
+
+  /// Poll WebView localStorage from Dart side to detect logout.
+  /// When 'iborcuha_auth' disappears, trigger Flutter logout.
+  void _startAuthCheck() {
+    _authCheckTimer = Timer.periodic(
+      const Duration(milliseconds: 500),
+      (_) async {
+        if (!mounted) {
+          _authCheckTimer?.cancel();
+          return;
+        }
+        try {
+          final result = await _controllers[_currentIndex]
+              .runJavaScriptReturningResult(
+                  'localStorage.getItem("iborcuha_auth") != null');
+          if (mounted && result.toString() == 'false') {
+            _authCheckTimer?.cancel();
+            context.read<AuthProvider>().logout();
+          }
+        } catch (_) {}
+      },
+    );
   }
 
   /// Build URL for tab: baseUrl + path + #__ft=TOKEN&__fa=AUTH
@@ -215,6 +223,7 @@ class MainShellState extends State<MainShell>
               // Dismiss splash as soon as ANY tab finishes loading
               if (!_splashDismissed) {
                 _dismissSplash();
+                _startAuthCheck();
               }
             }
           },
