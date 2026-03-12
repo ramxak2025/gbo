@@ -23,6 +23,8 @@
           var a = p.get('__fa');
           if (t) localStorage.setItem('iborcuha_token', t);
           if (a) localStorage.setItem('iborcuha_auth', decodeURIComponent(a));
+          // Mark as Flutter embed so React skips post-login redirect
+          window.__isFlutterEmbed = true;
           history.replaceState(null, '', window.location.pathname + window.location.search);
         }
       } catch(e) {}

@@ -34,9 +34,9 @@ function AppRoutes() {
   const location = useLocation()
   const prevAuth = useRef(null)
 
-  // After login, navigate to home page
+  // After login, navigate to home page (skip in Flutter WebView embed)
   useEffect(() => {
-    if (!prevAuth.current && auth && location.pathname !== '/') {
+    if (!prevAuth.current && auth && location.pathname !== '/' && !window.__isFlutterEmbed) {
       navigate('/', { replace: true })
     }
     prevAuth.current = auth
