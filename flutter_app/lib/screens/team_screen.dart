@@ -16,6 +16,7 @@ import '../providers/auth_provider.dart';
 import '../providers/data_provider.dart';
 import '../providers/theme_provider.dart';
 import '../models/student.dart';
+import '../models/user.dart';
 import '../theme/app_theme.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/avatar_widget.dart';
