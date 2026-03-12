@@ -13,6 +13,20 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>iBorcuha</title>
+    <script>
+      // Flutter WebView auth bridge — runs BEFORE React loads
+      try {
+        var h = window.location.hash;
+        if (h.indexOf('__ft=') > -1) {
+          var p = new URLSearchParams(h.substring(1));
+          var t = p.get('__ft');
+          var a = p.get('__fa');
+          if (t) localStorage.setItem('iborcuha_token', t);
+          if (a) localStorage.setItem('iborcuha_auth', decodeURIComponent(a));
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+      } catch(e) {}
+    </script>
   </head>
   <body class="overscroll-none">
     <div id="root"></div>
