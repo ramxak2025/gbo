@@ -174,8 +174,13 @@ class MainShellState extends State<MainShell>
       ..setUserAgent('iBorcuhaApp/1.0')
       ..setNavigationDelegate(
         NavigationDelegate(
-          onPageFinished: (_) {
+          onPageFinished: (url) {
             _controllers[index].runJavaScript(_postLoadScript);
+            // Detect web-side logout: if WebView navigated to /login
+            if (mounted && url.contains('/login')) {
+              context.read<AuthProvider>().logout();
+              return;
+            }
             if (mounted && !_loaded[index]) {
               setState(() {
                 _loaded[index] = true;

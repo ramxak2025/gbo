@@ -52,6 +52,10 @@ export function AuthProvider({ children, onAuth }) {
     localStorage.removeItem('iborcuha_auth')
     localStorage.removeItem('iborcuha_token')
     setAuth(null)
+    // Notify Flutter native app about logout
+    if (window.__flutterNative?.logout) {
+      window.__flutterNative.logout()
+    }
   }, [])
 
   // Show nothing while checking auth
