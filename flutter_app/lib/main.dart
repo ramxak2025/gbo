@@ -10,7 +10,6 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/auth_provider.dart';
-import 'providers/data_provider.dart';
 import 'providers/theme_provider.dart';
 import 'services/api_service.dart';
 import 'services/auth_service.dart';
@@ -18,14 +17,10 @@ import 'theme/app_theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_shell.dart';
 import 'utils/config.dart';
-import 'utils/date_utils.dart' as date_utils;
 
 /// Точка входа приложения
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Инициализация русской локали для дат
-  await date_utils.initDateFormatting();
 
   // Настройка ориентации
   await SystemChrome.setPreferredOrientations([
@@ -81,10 +76,6 @@ class IBorcuhaApp extends StatelessWidget {
           ),
         ),
 
-        // Данные приложения
-        ChangeNotifierProvider<DataProvider>(
-          create: (_) => DataProvider(api: apiService),
-        ),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, theme, _) {

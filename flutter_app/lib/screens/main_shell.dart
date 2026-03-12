@@ -1,27 +1,21 @@
-/// Основная оболочка — копия Layout.jsx
+/// Основная оболочка — WebView обёртка
 ///
-/// Animated atmospheric gradient blobs + GlassBottomNav + IndexedStack.
-/// Role-adaptive экраны с нативными переходами.
-/// Живой фон с плавными анимациями для вау-эффекта.
+/// После авторизации загружает веб-версию iborcuha.ru
+/// с инжектированным токеном. Pixel-perfect копия PWA
+/// внутри нативного приложения.
 library;
 
-import 'dart:math' as math;
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/auth_provider.dart';
-import '../providers/data_provider.dart';
 import '../providers/theme_provider.dart';
-import '../models/user.dart';
 import '../theme/app_theme.dart';
-import '../widgets/glass_bottom_nav.dart';
-
-import 'dashboard_screen.dart';
-import 'cash_screen.dart';
-import 'team_screen.dart';
-import 'tournaments_screen.dart';
-import 'profile_screen.dart';
-import 'materials_screen.dart';
+import '../utils/config.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -30,237 +24,195 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => _MainShellState();
 }
 
-class _MainShellState extends State<MainShell> with TickerProviderStateMixin {
-  int _currentIndex = 0;
-
-  late final AnimationController _blobController1;
-  late final AnimationController _blobController2;
-  late final AnimationController _blobController3;
+class _MainShellState extends State<MainShell> {
+  late final WebViewController _controller;
+  bool _isLoading = true;
+  bool _hasError = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<DataProvider>().loadData();
-    });
-
-    // Slow breathing animations for blobs
-    _blobController1 = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 8),
-    )..repeat(reverse: true);
-
-    _blobController2 = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 12),
-    )..repeat(reverse: true);
-
-    _blobController3 = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 10),
-    )..repeat(reverse: true);
+    _initWebView();
   }
 
-  @override
-  void dispose() {
-    _blobController1.dispose();
-    _blobController2.dispose();
-    _blobController3.dispose();
-    super.dispose();
+  void _initWebView() {
+    final auth = context.read<AuthProvider>();
+    final token = auth.authData?.token ?? '';
+
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(Colors.transparent)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageStarted: (_) {
+            if (mounted) setState(() => _isLoading = true);
+          },
+          onPageFinished: (_) {
+            // Инжектируем токен в localStorage веб-приложения
+            _controller.runJavaScript('''
+              try {
+                localStorage.setItem('token', '$token');
+                // Если приложение уже загружено, обновляем состояние
+                if (window.__refreshAuth) window.__refreshAuth();
+              } catch(e) {}
+            ''');
+            if (mounted) setState(() => _isLoading = false);
+          },
+          onWebResourceError: (error) {
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+                _hasError = true;
+              });
+            }
+          },
+          // Внешние ссылки (WhatsApp, Telegram и т.д.) — открываем в браузере
+          onNavigationRequest: (request) {
+            final url = request.url;
+            if (url.startsWith('https://wa.me/') ||
+                url.startsWith('https://t.me/') ||
+                url.startsWith('tel:') ||
+                url.startsWith('mailto:')) {
+              launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
+        ),
+      )
+      ..addJavaScriptChannel(
+        'FlutterBridge',
+        onMessageReceived: (message) {
+          _handleBridgeMessage(message.message);
+        },
+      )
+      ..loadRequest(Uri.parse(AppConfig.apiBaseUrl));
   }
 
-  List<Widget> _buildScreens(UserRole role) {
-    switch (role) {
-      case UserRole.superadmin:
-        return const [
-          DashboardScreen(),
-          _PlaceholderScreen(title: 'Клубы'),
-          TeamScreen(),
-          TournamentsScreen(),
-          ProfileScreen(),
-        ];
-      case UserRole.trainer:
-        return const [
-          DashboardScreen(),
-          CashScreen(),
-          TeamScreen(),
-          TournamentsScreen(),
-          MaterialsScreen(),
-        ];
-      case UserRole.student:
-        return const [
-          DashboardScreen(),
-          TeamScreen(),
-          TournamentsScreen(),
-          _PlaceholderScreen(title: 'Автор'),
-          MaterialsScreen(),
-        ];
+  void _handleBridgeMessage(String message) {
+    switch (message) {
+      case 'logout':
+        context.read<AuthProvider>().logout();
+        break;
+      case 'haptic_light':
+        HapticFeedback.lightImpact();
+        break;
+      case 'haptic_medium':
+        HapticFeedback.mediumImpact();
+        break;
+      case 'haptic_heavy':
+        HapticFeedback.heavyImpact();
+        break;
+      case 'haptic_selection':
+        HapticFeedback.selectionClick();
+        break;
     }
+  }
+
+  Future<void> _reload() async {
+    setState(() {
+      _hasError = false;
+      _isLoading = true;
+    });
+    await _controller.reload();
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDark;
-    final auth = context.watch<AuthProvider>();
-    final role = auth.role ?? UserRole.student;
-    final screens = _buildScreens(role);
-    final size = MediaQuery.of(context).size;
 
-    if (_currentIndex >= screens.length) {
-      _currentIndex = 0;
-    }
+    // Статус-бар под цвет приложения
+    SystemChrome.setSystemUIOverlayStyle(
+      isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+    );
 
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
           gradient: LiquidGlassColors.backgroundGradient(isDark: isDark),
         ),
-        child: Stack(
-          children: [
-            // Animated atmospheric blobs — живой фон
-            // Blob 1: Purple (top-left) — breathing + drifting
-            AnimatedBuilder(
-              animation: _blobController1,
-              builder: (context, child) {
-                final t = _blobController1.value;
-                return Positioned(
-                  top: -size.height * (0.25 + t * 0.08),
-                  left: -size.width * (0.15 + t * 0.05),
-                  child: Container(
-                    width: size.width * (0.55 + t * 0.1),
-                    height: size.height * (0.55 + t * 0.1),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
+        child: SafeArea(
+          child: Stack(
+            children: [
+              // WebView
+              WebViewWidget(controller: _controller),
+
+              // Loading overlay
+              if (_isLoading)
+                Container(
+                  color: isDark
+                      ? const Color(0xFF0A0A0F)
+                      : const Color(0xFFF8F7FF),
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        LiquidGlassColors.primary,
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Error state
+              if (_hasError && !_isLoading)
+                Container(
+                  color: isDark
+                      ? const Color(0xFF0A0A0F)
+                      : const Color(0xFFF8F7FF),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.wifi_off_rounded,
+                          size: 48,
                           color: isDark
-                              ? Color.lerp(
-                                  const Color(0xFF581C87).withValues(alpha: 0.15),
-                                  const Color(0xFF7C3AED).withValues(alpha: 0.25),
-                                  t,
-                                )!
-                              : Color.lerp(
-                                  const Color(0xFFE9D5FF).withValues(alpha: 0.25),
-                                  const Color(0xFFD8B4FE).withValues(alpha: 0.40),
-                                  t,
-                                )!,
-                          blurRadius: 120 + t * 40,
-                          spreadRadius: 40 + t * 20,
+                              ? Colors.white.withValues(alpha: 0.3)
+                              : Colors.grey,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Нет подключения',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Проверьте интернет и попробуйте снова',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.5)
+                                : Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        GestureDetector(
+                          onTap: _reload,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 28, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: LiquidGlassColors.primary,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text(
+                              'Повторить',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                );
-              },
-            ),
-
-            // Blob 2: Rose/Red (bottom-right) — counter-breathing
-            AnimatedBuilder(
-              animation: _blobController2,
-              builder: (context, child) {
-                final t = _blobController2.value;
-                return Positioned(
-                  bottom: -size.height * (0.18 + t * 0.06),
-                  right: -size.width * (0.12 + t * 0.05),
-                  child: Container(
-                    width: size.width * (0.5 + t * 0.08),
-                    height: size.height * (0.5 + t * 0.08),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: isDark
-                              ? Color.lerp(
-                                  const Color(0xFF7F1D1D).withValues(alpha: 0.12),
-                                  const Color(0xFFBE123C).withValues(alpha: 0.20),
-                                  t,
-                                )!
-                              : Color.lerp(
-                                  const Color(0xFFFECACA).withValues(alpha: 0.18),
-                                  const Color(0xFFFDA4AF).withValues(alpha: 0.30),
-                                  t,
-                                )!,
-                          blurRadius: 100 + t * 30,
-                          spreadRadius: 30 + t * 15,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-
-            // Blob 3: Teal/Cyan (center-right) — subtle accent
-            AnimatedBuilder(
-              animation: _blobController3,
-              builder: (context, child) {
-                final t = _blobController3.value;
-                return Positioned(
-                  top: size.height * (0.35 + t * 0.05),
-                  right: -size.width * (0.25 + t * 0.03),
-                  child: Container(
-                    width: size.width * (0.35 + t * 0.06),
-                    height: size.height * (0.35 + t * 0.06),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: isDark
-                              ? Color.lerp(
-                                  const Color(0xFF164E63).withValues(alpha: 0.08),
-                                  const Color(0xFF0E7490).withValues(alpha: 0.14),
-                                  t,
-                                )!
-                              : Color.lerp(
-                                  const Color(0xFFCFFAFE).withValues(alpha: 0.15),
-                                  const Color(0xFF67E8F9).withValues(alpha: 0.22),
-                                  t,
-                                )!,
-                          blurRadius: 80 + t * 25,
-                          spreadRadius: 20 + t * 10,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-
-            // Screens
-            IndexedStack(
-              index: _currentIndex,
-              children: screens,
-            ),
-            // Bottom navigation
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: GlassBottomNav(
-                currentIndex: _currentIndex,
-                onTap: (index) {
-                  setState(() => _currentIndex = index);
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PlaceholderScreen extends StatelessWidget {
-  final String title;
-  const _PlaceholderScreen({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Center(
-        child: Text(
-          title,
-          style: Theme.of(context).textTheme.headlineMedium,
+                ),
+            ],
+          ),
         ),
       ),
     );
