@@ -343,6 +343,21 @@ class DataProvider extends ChangeNotifier {
     await reload();
   }
 
+  /// Оплата ученика (продление подписки + транзакция дохода)
+  Future<void> handlePayment(Student student, int amount) async {
+    final expired = !student.isSubscriptionActive;
+    var baseDate = expired ? DateTime.now() : DateTime.tryParse(student.subscriptionExpiresAt ?? '') ?? DateTime.now();
+    baseDate = DateTime(baseDate.year, baseDate.month + 1, baseDate.day);
+    await updateStudent(student.id, {'subscriptionExpiresAt': baseDate.toIso8601String()});
+    await addTransaction({
+      'type': 'income',
+      'amount': amount,
+      'category': 'Абонемент',
+      'description': 'Оплата — ${student.name}',
+      'studentId': student.id,
+    });
+  }
+
   /// Одобрить заявку
   Future<void> approveRegistration(String id) async {
     await _api.approveRegistration(id);

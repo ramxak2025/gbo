@@ -1,17 +1,16 @@
-/// Виджет GlassCard — карточка в стиле Liquid Glass
+/// GlassCard — карточка с эффектом стекла (как в веб-версии)
 ///
-/// Полупрозрачный контейнер с размытием фона,
-/// тонкой границей и мягкой тенью.
-/// Точная копия дизайна веб-версии.
+/// Полупрозрачный контейнер rounded-[20px] с backdrop-blur,
+/// press-scale анимацией для нативного тактильного ощущения.
 library;
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../providers/theme_provider.dart';
 import 'package:provider/provider.dart';
 
-/// Стеклянная карточка в стиле Apple iOS Liquid Glass
-class GlassCard extends StatelessWidget {
+class GlassCard extends StatefulWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final VoidCallback? onTap;
@@ -28,15 +27,22 @@ class GlassCard extends StatelessWidget {
   });
 
   @override
+  State<GlassCard> createState() => _GlassCardState();
+}
+
+class _GlassCardState extends State<GlassCard> with SingleTickerProviderStateMixin {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDark;
 
     final card = ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
+      borderRadius: BorderRadius.circular(widget.borderRadius),
       child: BackdropFilter(
         filter: ImageFilter.blur(
-          sigmaX: blurAmount,
-          sigmaY: blurAmount,
+          sigmaX: widget.blurAmount,
+          sigmaY: widget.blurAmount,
         ),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -44,7 +50,7 @@ class GlassCard extends StatelessWidget {
             color: isDark
                 ? Colors.white.withValues(alpha: 0.05)
                 : Colors.white.withValues(alpha: 0.7),
-            borderRadius: BorderRadius.circular(borderRadius),
+            borderRadius: BorderRadius.circular(widget.borderRadius),
             border: Border.all(
               color: isDark
                   ? Colors.white.withValues(alpha: 0.07)
@@ -60,16 +66,31 @@ class GlassCard extends StatelessWidget {
                     ),
                   ],
           ),
-          padding: padding,
-          child: child,
+          padding: widget.padding,
+          child: widget.child,
         ),
       ),
     );
 
-    if (onTap != null) {
+    if (widget.onTap != null) {
       return GestureDetector(
-        onTap: onTap,
-        child: card,
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          widget.onTap!();
+        },
+        child: AnimatedScale(
+          scale: _pressed ? 0.96 : 1.0,
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOutCubic,
+          child: AnimatedOpacity(
+            opacity: _pressed ? 0.85 : 1.0,
+            duration: const Duration(milliseconds: 120),
+            child: card,
+          ),
+        ),
       );
     }
 

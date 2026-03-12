@@ -1,34 +1,24 @@
-/// Нижняя навигация в стиле Liquid Glass
+/// Нижняя навигация — копия BottomNav.jsx
 ///
-/// Полупрозрачная панель навигации с размытием фона.
-/// Адаптируется под роль пользователя (тренер/ученик/админ).
+/// Плавающая полупрозрачная таблетка rounded-[22px]
+/// с backdrop-blur-3xl и role-adaptive навигацией.
 library;
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/user.dart';
-import '../theme/app_theme.dart';
 
-/// Элемент навигации
 class NavItem {
   final IconData icon;
-  final IconData activeIcon;
   final String label;
-  final String route;
-
-  const NavItem({
-    required this.icon,
-    required this.activeIcon,
-    required this.label,
-    required this.route,
-  });
+  const NavItem({required this.icon, required this.label});
 }
 
-/// Стеклянная нижняя навигация
 class GlassBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -39,48 +29,33 @@ class GlassBottomNav extends StatelessWidget {
     required this.onTap,
   });
 
-  /// Элементы навигации в зависимости от роли
   static List<NavItem> getItems(UserRole role) {
-    final items = <NavItem>[
-      const NavItem(
-        icon: LucideIcons.layoutDashboard,
-        activeIcon: LucideIcons.layoutDashboard,
-        label: 'Главная',
-        route: '/',
-      ),
-    ];
-
-    if (role == UserRole.trainer) {
-      items.add(const NavItem(
-        icon: LucideIcons.wallet,
-        activeIcon: LucideIcons.wallet,
-        label: 'Касса',
-        route: '/cash',
-      ));
+    switch (role) {
+      case UserRole.superadmin:
+        return const [
+          NavItem(icon: LucideIcons.home, label: 'Главная'),
+          NavItem(icon: LucideIcons.shield, label: 'Клубы'),
+          NavItem(icon: LucideIcons.users, label: 'Люди'),
+          NavItem(icon: LucideIcons.trophy, label: 'Турниры'),
+          NavItem(icon: LucideIcons.user, label: 'Профиль'),
+        ];
+      case UserRole.trainer:
+        return const [
+          NavItem(icon: LucideIcons.home, label: 'Главная'),
+          NavItem(icon: LucideIcons.wallet, label: 'Касса'),
+          NavItem(icon: LucideIcons.users, label: 'Команда'),
+          NavItem(icon: LucideIcons.trophy, label: 'Турниры'),
+          NavItem(icon: LucideIcons.film, label: 'Материалы'),
+        ];
+      case UserRole.student:
+        return const [
+          NavItem(icon: LucideIcons.home, label: 'Главная'),
+          NavItem(icon: LucideIcons.users, label: 'Команда'),
+          NavItem(icon: LucideIcons.trophy, label: 'Турниры'),
+          NavItem(icon: LucideIcons.sparkles, label: 'Автор'),
+          NavItem(icon: LucideIcons.film, label: 'Материалы'),
+        ];
     }
-
-    items.add(const NavItem(
-      icon: LucideIcons.users,
-      activeIcon: LucideIcons.users,
-      label: 'Команда',
-      route: '/team',
-    ));
-
-    items.add(const NavItem(
-      icon: LucideIcons.trophy,
-      activeIcon: LucideIcons.trophy,
-      label: 'Турниры',
-      route: '/tournaments',
-    ));
-
-    items.add(const NavItem(
-      icon: LucideIcons.user,
-      activeIcon: LucideIcons.user,
-      label: 'Профиль',
-      route: '/profile',
-    ));
-
-    return items;
   }
 
   @override
@@ -89,76 +64,95 @@ class GlassBottomNav extends StatelessWidget {
     final auth = context.watch<AuthProvider>();
     final role = auth.role ?? UserRole.student;
     final items = getItems(role);
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return ClipRRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-        child: Container(
-          height: 84 + MediaQuery.of(context).padding.bottom,
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).padding.bottom,
-          ),
-          decoration: BoxDecoration(
-            color: isDark
-                ? Colors.black.withValues(alpha: 0.6)
-                : Colors.white.withValues(alpha: 0.8),
-            border: Border(
-              top: BorderSide(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.1)
-                    : Colors.black.withValues(alpha: 0.05),
-              ),
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding + 10),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+          child: Container(
+            height: 60,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.white.withValues(alpha: 0.50),
+              boxShadow: isDark
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.4),
+                        blurRadius: 32,
+                        offset: const Offset(0, 8),
+                      ),
+                    ]
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 32,
+                        offset: const Offset(0, 8),
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
             ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(items.length, (index) {
-              final item = items[index];
-              final isActive = index == currentIndex;
+            child: Row(
+              children: List.generate(items.length, (index) {
+                final item = items[index];
+                final isActive = index == currentIndex;
 
-              return Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => onTap(index),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 200),
-                          child: Icon(
-                            isActive ? item.activeIcon : item.icon,
-                            key: ValueKey<bool>(isActive),
-                            size: 24,
+                return Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      onTap(index);
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutCubic,
+                      margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 6),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        color: isActive
+                            ? isDark
+                                ? Colors.white.withValues(alpha: 0.12)
+                                : Colors.black.withValues(alpha: 0.06)
+                            : Colors.transparent,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            item.icon,
+                            size: 22,
                             color: isActive
-                                ? LiquidGlassColors.primary
-                                : isDark
-                                    ? Colors.white.withValues(alpha: 0.5)
-                                    : Colors.black.withValues(alpha: 0.4),
+                                ? isDark ? Colors.white : Colors.grey[900]
+                                : isDark ? Colors.grey[600] : Colors.grey[400],
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          item.label,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight:
-                                isActive ? FontWeight.w600 : FontWeight.w400,
-                            color: isActive
-                                ? LiquidGlassColors.primary
-                                : isDark
-                                    ? Colors.white.withValues(alpha: 0.5)
-                                    : Colors.black.withValues(alpha: 0.4),
+                          const SizedBox(height: 2),
+                          Text(
+                            item.label,
+                            style: TextStyle(
+                              fontSize: 9,
+                              letterSpacing: 0.3,
+                              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                              color: isActive
+                                  ? isDark ? Colors.white : Colors.grey[900]
+                                  : isDark ? Colors.grey[600] : Colors.grey[400],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              );
-            }),
+                );
+              }),
+            ),
           ),
         ),
       ),
