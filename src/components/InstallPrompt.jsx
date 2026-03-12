@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Share, PlusSquare, MoreVertical, Download, WifiOff, AppWindow } from 'lucide-react'
+import { X, Share, PlusSquare, Download, WifiOff, AppWindow } from 'lucide-react'
 
 function detectPlatform() {
   const ua = navigator.userAgent || ''
@@ -43,12 +43,21 @@ export default function InstallPrompt() {
     }
   }, [])
 
-  const handleInstall = async () => {
+  const handleInstall = () => {
+    if (platform === 'android') {
+      const link = document.createElement('a')
+      link.href = '/iborcuha.apk'
+      link.download = 'iborcuha.apk'
+      link.click()
+      handleDismiss()
+      return
+    }
     if (deferredPrompt) {
       deferredPrompt.prompt()
-      const result = await deferredPrompt.userChoice
-      if (result.outcome === 'accepted') handleDismiss()
-      setDeferredPrompt(null)
+      deferredPrompt.userChoice.then((result) => {
+        if (result.outcome === 'accepted') handleDismiss()
+        setDeferredPrompt(null)
+      })
     }
   }
 
@@ -71,11 +80,6 @@ export default function InstallPrompt() {
     { num: '3', text: 'Нажмите', accent: 'На экран «Домой»', icon: PlusSquare, hint: null },
   ]
 
-  const androidSteps = [
-    { num: '1', text: 'Нажмите', accent: 'меню браузера ⋮', icon: MoreVertical, hint: 'в правом верхнем углу' },
-    { num: '2', text: 'Пролистайте вниз', accent: null, icon: null, hint: 'в открывшемся меню' },
-    { num: '3', text: 'Нажмите', accent: 'На главный экран', icon: Download, hint: null },
-  ]
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-end justify-center">
@@ -134,42 +138,13 @@ export default function InstallPrompt() {
             {platform === 'android' ? (
               <div className="mb-4">
                 <button
-                  onClick={deferredPrompt ? handleInstall : undefined}
-                  className={`w-full py-3.5 rounded-2xl text-white font-bold text-sm press-scale flex items-center justify-center gap-2.5 shadow-lg mb-3 ${
-                    deferredPrompt
-                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 shadow-purple-600/25'
-                      : 'bg-white/[0.08] shadow-none'
-                  }`}
-                  disabled={!deferredPrompt}
+                  onClick={handleInstall}
+                  className="w-full py-3.5 rounded-2xl text-white font-bold text-sm press-scale flex items-center justify-center gap-2.5 shadow-lg mb-3 bg-gradient-to-r from-purple-600 to-indigo-600 shadow-purple-600/25"
                 >
                   <Download size={18} />
-                  {deferredPrompt ? 'Скачать приложение' : 'Ожидание...'}
+                  Скачать приложение
                 </button>
-                {!deferredPrompt && (
-                  <div className="space-y-2.5">
-                    <div className="text-white/30 text-[11px] text-center mb-2">Или установите вручную:</div>
-                    {androidSteps.map((step, i) => (
-                      <div
-                        key={step.num}
-                        className="flex items-center gap-3 transition-all duration-500"
-                        style={{
-                          opacity: animateIn ? 1 : 0,
-                          transform: animateIn ? 'translateY(0)' : 'translateY(12px)',
-                          transitionDelay: animateIn ? `${200 + i * 100}ms` : '0ms',
-                        }}
-                      >
-                        <div className="w-7 h-7 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
-                          <span className="text-purple-400 text-xs font-bold">{step.num}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="text-white/70 text-[13px]">{step.text}</span>
-                          {step.icon && <step.icon size={14} className="text-blue-400 shrink-0" />}
-                          {step.accent && <span className="text-white text-[13px] font-semibold">{step.accent}</span>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div className="text-white/30 text-[11px] text-center">APK · 52 МБ</div>
               </div>
             ) : (
               <div className="space-y-2.5 mb-4">
