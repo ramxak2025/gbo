@@ -1,13 +1,23 @@
 /// Основная оболочка — Multi-WebView с нативным BottomNav
 ///
-/// Каждая вкладка имеет свой WebView, который не уничтожается
-/// при переключении. IndexedStack сохраняет состояние всех WebView
-/// (скролл, формы, React-состояние).
+/// Архитектура:
+/// - 5 WebView в IndexedStack (каждая вкладка — свой WebView)
+/// - Все WebView предзагружаются при старте (preload)
+/// - Переключение вкладок мгновенное (без перезагрузки)
+/// - Скролл, формы, React-состояние сохраняются
 ///
-/// Нативный BottomNav с glass-morphism повторяет дизайн веб-версии.
-/// Веб-версия BottomNav скрывается через CSS-инжект.
+/// Интеграция с веб-приложением:
+/// - Токен передаётся через localStorage (iborcuha_token + iborcuha_auth)
+/// - Двусторонний JS bridge (FlutterBridge)
+/// - Веб BottomNav скрыт через CSS (заменён нативным)
+/// - Fake standalone mode (скрывает install prompt)
+/// - DOM storage + кэш включены
+///
+/// Deep linking:
+/// - navigateToPath(path) переключает вкладку или навигирует внутри WebView
 library;
 
+import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,15 +28,18 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
+import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/config.dart';
 
-/// Конфигурация вкладки нижнего меню
+// ============================================================
+// Tab configuration — exact copy of BottomNav.jsx navConfigs
+// ============================================================
+
 class _TabConfig {
   final String path;
   final IconData icon;
   final String label;
-
   const _TabConfig({
     required this.path,
     required this.icon,
@@ -34,62 +47,141 @@ class _TabConfig {
   });
 }
 
-/// Конфигурация вкладок по ролям (точная копия BottomNav.jsx navConfigs)
-Map<String, List<_TabConfig>> _navConfigs = {
+final Map<String, List<_TabConfig>> _navConfigs = {
   'superadmin': [
     _TabConfig(path: '/', icon: LucideIcons.home, label: 'Главная'),
     _TabConfig(path: '/clubs', icon: LucideIcons.shield, label: 'Клубы'),
     _TabConfig(path: '/team', icon: LucideIcons.users, label: 'Люди'),
-    _TabConfig(
-        path: '/tournaments', icon: LucideIcons.trophy, label: 'Турниры'),
+    _TabConfig(path: '/tournaments', icon: LucideIcons.trophy, label: 'Турниры'),
     _TabConfig(path: '/profile', icon: LucideIcons.user, label: 'Профиль'),
   ],
   'trainer': [
     _TabConfig(path: '/', icon: LucideIcons.home, label: 'Главная'),
     _TabConfig(path: '/cash', icon: LucideIcons.wallet, label: 'Касса'),
     _TabConfig(path: '/team', icon: LucideIcons.users, label: 'Команда'),
-    _TabConfig(
-        path: '/tournaments', icon: LucideIcons.trophy, label: 'Турниры'),
-    _TabConfig(
-        path: '/materials', icon: LucideIcons.film, label: 'Материалы'),
+    _TabConfig(path: '/tournaments', icon: LucideIcons.trophy, label: 'Турниры'),
+    _TabConfig(path: '/materials', icon: LucideIcons.film, label: 'Материалы'),
   ],
   'student': [
     _TabConfig(path: '/', icon: LucideIcons.home, label: 'Главная'),
     _TabConfig(path: '/team', icon: LucideIcons.users, label: 'Команда'),
-    _TabConfig(
-        path: '/tournaments', icon: LucideIcons.trophy, label: 'Турниры'),
-    _TabConfig(
-        path: '/author', icon: LucideIcons.sparkles, label: 'Автор'),
-    _TabConfig(
-        path: '/materials', icon: LucideIcons.film, label: 'Материалы'),
+    _TabConfig(path: '/tournaments', icon: LucideIcons.trophy, label: 'Турниры'),
+    _TabConfig(path: '/author', icon: LucideIcons.sparkles, label: 'Автор'),
+    _TabConfig(path: '/materials', icon: LucideIcons.film, label: 'Материалы'),
   ],
 };
+
+// ============================================================
+// JS injection script — runs on every page load in each WebView
+// ============================================================
+
+String _buildInjectionScript({
+  required String token,
+  required String authJson,
+}) {
+  // Escape for JS string safety
+  final safeToken = token.replaceAll("'", "\\'");
+  final safeAuth = authJson.replaceAll("'", "\\'").replaceAll('\n', '');
+
+  return '''
+    try {
+      // ---- Auth token (iborcuha_token — used by api.js) ----
+      localStorage.setItem('iborcuha_token', '$safeToken');
+
+      // ---- Auth data (iborcuha_auth — used by AuthContext.jsx) ----
+      localStorage.setItem('iborcuha_auth', '$safeAuth');
+
+      // ---- Fake standalone mode — hides InstallPrompt ----
+      if (!window.__standalonePatched) {
+        Object.defineProperty(window.navigator, 'standalone', {
+          get: function() { return true; },
+          configurable: true
+        });
+        window.__standalonePatched = true;
+      }
+      localStorage.setItem('iborcuha_install_dismissed', Date.now().toString());
+
+      // ---- Hide web BottomNav (native one replaces it) ----
+      if (!document.getElementById('__flutter_hide_nav')) {
+        var style = document.createElement('style');
+        style.id = '__flutter_hide_nav';
+        style.textContent = `
+          .fixed.bottom-0.left-0.right-0.z-50,
+          .fixed.bottom-0.left-0.right-0[class*="z-50"],
+          div.fixed.bottom-0 > nav { display: none !important; }
+          body { padding-bottom: 0 !important; }
+        `;
+        document.head.appendChild(style);
+      }
+
+      // ---- Bridge: expose native functions to React ----
+      window.__flutterNative = {
+        haptic: function(type) {
+          if (window.FlutterBridge) window.FlutterBridge.postMessage('haptic_' + type);
+        },
+        logout: function() {
+          if (window.FlutterBridge) window.FlutterBridge.postMessage('logout');
+        },
+        navigate: function(path) {
+          if (window.FlutterBridge) window.FlutterBridge.postMessage('navigate:' + path);
+        },
+        isNativeApp: true,
+        platform: 'flutter',
+      };
+
+      // ---- Refresh auth if React already loaded ----
+      if (window.__refreshAuth) window.__refreshAuth();
+
+    } catch(e) { console.error('Flutter injection error:', e); }
+  ''';
+}
+
+// ============================================================
+// MainShell — Multi-WebView with native BottomNav
+// ============================================================
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
   @override
-  State<MainShell> createState() => _MainShellState();
+  State<MainShell> createState() => MainShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class MainShellState extends State<MainShell> {
   int _currentIndex = 0;
   late final List<_TabConfig> _tabs;
   late final List<WebViewController> _controllers;
-  late final List<bool> _loaded; // Отслеживаем загрузку каждой вкладки
-  late final String _token;
+  late final List<bool> _loaded;
+  late final String _injectionScript;
 
   @override
   void initState() {
     super.initState();
 
     final auth = context.read<AuthProvider>();
-    _token = auth.authData?.token ?? '';
+    final authData = auth.authData;
     final roleName = auth.role?.name ?? 'student';
     _tabs = _navConfigs[roleName] ?? _navConfigs['student']!;
 
+    // Build auth JSON matching web's iborcuha_auth format
+    final authJson = authData != null
+        ? jsonEncode({
+            'userId': authData.userId,
+            'role': authData.role.name,
+            'studentId': authData.studentId,
+            'user': authData.user.toJson(),
+            'student': authData.studentData,
+          })
+        : '{}';
+
+    _injectionScript = _buildInjectionScript(
+      token: authData?.token ?? '',
+      authJson: authJson,
+    );
+
+    // Create all WebViews at once (preload)
     _loaded = List.filled(_tabs.length, false);
-    _controllers = List.generate(_tabs.length, (i) => _createController(i));
+    _controllers = List.generate(_tabs.length, _createController);
   }
 
   WebViewController _createController(int index) {
@@ -103,38 +195,20 @@ class _MainShellState extends State<MainShell> {
       ..setUserAgent('iBorcuhaApp/1.0')
       ..setNavigationDelegate(
         NavigationDelegate(
+          onPageStarted: (_) {
+            // Инжектируем скрипт как можно раньше
+            _controllers[index].runJavaScript(_injectionScript);
+          },
           onPageFinished: (_) {
-            // Инжектируем токен + скрываем веб-BottomNav + фейк standalone
-            _controllers[index].runJavaScript('''
-              try {
-                // Auth
-                localStorage.setItem('token', '$_token');
-
-                // Fake standalone — скрывает InstallPrompt
-                Object.defineProperty(window.navigator, 'standalone', {
-                  get: function() { return true; },
-                  configurable: true
-                });
-                localStorage.setItem('iborcuha_install_dismissed', Date.now().toString());
-
-                // Скрываем веб-BottomNav (нативный заменяет его)
-                var style = document.createElement('style');
-                style.textContent = `
-                  .fixed.bottom-0 { display: none !important; }
-                  [class*="fixed"][class*="bottom-0"][class*="z-50"] { display: none !important; }
-                `;
-                document.head.appendChild(style);
-
-                // Обновляем auth
-                if (window.__refreshAuth) window.__refreshAuth();
-              } catch(e) {}
-            ''');
-            if (mounted) {
+            // Повторно инжектируем после полной загрузки (на всякий случай)
+            _controllers[index].runJavaScript(_injectionScript);
+            if (mounted && !_loaded[index]) {
               setState(() => _loaded[index] = true);
             }
           },
           onNavigationRequest: (request) {
             final reqUrl = request.url;
+            // Внешние ссылки → системный браузер
             if (reqUrl.startsWith('https://wa.me/') ||
                 reqUrl.startsWith('https://t.me/') ||
                 reqUrl.startsWith('tel:') ||
@@ -149,16 +223,22 @@ class _MainShellState extends State<MainShell> {
       )
       ..addJavaScriptChannel(
         'FlutterBridge',
-        onMessageReceived: (message) {
-          _handleBridgeMessage(message.message);
-        },
+        onMessageReceived: (message) => _handleBridgeMessage(message.message),
       )
       ..loadRequest(Uri.parse(url));
 
     return controller;
   }
 
+  // ---- JS Bridge: messages from React → Flutter ----
   void _handleBridgeMessage(String message) {
+    // Deep link: "navigate:/tournaments/abc123"
+    if (message.startsWith('navigate:')) {
+      final path = message.substring('navigate:'.length);
+      navigateToPath(path);
+      return;
+    }
+
     switch (message) {
       case 'logout':
         context.read<AuthProvider>().logout();
@@ -178,12 +258,52 @@ class _MainShellState extends State<MainShell> {
     }
   }
 
+  // ---- Deep linking: open specific page ----
+  /// Navigate to a specific path (e.g., from push notification)
+  /// If the path matches a tab root, switches to that tab.
+  /// Otherwise navigates within the matching tab's WebView.
+  void navigateToPath(String path) {
+    // Find the matching tab
+    int targetTab = -1;
+    for (var i = 0; i < _tabs.length; i++) {
+      if (_tabs[i].path == path) {
+        targetTab = i;
+        break;
+      }
+      // Match sub-routes (e.g., /tournaments/123 → tournaments tab)
+      if (_tabs[i].path != '/' && path.startsWith(_tabs[i].path)) {
+        targetTab = i;
+        break;
+      }
+    }
+
+    if (targetTab >= 0) {
+      setState(() => _currentIndex = targetTab);
+      // If it's a sub-route, navigate within that tab's WebView
+      if (path != _tabs[targetTab].path) {
+        final fullUrl = '${AppConfig.apiBaseUrl}$path';
+        _controllers[targetTab].loadRequest(Uri.parse(fullUrl));
+      }
+    } else {
+      // Unknown path — load in current tab
+      final fullUrl = '${AppConfig.apiBaseUrl}$path';
+      _controllers[_currentIndex].loadRequest(Uri.parse(fullUrl));
+    }
+
+    HapticFeedback.selectionClick();
+  }
+
+  /// Refresh the current tab's WebView
+  void refreshCurrentTab() {
+    _controllers[_currentIndex].reload();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = context.watch<ThemeProvider>().isDark;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    // Edge-to-edge
+    // Edge-to-edge display
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
@@ -197,7 +317,7 @@ class _MainShellState extends State<MainShell> {
     return Scaffold(
       body: Stack(
         children: [
-          // IndexedStack — все WebView живут одновременно
+          // ---- All WebViews live simultaneously ----
           IndexedStack(
             index: _currentIndex,
             children: [
@@ -206,7 +326,7 @@ class _MainShellState extends State<MainShell> {
             ],
           ),
 
-          // Loading overlay для текущей вкладки
+          // ---- Loading overlay (only for unloaded tabs) ----
           if (!_loaded[_currentIndex])
             Container(
               decoration: BoxDecoration(
@@ -255,7 +375,7 @@ class _MainShellState extends State<MainShell> {
               ),
             ),
 
-          // Нативный BottomNav — точная копия BottomNav.jsx
+          // ---- Native BottomNav (glass morphism) ----
           Positioned(
             left: 0,
             right: 0,
@@ -277,8 +397,10 @@ class _MainShellState extends State<MainShell> {
   }
 }
 
-/// Нативный BottomNav с glass-morphism
-/// Точная копия BottomNav.jsx
+// ============================================================
+// Glass BottomNav — exact copy of BottomNav.jsx styling
+// ============================================================
+
 class _GlassBottomNav extends StatelessWidget {
   final List<_TabConfig> tabs;
   final int currentIndex;
@@ -297,7 +419,6 @@ class _GlassBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      // px-4 pb-[calc(env(safe-area-inset-bottom)+10px)] pt-2
       padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPadding + 10),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
@@ -330,7 +451,6 @@ class _GlassBottomNav extends StatelessWidget {
                         offset: const Offset(0, 2),
                       ),
                     ],
-              // inset border effect
               border: Border(
                 top: BorderSide(
                   color: isDark
@@ -381,9 +501,7 @@ class _GlassBottomNav extends StatelessWidget {
                                     ? FontWeight.bold
                                     : FontWeight.w500,
                                 color: i == currentIndex
-                                    ? (isDark
-                                        ? Colors.white
-                                        : Colors.black87)
+                                    ? (isDark ? Colors.white : Colors.black87)
                                     : (isDark
                                         ? Colors.grey.shade600
                                         : Colors.grey.shade400),
