@@ -120,34 +120,28 @@ class MainShellState extends State<MainShell>
     } catch(e) {}
 
     // 4. Flutter ↔ Web bridge (haptic, logout, native flag)
-    //    All bridge calls use setTimeout to avoid blocking JS ↔ Dart
     try {
       window.__flutterNative = {
         haptic: function(t) { if(window.FlutterBridge) FlutterBridge.postMessage('haptic_'+t); },
         logout: function() {
-          if(window.FlutterBridge && !window.__logoutSent) {
-            window.__logoutSent = true;
-            setTimeout(function() { FlutterBridge.postMessage('logout'); }, 0);
-          }
+          if(window.FlutterBridge) setTimeout(function(){ FlutterBridge.postMessage('logout'); }, 0);
         },
         isNativeApp: true
       };
     } catch(e) {}
 
-    // 5. Auto-detect logout: intercept localStorage.removeItem
-    //    When React removes 'iborcuha_auth', Flutter gets notified
-    //    regardless of whether React calls __flutterNative.logout()
+    // 5. Watch for logout: poll localStorage every 300ms
+    //    When 'iborcuha_auth' disappears, notify Flutter.
+    //    Works regardless of how React triggers logout.
     try {
-      if (!window.__lri) {
-        var _origRemove = localStorage.removeItem.bind(localStorage);
-        localStorage.removeItem = function(key) {
-          _origRemove(key);
-          if (key === 'iborcuha_auth' && window.FlutterBridge && !window.__logoutSent) {
-            window.__logoutSent = true;
-            setTimeout(function() { FlutterBridge.postMessage('logout'); }, 0);
+      if (localStorage.getItem('iborcuha_auth') && !window.__authPoll) {
+        window.__authPoll = setInterval(function() {
+          if (!localStorage.getItem('iborcuha_auth')) {
+            clearInterval(window.__authPoll);
+            window.__authPoll = null;
+            if (window.FlutterBridge) FlutterBridge.postMessage('logout');
           }
-        };
-        window.__lri = true;
+        }, 300);
       }
     } catch(e) {}
   ''';
