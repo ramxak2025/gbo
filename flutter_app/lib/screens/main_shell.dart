@@ -1,20 +1,14 @@
-/// Основная оболочка — Multi-WebView с нативным BottomNav
+/// Основная оболочка — Single WebView + нативный BottomNav
+///
+/// Один WebView загружает веб-приложение.
+/// Переключение вкладок через JS навигацию React Router.
+/// Состояние сохраняется — React SPA не перезагружается.
 ///
 /// Архитектура:
-/// - 5 WebView в IndexedStack (каждая вкладка — свой WebView)
-/// - Все WebView предзагружаются при старте (preload)
-/// - Переключение вкладок мгновенное (без перезагрузки)
-/// - Скролл, формы, React-состояние сохраняются
-///
-/// Интеграция с веб-приложением:
-/// - Токен передаётся через localStorage (iborcuha_token + iborcuha_auth)
-/// - Двусторонний JS bridge (FlutterBridge)
-/// - Веб BottomNav скрыт через CSS (заменён нативным)
-/// - Fake standalone mode (скрывает install prompt)
-/// - DOM storage + кэш включены
-///
-/// Deep linking:
-/// - navigateToPath(path) переключает вкладку или навигирует внутри WebView
+/// - 1 WebView (единый localStorage, cookies, auth)
+/// - Нативный BottomNav вызывает JS navigate()
+/// - Веб-BottomNav скрыт через CSS
+/// - Deep linking через navigateToPath()
 library;
 
 import 'dart:convert';
@@ -28,23 +22,18 @@ import 'package:lucide_icons/lucide_icons.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
-import '../services/auth_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/config.dart';
 
 // ============================================================
-// Tab configuration — exact copy of BottomNav.jsx navConfigs
+// Tab config — exact copy of BottomNav.jsx navConfigs
 // ============================================================
 
 class _TabConfig {
   final String path;
   final IconData icon;
   final String label;
-  const _TabConfig({
-    required this.path,
-    required this.icon,
-    required this.label,
-  });
+  const _TabConfig({required this.path, required this.icon, required this.label});
 }
 
 final Map<String, List<_TabConfig>> _navConfigs = {
@@ -72,72 +61,7 @@ final Map<String, List<_TabConfig>> _navConfigs = {
 };
 
 // ============================================================
-// JS injection script — runs on every page load in each WebView
-// ============================================================
-
-String _buildInjectionScript({
-  required String token,
-  required String authJson,
-}) {
-  // Escape for JS string safety
-  final safeToken = token.replaceAll("'", "\\'");
-  final safeAuth = authJson.replaceAll("'", "\\'").replaceAll('\n', '');
-
-  return '''
-    try {
-      // ---- Auth token (iborcuha_token — used by api.js) ----
-      localStorage.setItem('iborcuha_token', '$safeToken');
-
-      // ---- Auth data (iborcuha_auth — used by AuthContext.jsx) ----
-      localStorage.setItem('iborcuha_auth', '$safeAuth');
-
-      // ---- Fake standalone mode — hides InstallPrompt ----
-      if (!window.__standalonePatched) {
-        Object.defineProperty(window.navigator, 'standalone', {
-          get: function() { return true; },
-          configurable: true
-        });
-        window.__standalonePatched = true;
-      }
-      localStorage.setItem('iborcuha_install_dismissed', Date.now().toString());
-
-      // ---- Hide web BottomNav (native one replaces it) ----
-      if (!document.getElementById('__flutter_hide_nav')) {
-        var style = document.createElement('style');
-        style.id = '__flutter_hide_nav';
-        style.textContent = `
-          .fixed.bottom-0.left-0.right-0.z-50,
-          .fixed.bottom-0.left-0.right-0[class*="z-50"],
-          div.fixed.bottom-0 > nav { display: none !important; }
-          body { padding-bottom: 0 !important; }
-        `;
-        document.head.appendChild(style);
-      }
-
-      // ---- Bridge: expose native functions to React ----
-      window.__flutterNative = {
-        haptic: function(type) {
-          if (window.FlutterBridge) window.FlutterBridge.postMessage('haptic_' + type);
-        },
-        logout: function() {
-          if (window.FlutterBridge) window.FlutterBridge.postMessage('logout');
-        },
-        navigate: function(path) {
-          if (window.FlutterBridge) window.FlutterBridge.postMessage('navigate:' + path);
-        },
-        isNativeApp: true,
-        platform: 'flutter',
-      };
-
-      // ---- Refresh auth if React already loaded ----
-      if (window.__refreshAuth) window.__refreshAuth();
-
-    } catch(e) { console.error('Flutter injection error:', e); }
-  ''';
-}
-
-// ============================================================
-// MainShell — Multi-WebView with native BottomNav
+// MainShell — Single WebView + native BottomNav
 // ============================================================
 
 class MainShell extends StatefulWidget {
@@ -150,9 +74,10 @@ class MainShell extends StatefulWidget {
 class MainShellState extends State<MainShell> {
   int _currentIndex = 0;
   late final List<_TabConfig> _tabs;
-  late final List<WebViewController> _controllers;
-  late final List<bool> _loaded;
+  late final WebViewController _controller;
   late final String _injectionScript;
+  bool _isLoading = true;
+  bool _webReady = false; // React app fully loaded
 
   @override
   void initState() {
@@ -164,6 +89,7 @@ class MainShellState extends State<MainShell> {
     _tabs = _navConfigs[roleName] ?? _navConfigs['student']!;
 
     // Build auth JSON matching web's iborcuha_auth format
+    final token = authData?.token ?? '';
     final authJson = authData != null
         ? jsonEncode({
             'userId': authData.userId,
@@ -174,47 +100,74 @@ class MainShellState extends State<MainShell> {
           })
         : '{}';
 
-    _injectionScript = _buildInjectionScript(
-      token: authData?.token ?? '',
-      authJson: authJson,
-    );
+    final safeToken = token.replaceAll("'", "\\'");
+    final safeAuth = authJson.replaceAll("'", "\\'").replaceAll('\n', '');
 
-    // Create all WebViews at once (preload)
-    _loaded = List.filled(_tabs.length, false);
-    _controllers = List.generate(_tabs.length, _createController);
-  }
+    _injectionScript = '''
+      try {
+        // Auth — correct keys matching web's api.js and AuthContext.jsx
+        localStorage.setItem('iborcuha_token', '$safeToken');
+        localStorage.setItem('iborcuha_auth', '$safeAuth');
 
-  WebViewController _createController(int index) {
-    final baseUrl = AppConfig.apiBaseUrl;
-    final path = _tabs[index].path;
-    final url = path == '/' ? baseUrl : '$baseUrl$path';
+        // Fake standalone — hide InstallPrompt
+        if (!window.__standalonePatched) {
+          Object.defineProperty(window.navigator, 'standalone', {
+            get: function() { return true; },
+            configurable: true
+          });
+          window.__standalonePatched = true;
+        }
+        localStorage.setItem('iborcuha_install_dismissed', Date.now().toString());
 
-    final controller = WebViewController()
+        // Hide web BottomNav (native replaces it)
+        if (!document.getElementById('__flutter_hide_nav')) {
+          var s = document.createElement('style');
+          s.id = '__flutter_hide_nav';
+          s.textContent = 'div.fixed.bottom-0 { display: none !important; }';
+          document.head.appendChild(s);
+        }
+
+        // Bridge for React to call native functions
+        window.__flutterNative = {
+          haptic: function(t) { if(window.FlutterBridge) FlutterBridge.postMessage('haptic_'+t); },
+          logout: function() { if(window.FlutterBridge) FlutterBridge.postMessage('logout'); },
+          navigate: function(p) { if(window.FlutterBridge) FlutterBridge.postMessage('navigate:'+p); },
+          isNativeApp: true,
+          platform: 'flutter',
+        };
+
+        // Signal that injection is done
+        if (window.__refreshAuth) window.__refreshAuth();
+      } catch(e) {}
+    ''';
+
+    _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0xFF0A0A0F))
       ..setUserAgent('iBorcuhaApp/1.0')
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (_) {
-            // Инжектируем скрипт как можно раньше
-            _controllers[index].runJavaScript(_injectionScript);
+            // Inject ASAP (before React initializes)
+            _controller.runJavaScript(_injectionScript);
           },
           onPageFinished: (_) {
-            // Повторно инжектируем после полной загрузки (на всякий случай)
-            _controllers[index].runJavaScript(_injectionScript);
-            if (mounted && !_loaded[index]) {
-              setState(() => _loaded[index] = true);
+            // Re-inject after full load
+            _controller.runJavaScript(_injectionScript);
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+                _webReady = true;
+              });
             }
           },
           onNavigationRequest: (request) {
-            final reqUrl = request.url;
-            // Внешние ссылки → системный браузер
-            if (reqUrl.startsWith('https://wa.me/') ||
-                reqUrl.startsWith('https://t.me/') ||
-                reqUrl.startsWith('tel:') ||
-                reqUrl.startsWith('mailto:')) {
-              launchUrl(Uri.parse(reqUrl),
-                  mode: LaunchMode.externalApplication);
+            final url = request.url;
+            if (url.startsWith('https://wa.me/') ||
+                url.startsWith('https://t.me/') ||
+                url.startsWith('tel:') ||
+                url.startsWith('mailto:')) {
+              launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
               return NavigationDecision.prevent;
             }
             return NavigationDecision.navigate;
@@ -223,19 +176,41 @@ class MainShellState extends State<MainShell> {
       )
       ..addJavaScriptChannel(
         'FlutterBridge',
-        onMessageReceived: (message) => _handleBridgeMessage(message.message),
+        onMessageReceived: (msg) => _handleBridgeMessage(msg.message),
       )
-      ..loadRequest(Uri.parse(url));
-
-    return controller;
+      ..loadRequest(Uri.parse(AppConfig.apiBaseUrl));
   }
 
-  // ---- JS Bridge: messages from React → Flutter ----
+  /// Navigate to path via React Router (no page reload!)
+  void _navigateInWebView(String path) {
+    // Use React Router's navigate function via history API
+    // React Router v6 listens to popstate events
+    _controller.runJavaScript('''
+      try {
+        // Method 1: Direct React Router navigate (if exposed)
+        if (window.__navigate) {
+          window.__navigate('$path');
+        } else {
+          // Method 2: pushState + popstate event (works with React Router)
+          window.history.pushState({}, '', '$path');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }
+      } catch(e) {
+        // Fallback: reload the page at the new path
+        window.location.href = '$path';
+      }
+    ''');
+  }
+
   void _handleBridgeMessage(String message) {
-    // Deep link: "navigate:/tournaments/abc123"
     if (message.startsWith('navigate:')) {
-      final path = message.substring('navigate:'.length);
-      navigateToPath(path);
+      navigateToPath(message.substring('navigate:'.length));
+      return;
+    }
+    if (message.startsWith('route_changed:')) {
+      // Web notifies us about route changes → sync bottom nav
+      final path = message.substring('route_changed:'.length);
+      _syncTabFromPath(path);
       return;
     }
 
@@ -258,44 +233,30 @@ class MainShellState extends State<MainShell> {
     }
   }
 
-  // ---- Deep linking: open specific page ----
-  /// Navigate to a specific path (e.g., from push notification)
-  /// If the path matches a tab root, switches to that tab.
-  /// Otherwise navigates within the matching tab's WebView.
-  void navigateToPath(String path) {
-    // Find the matching tab
-    int targetTab = -1;
+  /// Sync native tab highlight from current web path
+  void _syncTabFromPath(String path) {
     for (var i = 0; i < _tabs.length; i++) {
-      if (_tabs[i].path == path) {
-        targetTab = i;
-        break;
-      }
-      // Match sub-routes (e.g., /tournaments/123 → tournaments tab)
-      if (_tabs[i].path != '/' && path.startsWith(_tabs[i].path)) {
-        targetTab = i;
-        break;
+      if (_tabs[i].path == path ||
+          (_tabs[i].path != '/' && path.startsWith(_tabs[i].path))) {
+        if (i != _currentIndex && mounted) {
+          setState(() => _currentIndex = i);
+        }
+        return;
       }
     }
+  }
 
-    if (targetTab >= 0) {
-      setState(() => _currentIndex = targetTab);
-      // If it's a sub-route, navigate within that tab's WebView
-      if (path != _tabs[targetTab].path) {
-        final fullUrl = '${AppConfig.apiBaseUrl}$path';
-        _controllers[targetTab].loadRequest(Uri.parse(fullUrl));
-      }
-    } else {
-      // Unknown path — load in current tab
-      final fullUrl = '${AppConfig.apiBaseUrl}$path';
-      _controllers[_currentIndex].loadRequest(Uri.parse(fullUrl));
-    }
-
+  /// Deep link — called from push notifications or JS bridge
+  void navigateToPath(String path) {
+    // Update native tab
+    _syncTabFromPath(path);
+    // Navigate in WebView
+    _navigateInWebView(path);
     HapticFeedback.selectionClick();
   }
 
-  /// Refresh the current tab's WebView
   void refreshCurrentTab() {
-    _controllers[_currentIndex].reload();
+    _controller.reload();
   }
 
   @override
@@ -303,7 +264,6 @@ class MainShellState extends State<MainShell> {
     final isDark = context.watch<ThemeProvider>().isDark;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    // Edge-to-edge display
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
@@ -317,21 +277,14 @@ class MainShellState extends State<MainShell> {
     return Scaffold(
       body: Stack(
         children: [
-          // ---- All WebViews live simultaneously ----
-          IndexedStack(
-            index: _currentIndex,
-            children: [
-              for (var i = 0; i < _tabs.length; i++)
-                WebViewWidget(controller: _controllers[i]),
-            ],
-          ),
+          // Single WebView
+          WebViewWidget(controller: _controller),
 
-          // ---- Loading overlay (only for unloaded tabs) ----
-          if (!_loaded[_currentIndex])
+          // Loading overlay
+          if (_isLoading)
             Container(
               decoration: BoxDecoration(
-                gradient:
-                    LiquidGlassColors.backgroundGradient(isDark: isDark),
+                gradient: LiquidGlassColors.backgroundGradient(isDark: isDark),
               ),
               child: Center(
                 child: Column(
@@ -343,10 +296,8 @@ class MainShellState extends State<MainShell> {
                         boxShadow: [
                           BoxShadow(
                             color: isDark
-                                ? const Color(0xFF7C3AED)
-                                    .withValues(alpha: 0.3)
-                                : const Color(0xFFC084FC)
-                                    .withValues(alpha: 0.2),
+                                ? const Color(0xFF7C3AED).withValues(alpha: 0.3)
+                                : const Color(0xFFC084FC).withValues(alpha: 0.2),
                             blurRadius: 40,
                             spreadRadius: 8,
                           ),
@@ -375,7 +326,7 @@ class MainShellState extends State<MainShell> {
               ),
             ),
 
-          // ---- Native BottomNav (glass morphism) ----
+          // Native BottomNav
           Positioned(
             left: 0,
             right: 0,
@@ -388,6 +339,8 @@ class MainShellState extends State<MainShell> {
               onTap: (index) {
                 HapticFeedback.selectionClick();
                 setState(() => _currentIndex = index);
+                // Navigate React Router to this tab's path
+                _navigateInWebView(_tabs[index].path);
               },
             ),
           ),
@@ -398,7 +351,7 @@ class MainShellState extends State<MainShell> {
 }
 
 // ============================================================
-// Glass BottomNav — exact copy of BottomNav.jsx styling
+// Glass BottomNav — exact copy of BottomNav.jsx
 // ============================================================
 
 class _GlassBottomNav extends StatelessWidget {
