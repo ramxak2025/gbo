@@ -7,6 +7,9 @@
 /// Inline-скрипт в index.html читает hash ПЕРЕД загрузкой React,
 /// записывает в localStorage, убирает hash из URL.
 /// Результат: каждый WebView авторизован с первого рендера.
+///
+/// Предзагрузка: ВСЕ вкладки загружаются параллельно в фоне.
+/// Splash с прогрессом показывается до готовности первой вкладки.
 library;
 
 import 'dart:convert';
@@ -75,12 +78,18 @@ class MainShell extends StatefulWidget {
   State<MainShell> createState() => MainShellState();
 }
 
-class MainShellState extends State<MainShell> {
+class MainShellState extends State<MainShell>
+    with SingleTickerProviderStateMixin {
   int _currentIndex = 0;
   late final List<_TabConfig> _tabs;
   late final List<WebViewController> _controllers;
   late final List<bool> _loaded;
-  late final String _authHash; // #__ft=TOKEN&__fa=AUTH_JSON
+  late final String _authHash;
+
+  // Preload tracking
+  int _loadedCount = 0;
+  bool _splashDismissed = false;
+  late final AnimationController _fadeController;
 
   // JS to hide web BottomNav + fake standalone + haptic bridge
   static const String _postLoadScript = '''
@@ -110,6 +119,11 @@ class MainShellState extends State<MainShell> {
   void initState() {
     super.initState();
 
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+
     final auth = context.read<AuthProvider>();
     final authData = auth.authData;
     final roleName = auth.role?.name ?? 'student';
@@ -130,9 +144,15 @@ class MainShellState extends State<MainShell> {
     _authHash =
         '#__ft=${Uri.encodeComponent(token)}&__fa=${Uri.encodeComponent(authJson)}';
 
-    // Create all WebViews
+    // Create all WebViews — ALL load in parallel for fast preloading
     _loaded = List.filled(_tabs.length, false);
     _controllers = List.generate(_tabs.length, _createController);
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    super.dispose();
   }
 
   /// Build URL for tab: baseUrl + path + #__ft=TOKEN&__fa=AUTH
@@ -153,7 +173,14 @@ class MainShellState extends State<MainShell> {
           onPageFinished: (_) {
             _controllers[index].runJavaScript(_postLoadScript);
             if (mounted && !_loaded[index]) {
-              setState(() => _loaded[index] = true);
+              setState(() {
+                _loaded[index] = true;
+                _loadedCount++;
+              });
+              // Dismiss splash as soon as the first tab (Главная) is ready
+              if (index == 0 && !_splashDismissed) {
+                _dismissSplash();
+              }
             }
           },
           onNavigationRequest: (request) {
@@ -177,6 +204,11 @@ class MainShellState extends State<MainShell> {
       ..loadRequest(Uri.parse(_urlForTab(index)));
 
     return controller;
+  }
+
+  void _dismissSplash() {
+    _splashDismissed = true;
+    _fadeController.forward();
   }
 
   void _handleBridgeMessage(String message) {
@@ -233,59 +265,27 @@ class MainShellState extends State<MainShell> {
     return Scaffold(
       body: Stack(
         children: [
-          // All WebViews — Offstage keeps them alive
+          // All WebViews — Offstage keeps them alive, ALL preload in parallel
           for (var i = 0; i < _tabs.length; i++)
             Offstage(
               offstage: i != _currentIndex,
               child: WebViewWidget(controller: _controllers[i]),
             ),
 
-          // Loading
-          if (!_loaded.contains(true))
-            Container(
-              decoration: BoxDecoration(
-                gradient:
-                    LiquidGlassColors.backgroundGradient(isDark: isDark),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: isDark
-                                ? const Color(0xFF7C3AED)
-                                    .withValues(alpha: 0.3)
-                                : const Color(0xFFC084FC)
-                                    .withValues(alpha: 0.2),
-                            blurRadius: 40,
-                            spreadRadius: 8,
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: Image.asset(
-                          'assets/logo.png',
-                          width: 64,
-                          height: 64,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              const SizedBox(width: 64, height: 64),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        LiquidGlassColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
+          // Preload splash with progress — fades out when first tab ready
+          if (!_splashDismissed || _fadeController.isAnimating)
+            AnimatedBuilder(
+              animation: _fadeController,
+              builder: (context, child) {
+                return Opacity(
+                  opacity: 1.0 - _fadeController.value,
+                  child: child,
+                );
+              },
+              child: _PreloadSplash(
+                isDark: isDark,
+                loadedCount: _loadedCount,
+                totalCount: _tabs.length,
               ),
             ),
 
@@ -306,6 +306,83 @@ class MainShellState extends State<MainShell> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ============================================================
+// Preload Splash — shows progress while WebViews load
+// ============================================================
+
+class _PreloadSplash extends StatelessWidget {
+  final bool isDark;
+  final int loadedCount;
+  final int totalCount;
+
+  const _PreloadSplash({
+    required this.isDark,
+    required this.loadedCount,
+    required this.totalCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = totalCount > 0 ? loadedCount / totalCount : 0.0;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LiquidGlassColors.backgroundGradient(isDark: isDark),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark
+                        ? const Color(0xFF7C3AED).withValues(alpha: 0.3)
+                        : const Color(0xFFC084FC).withValues(alpha: 0.2),
+                    blurRadius: 40,
+                    spreadRadius: 8,
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Image.asset(
+                  'assets/logo.png',
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      const SizedBox(width: 80, height: 80),
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            // Progress bar
+            SizedBox(
+              width: 140,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 3,
+                  backgroundColor: isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.black.withValues(alpha: 0.06),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    LiquidGlassColors.primary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

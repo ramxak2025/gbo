@@ -104,7 +104,10 @@ class IBorcuhaApp extends StatelessWidget {
                   return const LoginScreen();
                 }
 
-                return const MainShell();
+                // Key по userId+role: при смене аккаунта MainShell полностью пересоздаётся
+                return MainShell(
+                  key: ValueKey('${auth.userId}_${auth.role?.name}'),
+                );
               },
             ),
           );
