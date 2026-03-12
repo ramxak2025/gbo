@@ -120,10 +120,16 @@ class MainShellState extends State<MainShell>
     } catch(e) {}
 
     // 4. Flutter ↔ Web bridge (haptic, logout, native flag)
+    //    All bridge calls use setTimeout to avoid blocking JS ↔ Dart
     try {
       window.__flutterNative = {
         haptic: function(t) { if(window.FlutterBridge) FlutterBridge.postMessage('haptic_'+t); },
-        logout: function() { if(window.FlutterBridge) FlutterBridge.postMessage('logout'); },
+        logout: function() {
+          if(window.FlutterBridge && !window.__logoutSent) {
+            window.__logoutSent = true;
+            setTimeout(function() { FlutterBridge.postMessage('logout'); }, 0);
+          }
+        },
         isNativeApp: true
       };
     } catch(e) {}
@@ -136,8 +142,9 @@ class MainShellState extends State<MainShell>
         var _origRemove = localStorage.removeItem.bind(localStorage);
         localStorage.removeItem = function(key) {
           _origRemove(key);
-          if (key === 'iborcuha_auth' && window.FlutterBridge) {
-            FlutterBridge.postMessage('logout');
+          if (key === 'iborcuha_auth' && window.FlutterBridge && !window.__logoutSent) {
+            window.__logoutSent = true;
+            setTimeout(function() { FlutterBridge.postMessage('logout'); }, 0);
           }
         };
         window.__lri = true;
@@ -246,10 +253,11 @@ class MainShellState extends State<MainShell>
   }
 
   void _handleBridgeMessage(String message) {
+    if (!mounted) return;
     switch (message) {
       case 'logout':
         context.read<AuthProvider>().logout();
-        break;
+        return; // skip haptics after logout
       case 'haptic_light':
         HapticFeedback.lightImpact();
         break;
