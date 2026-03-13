@@ -70,11 +70,12 @@ router.get('/', authMiddleware, async (req, res) => {
     pool.query('SELECT * FROM materials ORDER BY created_at DESC'),
     pool.query('SELECT * FROM clubs ORDER BY created_at DESC'),
     pool.query('SELECT * FROM parents ORDER BY created_at DESC'),
+    pool.query('SELECT * FROM student_groups'),
   ]
   if (role === 'superadmin') queries.push(pool.query("SELECT * FROM pending_registrations WHERE status = 'pending' ORDER BY created_at DESC"))
   const results = await Promise.all(queries)
-  const [users, groups, students, transactions, tournaments, news, regs, author, intTournaments, attendance, materials, clubs, parents] = results
-  const pendingRegs = results[13] || { rows: [] }
+  const [users, groups, students, transactions, tournaments, news, regs, author, intTournaments, attendance, materials, clubs, parents, studentGroups] = results
+  const pendingRegs = results[14] || { rows: [] }
 
   const isSuperadmin = role === 'superadmin'
   // Superadmin sees passwords + no demo data; demo users see only their demo data
@@ -104,6 +105,7 @@ router.get('/', authMiddleware, async (req, res) => {
       id: p.id, studentId: p.student_id, name: p.name, phone: p.phone,
       relation: p.relation, plainPassword: isSuperadmin ? (p.plain_password || '') : undefined,
     })),
+    studentGroups: studentGroups.rows.map(sg => ({ studentId: sg.student_id, groupId: sg.group_id })),
     ...(isSuperadmin ? {
       pendingRegistrations: pendingRegs.rows.map(r => ({
         id: r.id, name: r.name, phone: r.phone, clubName: r.club_name,
@@ -116,29 +118,53 @@ router.get('/', authMiddleware, async (req, res) => {
 
 // --- Students ---
 router.post('/students', authMiddleware, async (req, res) => {
-  const { name, phone, weight, belt, birthDate, groupId, password, avatar, subscriptionExpiresAt, trainerId, trainingStartDate } = req.body
+  const { name, phone, weight, belt, birthDate, groupId, groupIds, password, avatar, subscriptionExpiresAt, trainerId, trainingStartDate } = req.body
   const id = genId()
   const pw = password || 'student123'
   const hash = bcrypt.hashSync(pw, 10)
   const tid = trainerId || req.user.userId
+  // Primary group: first of groupIds or legacy groupId
+  const allGroupIds = groupIds && groupIds.length > 0 ? groupIds : (groupId ? [groupId] : [])
+  const primaryGroupId = allGroupIds[0] || null
   await pool.query(
     `INSERT INTO students (id, trainer_id, group_id, name, phone, password_hash, weight, belt, birth_date, avatar, subscription_expires_at, training_start_date, plain_password, created_at)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW())`,
-    [id, tid, groupId || null, name, phone, hash, weight || null, belt || null, birthDate || null, avatar || null, subscriptionExpiresAt || null, trainingStartDate || null, pw]
+    [id, tid, primaryGroupId, name, phone, hash, weight || null, belt || null, birthDate || null, avatar || null, subscriptionExpiresAt || null, trainingStartDate || null, pw]
   )
+  // Insert into student_groups junction table
+  for (const gid of allGroupIds) {
+    await pool.query('INSERT INTO student_groups (student_id, group_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [id, gid])
+  }
   const { rows: [s] } = await pool.query('SELECT * FROM students WHERE id = $1', [id])
   res.json(mapStudent(s))
 })
 
 router.put('/students/:id', authMiddleware, async (req, res) => {
-  const { name, phone, weight, belt, birthDate, avatar, subscriptionExpiresAt, status, groupId, password, trainingStartDate } = req.body
+  const { name, phone, weight, belt, birthDate, avatar, subscriptionExpiresAt, status, groupId, groupIds, password, trainingStartDate } = req.body
   const sets = []
   const vals = []
   let i = 1
   const add = (col, val) => { if (val !== undefined) { sets.push(`${col} = $${i++}`); vals.push(val) } }
   add('name', name); add('phone', phone); add('weight', weight); add('belt', belt)
   add('birth_date', birthDate); add('avatar', avatar); add('subscription_expires_at', subscriptionExpiresAt)
-  add('status', status); add('group_id', groupId); add('training_start_date', trainingStartDate)
+  add('status', status); add('training_start_date', trainingStartDate)
+  // Handle multi-group: if groupIds provided, set primary group_id to first
+  if (groupIds !== undefined) {
+    sets.push(`group_id = $${i++}`)
+    vals.push(groupIds.length > 0 ? groupIds[0] : null)
+    // Sync junction table
+    await pool.query('DELETE FROM student_groups WHERE student_id = $1', [req.params.id])
+    for (const gid of groupIds) {
+      await pool.query('INSERT INTO student_groups (student_id, group_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [req.params.id, gid])
+    }
+  } else if (groupId !== undefined) {
+    add('group_id', groupId)
+    // Also sync junction table for legacy single-group update
+    await pool.query('DELETE FROM student_groups WHERE student_id = $1', [req.params.id])
+    if (groupId) {
+      await pool.query('INSERT INTO student_groups (student_id, group_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [req.params.id, groupId])
+    }
+  }
   if (password) { add('password_hash', bcrypt.hashSync(password, 10)); add('plain_password', password) }
   if (sets.length === 0) return res.json({ ok: true })
   vals.push(req.params.id)
@@ -148,6 +174,7 @@ router.put('/students/:id', authMiddleware, async (req, res) => {
 })
 
 router.delete('/students/:id', authMiddleware, async (req, res) => {
+  await pool.query('DELETE FROM student_groups WHERE student_id = $1', [req.params.id])
   await pool.query('DELETE FROM transactions WHERE student_id = $1', [req.params.id])
   await pool.query('DELETE FROM tournament_registrations WHERE student_id = $1', [req.params.id])
   await pool.query('DELETE FROM students WHERE id = $1', [req.params.id])
@@ -185,6 +212,7 @@ router.put('/groups/:id', authMiddleware, async (req, res) => {
 })
 
 router.delete('/groups/:id', authMiddleware, async (req, res) => {
+  await pool.query('DELETE FROM student_groups WHERE group_id = $1', [req.params.id])
   await pool.query('UPDATE students SET group_id = NULL WHERE group_id = $1', [req.params.id])
   await pool.query('DELETE FROM groups WHERE id = $1', [req.params.id])
   res.json({ ok: true })
@@ -317,16 +345,130 @@ router.post('/qr-token/:groupId/regenerate', authMiddleware, async (req, res) =>
   res.json({ token, createdAt: new Date() })
 })
 
+// --- Shared Trainer QR ---
+router.get('/trainer-qr-token', authMiddleware, async (req, res) => {
+  const { userId, role } = req.user
+  if (role !== 'trainer' && role !== 'superadmin') return res.status(403).json({ error: 'Нет доступа' })
+  let { rows: [existing] } = await pool.query('SELECT * FROM trainer_qr_tokens WHERE trainer_id = $1', [userId])
+  if (!existing) {
+    const id = genId()
+    const token = crypto.randomBytes(32).toString('hex')
+    await pool.query('INSERT INTO trainer_qr_tokens (id, trainer_id, token) VALUES ($1,$2,$3)', [id, userId, token])
+    existing = { id, trainer_id: userId, token, created_at: new Date() }
+  }
+  res.json({ token: existing.token, createdAt: existing.created_at })
+})
+
+router.post('/trainer-qr-token/regenerate', authMiddleware, async (req, res) => {
+  const { userId, role } = req.user
+  if (role !== 'trainer' && role !== 'superadmin') return res.status(403).json({ error: 'Нет доступа' })
+  await pool.query('DELETE FROM trainer_qr_tokens WHERE trainer_id = $1', [userId])
+  const id = genId()
+  const token = crypto.randomBytes(32).toString('hex')
+  await pool.query('INSERT INTO trainer_qr_tokens (id, trainer_id, token) VALUES ($1,$2,$3)', [id, userId, token])
+  res.json({ token, createdAt: new Date() })
+})
+
+// Parse schedule string to extract time (e.g. "Пн, Ср, Пт — 09:00" → { days: [1,3,5], time: "09:00" })
+function parseSchedule(schedule) {
+  if (!schedule) return { days: [], time: null, minutes: null }
+  const dayMap = { 'пн': 1, 'вт': 2, 'ср': 3, 'чт': 4, 'пт': 5, 'сб': 6, 'вс': 0 }
+  const days = []
+  const lower = schedule.toLowerCase()
+  for (const [abbr, num] of Object.entries(dayMap)) {
+    if (lower.includes(abbr)) days.push(num)
+  }
+  const timeMatch = schedule.match(/(\d{1,2}):(\d{2})/)
+  const time = timeMatch ? `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}` : null
+  const minutes = timeMatch ? parseInt(timeMatch[1]) * 60 + parseInt(timeMatch[2]) : null
+  return { days, time, minutes }
+}
+
 router.post('/attendance/qr-checkin', authMiddleware, async (req, res) => {
   const { role, studentId } = req.user
   if (role !== 'student' || !studentId) return res.status(403).json({ error: 'Только ученики могут отмечаться' })
   const { token } = req.body
   if (!token) return res.status(400).json({ error: 'Токен не указан' })
+
+  // Check trainer-level QR token first
+  const { rows: [trainerQr] } = await pool.query('SELECT * FROM trainer_qr_tokens WHERE token = $1', [token])
+  if (trainerQr) {
+    // Shared trainer QR — determine group by time
+    const { rows: [student] } = await pool.query('SELECT * FROM students WHERE id = $1', [studentId])
+    if (!student) return res.status(404).json({ error: 'Ученик не найден' })
+    if (student.trainer_id !== trainerQr.trainer_id) return res.status(400).json({ error: 'Вы не являетесь учеником этого тренера' })
+
+    // Get all groups the student belongs to (from junction table + fallback to primary group_id)
+    const { rows: sgRows } = await pool.query('SELECT group_id FROM student_groups WHERE student_id = $1', [studentId])
+    let studentGroupIds = sgRows.map(r => r.group_id)
+    if (studentGroupIds.length === 0 && student.group_id) {
+      studentGroupIds = [student.group_id]
+    }
+    if (studentGroupIds.length === 0) return res.status(400).json({ error: 'Вы не состоите ни в одной группе' })
+
+    // Get those groups (only from this trainer)
+    const { rows: groups } = await pool.query('SELECT * FROM groups WHERE trainer_id = $1', [trainerQr.trainer_id])
+    const myGroups = groups.filter(g => studentGroupIds.includes(g.id))
+    if (myGroups.length === 0) return res.status(400).json({ error: 'Вы не состоите ни в одной группе этого тренера' })
+
+    // Determine which group's training matches current time
+    const now = new Date()
+    const currentDay = now.getDay() // 0=Sun, 1=Mon, ...
+    const currentMinutes = now.getHours() * 60 + now.getMinutes()
+
+    let bestGroup = null
+    let bestDiff = Infinity
+
+    for (const g of myGroups) {
+      const { days, minutes } = parseSchedule(g.schedule)
+      if (minutes === null) continue
+
+      // Check if today is a training day for this group
+      const isTrainingDay = days.length === 0 || days.includes(currentDay)
+      if (!isTrainingDay) continue
+
+      // Find closest training time (prefer within -60min to +120min window)
+      const diff = Math.abs(currentMinutes - minutes)
+      if (diff < bestDiff) {
+        bestDiff = diff
+        bestGroup = g
+      }
+    }
+
+    // If no time match found, pick any group that trains today, or just the first one
+    if (!bestGroup) {
+      // Try groups that train today
+      const todayGroups = myGroups.filter(g => {
+        const { days } = parseSchedule(g.schedule)
+        return days.length === 0 || days.includes(currentDay)
+      })
+      bestGroup = todayGroups[0] || myGroups[0]
+    }
+
+    const today = now.toISOString().split('T')[0]
+    const id = genId()
+    await pool.query(
+      `INSERT INTO attendance (id, group_id, student_id, date, present)
+       VALUES ($1,$2,$3,$4,true)
+       ON CONFLICT (group_id, student_id, date)
+       DO UPDATE SET present = true`,
+      [id, bestGroup.id, studentId, today]
+    )
+    return res.json({ ok: true, groupId: bestGroup.id, groupName: bestGroup.name, date: today })
+  }
+
+  // Fallback: check group-level QR token (legacy)
   const { rows: [qr] } = await pool.query('SELECT * FROM qr_tokens WHERE token = $1', [token])
   if (!qr) return res.status(400).json({ error: 'Недействительный QR-код. Попросите тренера сгенерировать новый.' })
   const { rows: [student] } = await pool.query('SELECT * FROM students WHERE id = $1', [studentId])
   if (!student) return res.status(404).json({ error: 'Ученик не найден' })
-  if (student.group_id !== qr.group_id) return res.status(400).json({ error: 'Вы не состоите в этой группе' })
+
+  // Check if student is in this group (via junction table or primary group_id)
+  const { rows: sgCheck } = await pool.query('SELECT 1 FROM student_groups WHERE student_id = $1 AND group_id = $2', [studentId, qr.group_id])
+  if (sgCheck.length === 0 && student.group_id !== qr.group_id) {
+    return res.status(400).json({ error: 'Вы не состоите в этой группе' })
+  }
+
   const today = new Date().toISOString().split('T')[0]
   const id = genId()
   await pool.query(
@@ -370,6 +512,20 @@ router.put('/parents/:id', authMiddleware, async (req, res) => {
 
 router.delete('/parents/:id', authMiddleware, async (req, res) => {
   await pool.query('DELETE FROM parents WHERE id = $1', [req.params.id])
+  res.json({ ok: true })
+})
+
+// --- Student Groups (multi-group) ---
+router.put('/student-groups/:studentId', authMiddleware, async (req, res) => {
+  const { groupIds } = req.body
+  if (!Array.isArray(groupIds)) return res.status(400).json({ error: 'groupIds must be an array' })
+  const studentId = req.params.studentId
+  await pool.query('DELETE FROM student_groups WHERE student_id = $1', [studentId])
+  for (const gid of groupIds) {
+    await pool.query('INSERT INTO student_groups (student_id, group_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [studentId, gid])
+  }
+  // Update primary group_id
+  await pool.query('UPDATE students SET group_id = $1 WHERE id = $2', [groupIds[0] || null, studentId])
   res.json({ ok: true })
 })
 

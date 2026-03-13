@@ -7,7 +7,7 @@ const EMPTY_DATA = {
   users: [], groups: [], students: [], transactions: [],
   tournaments: [], news: [], tournamentRegistrations: [], authorInfo: {},
   internalTournaments: [], attendance: [], pendingRegistrations: [],
-  materials: [], clubs: [], parents: [],
+  materials: [], clubs: [], parents: [], studentGroups: [],
 }
 
 export function DataProvider({ children }) {
@@ -61,16 +61,33 @@ export function DataProvider({ children }) {
 
   const addStudent = useCallback(async (student) => {
     const s = await api.addStudent(student)
-    setData(d => ({ ...d, students: [...d.students, s] }))
+    // Build studentGroups entries
+    const groupIds = student.groupIds || (student.groupId ? [student.groupId] : [])
+    const newSgLinks = groupIds.map(gid => ({ studentId: s.id, groupId: gid }))
+    setData(d => ({
+      ...d,
+      students: [...d.students, s],
+      studentGroups: [...d.studentGroups, ...newSgLinks],
+    }))
     return s.id
   }, [])
 
   const updateStudent = useCallback(async (id, changes) => {
     await api.updateStudent(id, changes)
-    setData(d => ({
-      ...d,
-      students: d.students.map(s => s.id === id ? { ...s, ...changes } : s)
-    }))
+    setData(d => {
+      const updatedData = {
+        ...d,
+        students: d.students.map(s => s.id === id ? { ...s, ...changes, groupId: changes.groupIds ? (changes.groupIds[0] || null) : (changes.groupId !== undefined ? changes.groupId : s.groupId) } : s)
+      }
+      // Sync studentGroups if groupIds provided
+      if (changes.groupIds) {
+        updatedData.studentGroups = [
+          ...d.studentGroups.filter(sg => sg.studentId !== id),
+          ...changes.groupIds.map(gid => ({ studentId: id, groupId: gid })),
+        ]
+      }
+      return updatedData
+    })
   }, [])
 
   const deleteStudent = useCallback(async (id) => {
@@ -80,6 +97,7 @@ export function DataProvider({ children }) {
       students: d.students.filter(s => s.id !== id),
       transactions: d.transactions.filter(t => t.studentId !== id),
       tournamentRegistrations: d.tournamentRegistrations.filter(r => r.studentId !== id),
+      studentGroups: d.studentGroups.filter(sg => sg.studentId !== id),
     }))
   }, [])
 
@@ -102,7 +120,8 @@ export function DataProvider({ children }) {
     setData(d => ({
       ...d,
       groups: d.groups.filter(g => g.id !== id),
-      students: d.students.map(s => s.groupId === id ? { ...s, groupId: null } : s)
+      students: d.students.map(s => s.groupId === id ? { ...s, groupId: null } : s),
+      studentGroups: d.studentGroups.filter(sg => sg.groupId !== id),
     }))
   }, [])
 
@@ -306,6 +325,18 @@ export function DataProvider({ children }) {
     setData(d => ({ ...d, parents: d.parents.filter(p => p.id !== id) }))
   }, [])
 
+  const updateStudentGroups = useCallback(async (studentId, groupIds) => {
+    await api.updateStudentGroups(studentId, groupIds)
+    setData(d => ({
+      ...d,
+      studentGroups: [
+        ...d.studentGroups.filter(sg => sg.studentId !== studentId),
+        ...groupIds.map(gid => ({ studentId, groupId: gid })),
+      ],
+      students: d.students.map(s => s.id === studentId ? { ...s, groupId: groupIds[0] || null } : s),
+    }))
+  }, [])
+
   const qrCheckin = useCallback(async (token) => {
     const result = await api.qrCheckin(token)
     if (result.ok) {
@@ -336,7 +367,7 @@ export function DataProvider({ children }) {
       saveAttendanceBulk,
       addMaterial, updateMaterial, deleteMaterial,
       addClub, updateClub, deleteClub, assignTrainerToClub, removeTrainerFromClub,
-      addParent, updateParent, deleteParent, qrCheckin,
+      addParent, updateParent, deleteParent, qrCheckin, updateStudentGroups,
     }}>
       {children}
     </DataContext.Provider>

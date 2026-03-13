@@ -5,21 +5,28 @@ import { api } from '../utils/api'
 import { useTheme } from '../context/ThemeContext'
 import GlassCard from './GlassCard'
 
-export default function QRGenerator({ groupId, groupName }) {
+export default function QRGenerator({ groupId, groupName, mode }) {
   const { dark } = useTheme()
   const [token, setToken] = useState(null)
   const [loading, setLoading] = useState(true)
   const [regenerating, setRegenerating] = useState(false)
   const [copied, setCopied] = useState(false)
 
+  const isShared = mode === 'shared'
+
   useEffect(() => {
-    api.getQrToken(groupId).then(r => { setToken(r.token); setLoading(false) }).catch(() => setLoading(false))
-  }, [groupId])
+    const fetchToken = isShared
+      ? api.getTrainerQrToken()
+      : api.getQrToken(groupId)
+    fetchToken.then(r => { setToken(r.token); setLoading(false) }).catch(() => setLoading(false))
+  }, [groupId, isShared])
 
   const handleRegenerate = async () => {
     setRegenerating(true)
     try {
-      const r = await api.regenerateQrToken(groupId)
+      const r = isShared
+        ? await api.regenerateTrainerQrToken()
+        : await api.regenerateQrToken(groupId)
       setToken(r.token)
     } catch (e) {
       console.error(e)
@@ -29,17 +36,19 @@ export default function QRGenerator({ groupId, groupName }) {
 
   const qrUrl = token ? `${window.location.origin}/qr-checkin/${token}` : ''
 
+  const printTitle = isShared ? 'Общий QR для посещения' : groupName
+
   const handlePrint = () => {
     const w = window.open('', '_blank', 'width=420,height=600')
     if (!w) return
-    w.document.write(`<!DOCTYPE html><html><head><title>QR - ${groupName}</title><style>
+    w.document.write(`<!DOCTYPE html><html><head><title>QR - ${printTitle}</title><style>
       body { font-family: -apple-system, sans-serif; text-align: center; padding: 40px 20px; }
       h2 { margin-bottom: 8px; font-size: 22px; }
       p { color: #666; margin-bottom: 24px; font-size: 14px; }
       svg { max-width: 280px; height: auto; }
       .hint { margin-top: 20px; color: #999; font-size: 12px; }
     </style></head><body>
-      <h2>${groupName}</h2>
+      <h2>${printTitle}</h2>
       <p>Отсканируйте QR-код для отметки посещения</p>
       <div id="qr"></div>
       <p class="hint">iBorcuha</p>
@@ -69,7 +78,7 @@ export default function QRGenerator({ groupId, groupName }) {
     <div className="space-y-3">
       <GlassCard className="text-center">
         <div className={`text-[10px] uppercase font-bold tracking-wider mb-4 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
-          QR-код для посещаемости
+          {isShared ? 'Общий QR-код для всех групп' : 'QR-код для посещаемости'}
         </div>
 
         {/* QR Code */}
@@ -84,7 +93,10 @@ export default function QRGenerator({ groupId, groupName }) {
         </div>
 
         <div className={`mt-4 text-xs ${dark ? 'text-white/30' : 'text-gray-500'}`}>
-          Ученики сканируют этот код через свой кабинет
+          {isShared
+            ? 'Один QR для всех групп — группа определяется по расписанию'
+            : 'Ученики сканируют этот код через свой кабинет'
+          }
         </div>
       </GlassCard>
 

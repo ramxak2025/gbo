@@ -75,7 +75,7 @@ export default function StudentDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { auth } = useAuth()
-  const { data, updateStudent, deleteStudent, addParent, deleteParent } = useData()
+  const { data, updateStudent, deleteStudent, addParent, deleteParent, updateStudentGroups } = useData()
   const { dark } = useTheme()
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState(null)
@@ -95,6 +95,12 @@ export default function StudentDetail() {
   }
 
   const group = data.groups.find(g => g.id === student.groupId)
+  const studentGroupIds = data.studentGroups
+    .filter(sg => sg.studentId === student.id)
+    .map(sg => sg.groupId)
+  // Combine junction table + primary groupId for all groups
+  const allGroupIds = [...new Set([...studentGroupIds, ...(student.groupId ? [student.groupId] : [])])]
+  const studentAllGroups = data.groups.filter(g => allGroupIds.includes(g.id))
   const trainer = data.users.find(u => u.id === student.trainerId)
   const expired = isExpired(student.subscriptionExpiresAt)
   const canEdit = auth.role === 'trainer' && auth.userId === student.trainerId
@@ -102,12 +108,14 @@ export default function StudentDetail() {
   const rankOptions = getRankOptions(trainer?.sportType)
   const rankLabel = getRankLabel(trainer?.sportType)
 
+  const trainerGroups = data.groups.filter(g => g.trainerId === student.trainerId)
+
   const startEdit = () => {
-    setForm({ ...student, phone: formatPhone(student.phone || ''), newPassword: '' })
+    setForm({ ...student, phone: formatPhone(student.phone || ''), newPassword: '', editGroupIds: [...allGroupIds] })
     setEditing(true)
   }
 
-  const saveEdit = (e) => {
+  const saveEdit = async (e) => {
     e.preventDefault()
     const changes = {
       name: form.name,
@@ -117,12 +125,13 @@ export default function StudentDetail() {
       birthDate: form.birthDate,
       trainingStartDate: form.trainingStartDate || null,
       subscriptionExpiresAt: form.subscriptionExpiresAt || null,
+      groupIds: form.editGroupIds,
     }
     if (form.newPassword) {
       changes.password = form.newPassword
       changes.plainPassword = form.newPassword
     }
-    updateStudent(student.id, changes)
+    await updateStudent(student.id, changes)
     setEditing(false)
   }
 
@@ -184,7 +193,7 @@ export default function StudentDetail() {
           </div>
           <h2 className="text-xl font-bold mt-3">{student.name}</h2>
           <p className={`text-sm ${dark ? 'text-white/40' : 'text-gray-500'}`}>
-            {trainer?.clubName} — {group?.name || 'Без группы'}
+            {trainer?.clubName} — {studentAllGroups.length > 0 ? studentAllGroups.map(g => g.name).join(', ') : 'Без группы'}
           </p>
         </div>
 
@@ -257,8 +266,10 @@ export default function StudentDetail() {
           </GlassCard>
         )}
 
-        {/* Attendance stats */}
-        <AttendanceStats studentId={student.id} groupId={student.groupId} data={data} dark={dark} />
+        {/* Attendance stats — show for all groups */}
+        {studentAllGroups.map(g => (
+          <AttendanceStats key={g.id} studentId={student.id} groupId={g.id} data={data} dark={dark} />
+        ))}
 
         {/* Parents/Guardians section */}
         {(canEdit || canEditAdmin) && (() => {
@@ -355,6 +366,36 @@ export default function StudentDetail() {
               <option value="">— {rankLabel} —</option>
               {rankOptions.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
+            {/* Multi-group selection */}
+            {trainerGroups.length > 0 && (
+              <div>
+                <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Группы</div>
+                <div className="flex flex-wrap gap-2">
+                  {trainerGroups.map(g => {
+                    const active = form.editGroupIds?.includes(g.id)
+                    return (
+                      <button
+                        key={g.id}
+                        type="button"
+                        onClick={() => setForm(f => ({
+                          ...f,
+                          editGroupIds: active
+                            ? (f.editGroupIds || []).filter(id => id !== g.id)
+                            : [...(f.editGroupIds || []), g.id]
+                        }))}
+                        className={`px-3 py-1.5 rounded-2xl text-xs font-bold press-scale transition-all ${
+                          active
+                            ? 'bg-accent text-white'
+                            : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60'
+                        }`}
+                      >
+                        {g.name}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
             {canEditAdmin && (
               <input
                 type="text"

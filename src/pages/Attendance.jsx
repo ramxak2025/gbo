@@ -45,7 +45,10 @@ export default function Attendance() {
   const [dirty, setDirty] = useState(false)
 
   const group = data.groups.find(g => g.id === groupId)
-  const students = data.students.filter(s => s.groupId === groupId).sort((a, b) => a.name.localeCompare(b.name))
+  // Include students from junction table + fallback primary groupId
+  const sgStudentIds = new Set(data.studentGroups.filter(sg => sg.groupId === groupId).map(sg => sg.studentId))
+  data.students.forEach(s => { if (s.groupId === groupId) sgStudentIds.add(s.id) })
+  const students = data.students.filter(s => sgStudentIds.has(s.id)).sort((a, b) => a.name.localeCompare(b.name))
 
   // Existing attendance for selected date
   const dayAttendance = useMemo(() => {
@@ -324,7 +327,9 @@ export default function Attendance() {
           </>
         )}
         {tab === 'qr' && (
-          <QRGenerator groupId={groupId} groupName={group.name} />
+          <div className="space-y-4">
+            <QRGenerator groupId={groupId} groupName={group.name} mode="shared" />
+          </div>
         )}
       </div>
     </Layout>

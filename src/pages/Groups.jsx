@@ -77,7 +77,10 @@ export default function Groups() {
 
       <div className="px-4 space-y-3 slide-in">
         {myGroups.map(g => {
-          const count = data.students.filter(s => s.groupId === g.id).length
+          // Count students from junction table + fallback primary groupId
+          const sgStudentIds = new Set(data.studentGroups.filter(sg => sg.groupId === g.id).map(sg => sg.studentId))
+          data.students.forEach(s => { if (s.groupId === g.id) sgStudentIds.add(s.id) })
+          const count = sgStudentIds.size
           return (
             <GlassCard key={g.id}>
               <div className="flex items-center justify-between">

@@ -257,6 +257,22 @@ CREATE TABLE IF NOT EXISTS qr_tokens (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS qr_tokens_group_id_idx ON qr_tokens(group_id);
 
+-- Shared trainer-level QR tokens (one QR for all groups)
+CREATE TABLE IF NOT EXISTS trainer_qr_tokens (
+  id TEXT PRIMARY KEY,
+  trainer_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS trainer_qr_tokens_trainer_idx ON trainer_qr_tokens(trainer_id);
+
+-- Multi-group support: one student can belong to multiple groups
+CREATE TABLE IF NOT EXISTS student_groups (
+  student_id TEXT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  group_id TEXT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  PRIMARY KEY (student_id, group_id)
+);
+
 -- Parents / guardians for minors
 CREATE TABLE IF NOT EXISTS parents (
   id TEXT PRIMARY KEY,

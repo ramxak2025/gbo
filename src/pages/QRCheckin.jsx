@@ -14,6 +14,7 @@ export default function QRCheckin() {
   const { dark } = useTheme()
   const [status, setStatus] = useState('loading') // 'loading' | 'success' | 'error' | 'wrong_role'
   const [errorMsg, setErrorMsg] = useState('')
+  const [matchedGroup, setMatchedGroup] = useState('')
 
   useEffect(() => {
     if (!token || !auth) return
@@ -24,7 +25,10 @@ export default function QRCheckin() {
     }
 
     qrCheckin(token)
-      .then(() => setStatus('success'))
+      .then((result) => {
+        setStatus('success')
+        if (result?.groupName) setMatchedGroup(result.groupName)
+      })
       .catch(e => { setStatus('error'); setErrorMsg(e.message || 'Ошибка') })
   }, [token, auth])
 
@@ -46,6 +50,7 @@ export default function QRCheckin() {
               <h2 className="text-xl font-bold text-green-500">Отмечено!</h2>
               <p className={`text-sm ${dark ? 'text-white/50' : 'text-gray-600'}`}>
                 Ваше посещение записано на сегодня
+                {matchedGroup && <><br /><span className="font-semibold">{matchedGroup}</span></>}
               </p>
             </>
           )}

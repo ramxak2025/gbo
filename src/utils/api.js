@@ -102,6 +102,11 @@ export const api = {
   getQrToken: (groupId) => request(`/data/qr-token/${groupId}`),
   regenerateQrToken: (groupId) => request(`/data/qr-token/${groupId}/regenerate`, { method: 'POST' }),
   qrCheckin: (token) => request('/data/attendance/qr-checkin', { method: 'POST', body: JSON.stringify({ token }) }),
+  // Shared trainer QR
+  getTrainerQrToken: () => request('/data/trainer-qr-token'),
+  regenerateTrainerQrToken: () => request('/data/trainer-qr-token/regenerate', { method: 'POST' }),
+  // Student groups (multi-group)
+  updateStudentGroups: (studentId, groupIds) => request(`/data/student-groups/${studentId}`, { method: 'PUT', body: JSON.stringify({ groupIds }) }),
 
   // Materials
   addMaterial: (data) => request('/data/materials', { method: 'POST', body: JSON.stringify(data) }),

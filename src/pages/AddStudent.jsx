@@ -37,7 +37,7 @@ export default function AddStudent() {
     weight: '',
     belt: rankOptions[0] || '',
     birthDate: '',
-    groupId: myGroups[0]?.id || '',
+    groupIds: myGroups[0]?.id ? [myGroups[0].id] : [],
     password: 'student123',
     trainingStartDate: new Date().toISOString().split('T')[0],
     subscriptionExpiresAt: '',
@@ -78,7 +78,7 @@ export default function AddStudent() {
 
     const studentId = await addStudent({
       trainerId: auth.userId,
-      groupId: form.groupId || null,
+      groupIds: form.groupIds,
       name: form.name.trim(),
       phone: phoneDigits,
       weight: parseFloat(form.weight) || 0,
@@ -134,14 +134,38 @@ export default function AddStudent() {
             className={inputCls}
             required
           />
-          <select
-            value={form.groupId}
-            onChange={e => setForm(f => ({ ...f, groupId: e.target.value }))}
-            className={inputCls}
-          >
-            <option value="">— Группа —</option>
-            {myGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-          </select>
+          {/* Multi-group selection */}
+          <div>
+            <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Группы</div>
+            <div className="flex flex-wrap gap-2">
+              {myGroups.map(g => {
+                const active = form.groupIds.includes(g.id)
+                return (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => setForm(f => ({
+                      ...f,
+                      groupIds: active
+                        ? f.groupIds.filter(id => id !== g.id)
+                        : [...f.groupIds, g.id]
+                    }))}
+                    className={`px-3.5 py-2 rounded-2xl text-xs font-bold press-scale transition-all ${
+                      active
+                        ? 'bg-accent text-white'
+                        : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60'
+                    }`}
+                  >
+                    {g.name}
+                    {g.schedule && <span className="ml-1 opacity-60">({g.schedule})</span>}
+                  </button>
+                )
+              })}
+              {myGroups.length === 0 && (
+                <span className={`text-xs ${dark ? 'text-white/30' : 'text-gray-400'}`}>Сначала создайте группу</span>
+              )}
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <input
               type="number"

@@ -77,12 +77,23 @@ export default function Team() {
   )
   const filteredStudents = students.filter(s => s.name.toLowerCase().includes(search.toLowerCase()))
 
-  // Group students by group for trainer view
-  const studentsByGroup = myGroups.map(g => ({
-    group: g,
-    students: filteredStudents.filter(s => s.groupId === g.id),
-  }))
-  const ungrouped = filteredStudents.filter(s => !s.groupId || !myGroups.find(g => g.id === s.groupId))
+  // Group students by group for trainer view (using studentGroups junction table)
+  const studentsByGroup = myGroups.map(g => {
+    const sgStudentIds = data.studentGroups
+      .filter(sg => sg.groupId === g.id)
+      .map(sg => sg.studentId)
+    // Include students from junction table + fallback to primary groupId
+    const groupStudentSet = new Set(sgStudentIds)
+    filteredStudents.forEach(s => {
+      if (s.groupId === g.id) groupStudentSet.add(s.id)
+    })
+    return {
+      group: g,
+      students: filteredStudents.filter(s => groupStudentSet.has(s.id)),
+    }
+  })
+  const allGroupedIds = new Set(studentsByGroup.flatMap(sg => sg.students.map(s => s.id)))
+  const ungrouped = filteredStudents.filter(s => !allGroupedIds.has(s.id))
 
   const inputCls = `w-full pl-10 pr-4 py-2.5 rounded-[16px] text-sm outline-none ${dark ? 'bg-white/[0.07] border border-white/[0.08] text-white placeholder-white/25 focus:border-purple-500/50 focus:bg-white/[0.1]' : 'bg-white/70 border border-white/60 text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] shadow-sm'}`
 
@@ -181,8 +192,20 @@ export default function Team() {
 
 function StudentTeam({ auth, data, dark, navigate, search, setSearch }) {
   const student = data.students.find(s => s.id === auth.studentId)
-  const teammates = data.students.filter(s => s.groupId === student?.groupId && s.id !== auth.studentId)
-  const group = data.groups.find(g => g.id === student?.groupId)
+  // Get all groups the student belongs to
+  const myGroupIds = new Set(data.studentGroups.filter(sg => sg.studentId === auth.studentId).map(sg => sg.groupId))
+  if (student?.groupId) myGroupIds.add(student.groupId)
+  const myGroups = data.groups.filter(g => myGroupIds.has(g.id))
+  // Get all teammates from all groups
+  const teammateIds = new Set()
+  data.studentGroups.forEach(sg => {
+    if (myGroupIds.has(sg.groupId) && sg.studentId !== auth.studentId) teammateIds.add(sg.studentId)
+  })
+  data.students.forEach(s => {
+    if (myGroupIds.has(s.groupId) && s.id !== auth.studentId) teammateIds.add(s.id)
+  })
+  const teammates = data.students.filter(s => teammateIds.has(s.id))
+  const group = myGroups[0]
   const [selected, setSelected] = useState(null)
 
   const filtered = teammates.filter(s => s.name.toLowerCase().includes(search.toLowerCase()))
@@ -195,10 +218,10 @@ function StudentTeam({ auth, data, dark, navigate, search, setSearch }) {
     <Layout>
       <PageHeader title="Моя команда" />
       <div className="px-4 space-y-4 slide-in">
-        {group && (
+        {myGroups.length > 0 && (
           <GlassCard>
-            <div className="font-bold">{group.name}</div>
-            <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>{group.schedule}</div>
+            <div className="font-bold">{myGroups.map(g => g.name).join(', ')}</div>
+            <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>{myGroups.map(g => g.schedule).filter(Boolean).join(' / ')}</div>
           </GlassCard>
         )}
         <div className="relative">
