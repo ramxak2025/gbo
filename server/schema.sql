@@ -247,6 +247,28 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_column THEN NULL;
 END $$;
 
+-- QR tokens for attendance check-in
+CREATE TABLE IF NOT EXISTS qr_tokens (
+  id TEXT PRIMARY KEY,
+  group_id TEXT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  trainer_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS qr_tokens_group_id_idx ON qr_tokens(group_id);
+
+-- Parents / guardians for minors
+CREATE TABLE IF NOT EXISTS parents (
+  id TEXT PRIMARY KEY,
+  student_id TEXT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  phone VARCHAR(50) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  plain_password VARCHAR(255),
+  relation VARCHAR(50) NOT NULL DEFAULT 'parent',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Trainer registration requests
 CREATE TABLE IF NOT EXISTS pending_registrations (
   id TEXT PRIMARY KEY,

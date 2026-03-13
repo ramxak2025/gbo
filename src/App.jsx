@@ -26,6 +26,7 @@ import Attendance from './pages/Attendance'
 import Materials from './pages/Materials'
 import Clubs from './pages/Clubs'
 import ClubDetail from './pages/ClubDetail'
+import QRCheckin from './pages/QRCheckin'
 
 function AppRoutes() {
   const { auth } = useAuth()
@@ -61,6 +62,8 @@ function AppRoutes() {
       {auth.role === 'trainer' && <Route path="/create-internal-tournament" element={<CreateInternalTournament />} />}
       {auth.role === 'trainer' && <Route path="/attendance/:groupId" element={<Attendance />} />}
       <Route path="/internal-tournament/:id" element={<InternalTournamentDetail />} />
+      <Route path="/qr-checkin/:token" element={<QRCheckin />} />
+      {auth.role === 'parent' && <Route path="/profile" element={<Profile />} />}
       {auth.role === 'superadmin' && <Route path="/add-tournament" element={<AddTournament />} />}
       {auth.role === 'superadmin' && <Route path="/add-trainer" element={<AddTrainer />} />}
       {auth.role === 'superadmin' && <Route path="/trainer/:id" element={<TrainerDetail />} />}

@@ -25,6 +25,12 @@ const navConfigs = {
     { path: '/author', icon: Sparkles, label: 'Автор' },
     { path: '/materials', icon: Film, label: 'Материалы' },
   ],
+  parent: [
+    { path: '/', icon: Home, label: 'Главная' },
+    { path: '/tournaments', icon: Trophy, label: 'Турниры' },
+    { path: '/materials', icon: Film, label: 'Материалы' },
+    { path: '/profile', icon: User, label: 'Профиль' },
+  ],
 }
 
 export default function BottomNav() {

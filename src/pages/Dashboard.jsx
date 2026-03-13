@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords, MapPin, Megaphone, Plus, ClipboardList, Award, ChevronRight, Dumbbell, CreditCard, Shield, UserPlus, Check, X, Instagram, Globe, MessageCircle, Code, Play, Film, Trash2, Trophy } from 'lucide-react'
+import { Users, TrendingUp, TrendingDown, AlertCircle, Newspaper, Calendar, Flame, Clock, Thermometer, HeartCrack, Zap, Swords, MapPin, Megaphone, Plus, ClipboardList, Award, ChevronRight, Dumbbell, CreditCard, Shield, UserPlus, Check, X, Instagram, Globe, MessageCircle, Code, Play, Film, Trash2, Trophy, QrCode, BarChart3 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -11,6 +11,7 @@ import GlassCard from '../components/GlassCard'
 import Avatar from '../components/Avatar'
 import Modal from '../components/Modal'
 import { getRankLabel, getSportLabel, SPORT_TYPES } from '../utils/sports'
+import QRScanner from '../components/QRScanner'
 
 const STATUS_CONFIG = {
   sick: { label: 'Болеет', icon: Thermometer, color: 'text-yellow-400', bg: 'bg-yellow-500/15', border: 'border-yellow-500/30' },
@@ -74,6 +75,7 @@ export default function Dashboard() {
 
   if (auth.role === 'superadmin') return <SuperAdminDash data={data} dark={dark} navigate={navigate} />
   if (auth.role === 'trainer') return <TrainerDash auth={auth} data={data} dark={dark} navigate={navigate} />
+  if (auth.role === 'parent') return <ParentDash auth={auth} data={data} dark={dark} navigate={navigate} />
   return <StudentDash auth={auth} data={data} dark={dark} navigate={navigate} />
 }
 
@@ -586,6 +588,221 @@ function AuthorBlock({ data, dark, navigate }) {
   )
 }
 
+/* ======================== PARENT ======================== */
+function ParentDash({ auth, data, dark, navigate }) {
+  const student = data.students.find(s => s.id === auth.studentId)
+  const group = student ? data.groups.find(g => g.id === student.groupId) : null
+  const trainer = data.users.find(u => u.id === auth.userId)
+  const expired = isExpired(student?.subscriptionExpiresAt)
+  const sportLabel = getSportLabel(trainer?.sportType)
+  const parentInfo = auth.parent
+
+  // Attendance stats
+  const now = new Date()
+  const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const myAttendance = data.attendance.filter(a => a.studentId === auth.studentId && a.date.startsWith(monthPrefix))
+  const presentCount = myAttendance.filter(a => a.present).length
+  const totalCount = myAttendance.length
+  const pct = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0
+
+  // Recent attendance (last 14 days)
+  const last14Days = useMemo(() => {
+    const days = []
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date()
+      d.setDate(d.getDate() - i)
+      const dateStr = d.toISOString().split('T')[0]
+      const record = data.attendance.find(a => a.studentId === auth.studentId && a.date === dateStr)
+      days.push({ date: dateStr, day: d.toLocaleDateString('ru-RU', { weekday: 'narrow' }), num: d.getDate(), present: record?.present ?? null })
+    }
+    return days
+  }, [data.attendance, auth.studentId])
+
+  const myNews = data.news.filter(n => n.groupId === student?.groupId || (!n.groupId && n.trainerId === auth.userId))
+
+  return (
+    <Layout>
+      <PageHeader title="Кабинет родителя" logo />
+      <div className="px-4 space-y-4 slide-in stagger">
+
+        {/* Parent info */}
+        <GlassCard className={`border ${dark ? 'border-blue-500/20 bg-gradient-to-r from-blue-500/5 to-cyan-500/5' : 'border-blue-200 bg-gradient-to-r from-blue-50/50 to-cyan-50/50'}`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${dark ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
+              <Shield size={20} className="text-blue-400" />
+            </div>
+            <div>
+              <div className="font-bold text-sm">{parentInfo?.name || 'Родитель'}</div>
+              <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-600'}`}>
+                {parentInfo?.relation === 'mother' ? 'Мать' : parentInfo?.relation === 'father' ? 'Отец' : parentInfo?.relation === 'guardian' ? 'Опекун' : 'Родитель'} ученика
+              </div>
+            </div>
+          </div>
+        </GlassCard>
+
+        {/* Child info */}
+        <div
+          onClick={() => navigate('/profile')}
+          className={`rounded-[24px] p-5 relative overflow-hidden backdrop-blur-xl press-scale cursor-pointer ${
+            dark
+              ? 'bg-gradient-to-br from-purple-500/10 via-white/[0.04] to-accent/10 border border-white/[0.07]'
+              : 'bg-gradient-to-br from-purple-50/80 via-white/70 to-red-50/80 border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
+          }`}
+        >
+          <div className={`text-[10px] uppercase font-bold tracking-wider mb-3 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Ваш ребёнок</div>
+          <div className="flex items-center gap-4">
+            <Avatar name={student?.name || '?'} src={student?.avatar} size={56} />
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-black truncate">{student?.name}</h2>
+              <p className={`text-sm truncate ${dark ? 'text-white/50' : 'text-gray-600'}`}>
+                {trainer?.clubName} — {group?.name || 'Без группы'}
+              </p>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                {trainer?.sportType && (
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                    dark ? 'bg-accent/20 text-accent-light' : 'bg-red-100 text-red-600'
+                  }`}>{sportLabel}</span>
+                )}
+                {student?.belt && (
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                    dark ? 'bg-purple-500/20 text-purple-300' : 'bg-purple-100 text-purple-600'
+                  }`}>{student.belt}</span>
+                )}
+              </div>
+            </div>
+            <ChevronRight size={18} className={dark ? 'text-white/20' : 'text-gray-300'} />
+          </div>
+          {trainer && (
+            <div className={`mt-3 pt-3 flex items-center gap-2 ${dark ? 'border-t border-white/[0.06]' : 'border-t border-black/[0.05]'}`}>
+              <Shield size={12} className={dark ? 'text-white/30' : 'text-gray-600'} />
+              <span className={`text-xs ${dark ? 'text-white/40' : 'text-gray-600'}`}>
+                Тренер: <span className="font-semibold">{trainer.name}</span>
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Subscription + Status */}
+        <div className="grid grid-cols-2 gap-2">
+          <GlassCard>
+            <div className={`text-[10px] uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-600'}`}>Абонемент</div>
+            <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
+              expired ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+            }`}>{expired ? 'Долг' : 'Активен'}</span>
+            <div className={`text-[10px] mt-1.5 ${dark ? 'text-white/30' : 'text-gray-600'}`}>
+              {expired ? 'Истёк' : 'До'}: <span className="font-semibold">{formatDate(student?.subscriptionExpiresAt)}</span>
+            </div>
+          </GlassCard>
+          <GlassCard>
+            <div className={`text-[10px] uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-600'}`}>
+              Статус
+            </div>
+            {student?.status && STATUS_CONFIG[student.status] ? (() => {
+              const cfg = STATUS_CONFIG[student.status]
+              return (
+                <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full ${cfg.bg} border ${cfg.border} w-fit`}>
+                  <cfg.icon size={12} className={cfg.color} />
+                  <span className={`text-xs font-bold ${cfg.color}`}>{cfg.label}</span>
+                </div>
+              )
+            })() : (
+              <span className="text-xs text-green-400 font-bold bg-green-500/15 px-2 py-1 rounded-full">В строю</span>
+            )}
+          </GlassCard>
+        </div>
+
+        {/* Attendance stats */}
+        <div>
+          <SectionTitle dark={dark}>
+            <span className="flex items-center gap-1.5"><BarChart3 size={12} className="text-accent" /> Посещаемость</span>
+          </SectionTitle>
+
+          {totalCount > 0 && (
+            <GlassCard className="mb-2">
+              <div className="flex items-center justify-between mb-2">
+                <span className={`text-xs ${dark ? 'text-white/50' : 'text-gray-600'}`}>
+                  {now.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}
+                </span>
+                <span className={`text-2xl font-black ${
+                  pct >= 80 ? 'text-green-500' : pct >= 50 ? 'text-yellow-500' : 'text-red-500'
+                }`}>{pct}%</span>
+              </div>
+              <div className={`h-2.5 rounded-full overflow-hidden ${dark ? 'bg-white/[0.08]' : 'bg-black/[0.06]'}`}>
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                  }`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <div className={`text-[11px] mt-1.5 ${dark ? 'text-white/30' : 'text-gray-500'}`}>
+                {presentCount} из {totalCount} тренировок
+              </div>
+            </GlassCard>
+          )}
+
+          {/* Last 14 days grid */}
+          <GlassCard>
+            <div className={`text-[10px] uppercase font-bold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Последние 2 недели</div>
+            <div className="grid grid-cols-7 gap-1.5">
+              {last14Days.map(d => (
+                <div key={d.date} className="text-center">
+                  <div className={`text-[9px] mb-0.5 ${dark ? 'text-white/25' : 'text-gray-400'}`}>{d.day}</div>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold mx-auto ${
+                    d.present === true
+                      ? 'bg-green-500/20 text-green-500'
+                      : d.present === false
+                        ? 'bg-red-500/15 text-red-400'
+                        : dark ? 'bg-white/[0.04] text-white/15' : 'bg-gray-100 text-gray-300'
+                  }`}>
+                    {d.num}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </GlassCard>
+        </div>
+
+        {/* Schedule */}
+        {group && (
+          <div>
+            <SectionTitle dark={dark}>Расписание</SectionTitle>
+            <GlassCard>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${dark ? 'bg-accent/15' : 'bg-red-100'}`}>
+                  <Calendar size={18} className="text-accent" />
+                </div>
+                <div>
+                  <div className="font-bold text-sm">{group.name}</div>
+                  <div className={`text-xs mt-0.5 ${dark ? 'text-white/40' : 'text-gray-600'}`}>{group.schedule || 'Не указано'}</div>
+                </div>
+              </div>
+            </GlassCard>
+          </div>
+        )}
+
+        {/* News */}
+        {myNews.length > 0 && (
+          <div>
+            <SectionTitle dark={dark}>Новости</SectionTitle>
+            {myNews.slice(-3).reverse().map(n => (
+              <GlassCard key={n.id} className="mb-2">
+                <div className="flex items-start gap-2">
+                  <Newspaper size={16} className="text-accent shrink-0 mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-sm">{n.title}</div>
+                    <div className={`text-xs mt-1 ${dark ? 'text-white/40' : 'text-gray-600'}`}>{n.content}</div>
+                  </div>
+                </div>
+              </GlassCard>
+            ))}
+          </div>
+        )}
+      </div>
+    </Layout>
+  )
+}
+
 /* ======================== STUDENT ======================== */
 function StudentDash({ auth, data, dark, navigate }) {
   const student = data.students.find(s => s.id === auth.studentId)
@@ -593,8 +810,9 @@ function StudentDash({ auth, data, dark, navigate }) {
   const trainer = data.users.find(u => u.id === auth.userId)
   const myNews = data.news.filter(n => n.groupId === student?.groupId || (!n.groupId && n.trainerId === auth.userId))
   const expired = isExpired(student?.subscriptionExpiresAt)
-  const { updateStudent } = useData()
+  const { updateStudent, qrCheckin } = useData()
   const [showStatus, setShowStatus] = useState(false)
+  const [showScanner, setShowScanner] = useState(false)
 
   const myRegs = (data.tournamentRegistrations || []).filter(r => r.studentId === auth.studentId)
   const registeredTournaments = myRegs
@@ -802,6 +1020,75 @@ function StudentDash({ auth, data, dark, navigate }) {
           </GlassCard>
         </div>
 
+        {/* QR Scan + Attendance Stats */}
+        {group && (() => {
+          const now = new Date()
+          const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+          const myAttendance = data.attendance.filter(a => a.studentId === auth.studentId && a.date.startsWith(monthPrefix))
+          const presentCount = myAttendance.filter(a => a.present).length
+          const totalCount = myAttendance.length
+          const pct = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0
+          const todayStr = now.toISOString().split('T')[0]
+          const checkedInToday = data.attendance.some(a => a.studentId === auth.studentId && a.date === todayStr && a.present)
+
+          return (
+            <div className="space-y-2">
+              {/* Scan QR button */}
+              <button
+                onClick={() => setShowScanner(true)}
+                className={`w-full flex items-center gap-3 p-4 rounded-[20px] press-scale transition-all ${
+                  checkedInToday
+                    ? dark ? 'bg-green-500/10 border border-green-500/30' : 'bg-green-50 border border-green-200 shadow-sm'
+                    : 'bg-gradient-to-r from-purple-600 to-indigo-600 shadow-lg shadow-purple-600/25'
+                }`}
+              >
+                <div className={`w-11 h-11 rounded-full flex items-center justify-center ${
+                  checkedInToday ? 'bg-green-500/20' : 'bg-white/20'
+                }`}>
+                  {checkedInToday ? <Check size={22} className="text-green-500" /> : <QrCode size={22} className="text-white" />}
+                </div>
+                <div className="text-left flex-1">
+                  <div className={`font-bold text-sm ${checkedInToday ? (dark ? 'text-green-400' : 'text-green-600') : 'text-white'}`}>
+                    {checkedInToday ? 'Вы отмечены сегодня' : 'Отметить посещение'}
+                  </div>
+                  <div className={`text-[11px] ${checkedInToday ? (dark ? 'text-green-400/50' : 'text-green-600/60') : 'text-white/60'}`}>
+                    {checkedInToday ? 'Отсканировать ещё раз' : 'Сканировать QR-код тренера'}
+                  </div>
+                </div>
+              </button>
+
+              {/* Attendance stats card */}
+              {totalCount > 0 && (
+                <GlassCard>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <BarChart3 size={14} className="text-accent" />
+                      <span className={`text-[10px] uppercase font-bold ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+                        Посещаемость за {now.toLocaleDateString('ru-RU', { month: 'long' })}
+                      </span>
+                    </div>
+                    <span className={`text-lg font-black ${
+                      pct >= 80 ? 'text-green-500' : pct >= 50 ? 'text-yellow-500' : 'text-red-500'
+                    }`}>{pct}%</span>
+                  </div>
+                  <div className={`h-2 rounded-full overflow-hidden ${dark ? 'bg-white/[0.08]' : 'bg-black/[0.06]'}`}>
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                      }`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <div className={`flex justify-between mt-1.5 text-[10px] ${dark ? 'text-white/30' : 'text-gray-500'}`}>
+                    <span>{presentCount} из {totalCount} тренировок</span>
+                    <span>{group.name}</span>
+                  </div>
+                </GlassCard>
+              )}
+            </div>
+          )
+        })()}
+
         {/* Today's workout — pinned video */}
         {pinnedMaterial && (() => {
           const ytMatch = pinnedMaterial.videoUrl?.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
@@ -957,6 +1244,14 @@ function StudentDash({ auth, data, dark, navigate }) {
             ))}
         </div>
       </div>
+
+      {/* QR Scanner modal */}
+      <Modal open={showScanner} onClose={() => setShowScanner(false)} title="Сканировать QR">
+        <QRScanner
+          onCheckin={async (token) => { await qrCheckin(token) }}
+          onClose={() => setShowScanner(false)}
+        />
+      </Modal>
 
       {/* Status picker modal */}
       <Modal open={showStatus} onClose={() => setShowStatus(false)} title="Установить статус">

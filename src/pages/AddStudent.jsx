@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { AlertTriangle, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -9,10 +10,20 @@ import PhoneInput, { cleanPhone } from '../components/PhoneInput'
 import DateButton from '../components/DateButton'
 import { getRankOptions, getRankLabel } from '../utils/sports'
 
+function getAge(birthDate) {
+  if (!birthDate) return null
+  const today = new Date()
+  const birth = new Date(birthDate + 'T00:00:00')
+  let age = today.getFullYear() - birth.getFullYear()
+  const m = today.getMonth() - birth.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
+  return age
+}
+
 export default function AddStudent() {
   const navigate = useNavigate()
   const { auth } = useAuth()
-  const { data, addStudent } = useData()
+  const { data, addStudent, addParent } = useData()
   const { dark } = useTheme()
 
   const myGroups = data.groups.filter(g => g.trainerId === auth.userId)
@@ -32,12 +43,32 @@ export default function AddStudent() {
     subscriptionExpiresAt: '',
   })
 
-  const handleSubmit = (e) => {
+  const [parentForm, setParentForm] = useState({
+    name: '',
+    phone: '',
+    relation: 'mother',
+    password: 'parent123',
+  })
+
+  const age = useMemo(() => getAge(form.birthDate), [form.birthDate])
+  const isMinor = age !== null && age < 18
+  const isUnder14 = age !== null && age < 14
+  const showParent = isMinor
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
     const phoneDigits = cleanPhone(form.phone)
     if (!form.name.trim() || phoneDigits.length < 11) return
 
-    // If no subscription date set, default to 1 month from now
+    // Validate parent for under 14
+    if (isUnder14) {
+      const parentPhoneDigits = cleanPhone(parentForm.phone)
+      if (!parentForm.name.trim() || parentPhoneDigits.length < 11) {
+        alert('Для детей до 14 лет обязательно указать данные родителя/законного представителя (ФЗ-152)')
+        return
+      }
+    }
+
     let subExpires = form.subscriptionExpiresAt
     if (!subExpires) {
       const d = new Date()
@@ -45,7 +76,7 @@ export default function AddStudent() {
       subExpires = d.toISOString()
     }
 
-    addStudent({
+    const studentId = await addStudent({
       trainerId: auth.userId,
       groupId: form.groupId || null,
       name: form.name.trim(),
@@ -58,6 +89,21 @@ export default function AddStudent() {
       trainingStartDate: form.trainingStartDate || null,
       password: form.password,
     })
+
+    // Add parent if minor and parent data provided
+    if (showParent && parentForm.name.trim()) {
+      const parentPhoneDigits = cleanPhone(parentForm.phone)
+      if (parentPhoneDigits.length >= 11) {
+        await addParent({
+          studentId,
+          name: parentForm.name.trim(),
+          phone: parentPhoneDigits,
+          relation: parentForm.relation,
+          password: parentForm.password,
+        })
+      }
+    }
+
     navigate(-1)
   }
 
@@ -120,6 +166,74 @@ export default function AddStudent() {
             <DateButton label="Тренируется с" value={form.trainingStartDate} onChange={v => setForm(f => ({ ...f, trainingStartDate: v }))} />
             <DateButton label="Абонемент до" value={form.subscriptionExpiresAt} onChange={v => setForm(f => ({ ...f, subscriptionExpiresAt: v }))} />
           </div>
+
+          {/* Age indicator */}
+          {age !== null && (
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-[12px] text-xs ${
+              isUnder14
+                ? dark ? 'bg-red-500/10 border border-red-500/20 text-red-400' : 'bg-red-50 border border-red-200 text-red-600'
+                : isMinor
+                  ? dark ? 'bg-yellow-500/10 border border-yellow-500/20 text-yellow-400' : 'bg-yellow-50 border border-yellow-200 text-yellow-600'
+                  : dark ? 'bg-green-500/10 border border-green-500/20 text-green-400' : 'bg-green-50 border border-green-200 text-green-600'
+            }`}>
+              {isUnder14 ? <AlertTriangle size={14} /> : isMinor ? <AlertTriangle size={14} /> : <ShieldCheck size={14} />}
+              <span className="font-semibold">
+                {age} {age === 1 ? 'год' : age < 5 ? 'года' : 'лет'}
+                {isUnder14 && ' — данные родителя обязательны (ФЗ-152)'}
+                {isMinor && !isUnder14 && ' — рекомендуется указать родителя'}
+              </span>
+            </div>
+          )}
+
+          {/* Parent/Guardian section */}
+          {showParent && (
+            <div className={`space-y-3 pt-3 ${dark ? 'border-t border-white/10' : 'border-t border-black/[0.08]'}`}>
+              <div className="flex items-center gap-2">
+                <ShieldCheck size={16} className="text-blue-400" />
+                <p className={`text-sm font-bold ${dark ? 'text-white/80' : 'text-gray-800'}`}>
+                  Родитель / законный представитель
+                  {isUnder14 && <span className="text-red-400 ml-1">*</span>}
+                </p>
+              </div>
+              <input
+                type="text"
+                placeholder={`ФИО родителя${isUnder14 ? ' *' : ''}`}
+                value={parentForm.name}
+                onChange={e => setParentForm(f => ({ ...f, name: e.target.value }))}
+                className={inputCls}
+                required={isUnder14}
+              />
+              <PhoneInput
+                value={parentForm.phone}
+                onChange={v => setParentForm(f => ({ ...f, phone: v }))}
+                className={inputCls}
+                placeholder={`Телефон родителя${isUnder14 ? ' *' : ''}`}
+                required={isUnder14}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <select
+                  value={parentForm.relation}
+                  onChange={e => setParentForm(f => ({ ...f, relation: e.target.value }))}
+                  className={inputCls}
+                >
+                  <option value="mother">Мать</option>
+                  <option value="father">Отец</option>
+                  <option value="guardian">Опекун</option>
+                  <option value="other">Другое</option>
+                </select>
+                <input
+                  type="text"
+                  placeholder="Пароль родителя"
+                  value={parentForm.password}
+                  onChange={e => setParentForm(f => ({ ...f, password: e.target.value }))}
+                  className={inputCls}
+                />
+              </div>
+              <p className={`text-[10px] ${dark ? 'text-white/25' : 'text-gray-400'}`}>
+                Родитель сможет войти по своему номеру и видеть кабинет ребёнка
+              </p>
+            </div>
+          )}
 
           <div className={`pt-2 ${dark ? 'border-t border-white/10' : 'border-t border-black/[0.08]'}`}>
             <p className={`text-xs mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Пароль для входа ученика</p>

@@ -7,7 +7,7 @@ const EMPTY_DATA = {
   users: [], groups: [], students: [], transactions: [],
   tournaments: [], news: [], tournamentRegistrations: [], authorInfo: {},
   internalTournaments: [], attendance: [], pendingRegistrations: [],
-  materials: [], clubs: [],
+  materials: [], clubs: [], parents: [],
 }
 
 export function DataProvider({ children }) {
@@ -287,6 +287,38 @@ export function DataProvider({ children }) {
     }))
   }, [])
 
+  const addParent = useCallback(async (parent) => {
+    const p = await api.addParent(parent)
+    setData(d => ({ ...d, parents: [...d.parents, p] }))
+    return p.id
+  }, [])
+
+  const updateParent = useCallback(async (id, changes) => {
+    await api.updateParent(id, changes)
+    setData(d => ({
+      ...d,
+      parents: d.parents.map(p => p.id === id ? { ...p, ...changes } : p)
+    }))
+  }, [])
+
+  const deleteParent = useCallback(async (id) => {
+    await api.deleteParent(id)
+    setData(d => ({ ...d, parents: d.parents.filter(p => p.id !== id) }))
+  }, [])
+
+  const qrCheckin = useCallback(async (token) => {
+    const result = await api.qrCheckin(token)
+    if (result.ok) {
+      const today = new Date().toISOString().split('T')[0]
+      const auth = JSON.parse(localStorage.getItem('iborcuha_auth') || '{}')
+      setData(d => {
+        const filtered = d.attendance.filter(a => !(a.groupId === result.groupId && a.studentId === auth.studentId && a.date === today))
+        return { ...d, attendance: [...filtered, { id: '', groupId: result.groupId, studentId: auth.studentId, date: today, present: true }] }
+      })
+    }
+    return result
+  }, [])
+
   const resetAll = useCallback(() => {
     // Not implemented for DB version — would need admin API
   }, [])
@@ -304,6 +336,7 @@ export function DataProvider({ children }) {
       saveAttendanceBulk,
       addMaterial, updateMaterial, deleteMaterial,
       addClub, updateClub, deleteClub, assignTrainerToClub, removeTrainerFromClub,
+      addParent, updateParent, deleteParent, qrCheckin,
     }}>
       {children}
     </DataContext.Provider>

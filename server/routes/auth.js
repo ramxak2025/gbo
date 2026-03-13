@@ -55,9 +55,38 @@ router.post('/login', async (req, res) => {
     })
   }
 
+  // Check parents
+  const { rows: allParents } = await pool.query('SELECT * FROM parents')
+  const parent = allParents.find(p => phonesMatch(p.phone, phone))
+  if (parent && bcrypt.compareSync(password, parent.password_hash)) {
+    // Find student and their trainer
+    const { rows: [pStudent] } = await pool.query('SELECT * FROM students WHERE id = $1', [parent.student_id])
+    if (!pStudent) return res.status(400).json({ error: 'Ученик не найден' })
+    const pTrainer = users.find(u => u.id === pStudent.trainer_id)
+    if (!pTrainer) return res.status(400).json({ error: 'Тренер не найден' })
+    const token = signToken({ userId: pTrainer.id, role: 'parent', studentId: pStudent.id, parentId: parent.id })
+    res.cookie('token', token, { httpOnly: true, maxAge: 30 * 86400000, sameSite: 'lax' })
+    return res.json({
+      token,
+      userId: pTrainer.id,
+      role: 'parent',
+      studentId: pStudent.id,
+      parentId: parent.id,
+      user: { id: pTrainer.id, name: pTrainer.name, phone: pTrainer.phone, role: pTrainer.role, avatar: pTrainer.avatar, clubName: pTrainer.club_name },
+      student: {
+        id: pStudent.id, name: pStudent.name, phone: pStudent.phone, belt: pStudent.belt,
+        weight: pStudent.weight ? parseFloat(pStudent.weight) : null,
+        status: pStudent.status, groupId: pStudent.group_id,
+        subscriptionExpiresAt: pStudent.subscription_expires_at,
+      },
+      parent: { id: parent.id, name: parent.name, phone: parent.phone, relation: parent.relation },
+    })
+  }
+
   // Error type
   if (user) return res.status(401).json({ error: 'Неверный пароль', errorType: 'trainer' })
   if (student) return res.status(401).json({ error: 'Неверный пароль', errorType: 'student' })
+  if (parent) return res.status(401).json({ error: 'Неверный пароль', errorType: 'parent' })
   return res.status(401).json({ error: 'Пользователь не найден', errorType: 'student' })
 })
 
@@ -120,6 +149,13 @@ router.get('/me', async (req, res) => {
         weight: student.weight ? parseFloat(student.weight) : null,
         status: student.status, groupId: student.group_id,
         subscriptionExpiresAt: student.subscription_expires_at,
+      }
+    }
+    if (decoded.parentId) {
+      const { rows: [parent] } = await pool.query('SELECT * FROM parents WHERE id = $1', [decoded.parentId])
+      if (parent) {
+        result.parentId = parent.id
+        result.parent = { id: parent.id, name: parent.name, phone: parent.phone, relation: parent.relation }
       }
     }
     res.json(result)

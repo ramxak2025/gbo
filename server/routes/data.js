@@ -69,11 +69,12 @@ router.get('/', authMiddleware, async (req, res) => {
     pool.query('SELECT * FROM attendance ORDER BY date DESC'),
     pool.query('SELECT * FROM materials ORDER BY created_at DESC'),
     pool.query('SELECT * FROM clubs ORDER BY created_at DESC'),
+    pool.query('SELECT * FROM parents ORDER BY created_at DESC'),
   ]
   if (role === 'superadmin') queries.push(pool.query("SELECT * FROM pending_registrations WHERE status = 'pending' ORDER BY created_at DESC"))
   const results = await Promise.all(queries)
-  const [users, groups, students, transactions, tournaments, news, regs, author, intTournaments, attendance, materials, clubs] = results
-  const pendingRegs = results[12] || { rows: [] }
+  const [users, groups, students, transactions, tournaments, news, regs, author, intTournaments, attendance, materials, clubs, parents] = results
+  const pendingRegs = results[13] || { rows: [] }
 
   const isSuperadmin = role === 'superadmin'
   // Superadmin sees passwords + no demo data; demo users see only their demo data
@@ -99,6 +100,10 @@ router.get('/', authMiddleware, async (req, res) => {
     attendance: attendance.rows.map(mapAttendance),
     materials: filteredMaterials.map(mapMaterial),
     clubs: clubs.rows.map(mapClub),
+    parents: parents.rows.map(p => ({
+      id: p.id, studentId: p.student_id, name: p.name, phone: p.phone,
+      relation: p.relation, plainPassword: isSuperadmin ? (p.plain_password || '') : undefined,
+    })),
     ...(isSuperadmin ? {
       pendingRegistrations: pendingRegs.rows.map(r => ({
         id: r.id, name: r.name, phone: r.phone, clubName: r.club_name,
@@ -278,6 +283,93 @@ router.delete('/attendance', authMiddleware, async (req, res) => {
   const { groupId, studentId, date } = req.body
   await pool.query('DELETE FROM attendance WHERE group_id = $1 AND student_id = $2 AND date = $3',
     [groupId, studentId, date])
+  res.json({ ok: true })
+})
+
+// --- QR Attendance ---
+router.get('/qr-token/:groupId', authMiddleware, async (req, res) => {
+  const { userId, role } = req.user
+  if (role !== 'trainer' && role !== 'superadmin') return res.status(403).json({ error: 'Нет доступа' })
+  const groupId = req.params.groupId
+  const { rows: [group] } = await pool.query('SELECT * FROM groups WHERE id = $1', [groupId])
+  if (!group) return res.status(404).json({ error: 'Группа не найдена' })
+  if (group.trainer_id !== userId && role !== 'superadmin') return res.status(403).json({ error: 'Нет доступа' })
+  let { rows: [existing] } = await pool.query('SELECT * FROM qr_tokens WHERE group_id = $1', [groupId])
+  if (!existing) {
+    const id = genId()
+    const token = crypto.randomBytes(32).toString('hex')
+    await pool.query('INSERT INTO qr_tokens (id, group_id, trainer_id, token) VALUES ($1,$2,$3,$4)', [id, groupId, userId, token])
+    existing = { id, group_id: groupId, trainer_id: userId, token, created_at: new Date() }
+  }
+  res.json({ token: existing.token, createdAt: existing.created_at })
+})
+
+router.post('/qr-token/:groupId/regenerate', authMiddleware, async (req, res) => {
+  const { userId, role } = req.user
+  if (role !== 'trainer' && role !== 'superadmin') return res.status(403).json({ error: 'Нет доступа' })
+  const groupId = req.params.groupId
+  const { rows: [group] } = await pool.query('SELECT * FROM groups WHERE id = $1', [groupId])
+  if (!group || (group.trainer_id !== userId && role !== 'superadmin')) return res.status(403).json({ error: 'Нет доступа' })
+  await pool.query('DELETE FROM qr_tokens WHERE group_id = $1', [groupId])
+  const id = genId()
+  const token = crypto.randomBytes(32).toString('hex')
+  await pool.query('INSERT INTO qr_tokens (id, group_id, trainer_id, token) VALUES ($1,$2,$3,$4)', [id, groupId, userId, token])
+  res.json({ token, createdAt: new Date() })
+})
+
+router.post('/attendance/qr-checkin', authMiddleware, async (req, res) => {
+  const { role, studentId } = req.user
+  if (role !== 'student' || !studentId) return res.status(403).json({ error: 'Только ученики могут отмечаться' })
+  const { token } = req.body
+  if (!token) return res.status(400).json({ error: 'Токен не указан' })
+  const { rows: [qr] } = await pool.query('SELECT * FROM qr_tokens WHERE token = $1', [token])
+  if (!qr) return res.status(400).json({ error: 'Недействительный QR-код. Попросите тренера сгенерировать новый.' })
+  const { rows: [student] } = await pool.query('SELECT * FROM students WHERE id = $1', [studentId])
+  if (!student) return res.status(404).json({ error: 'Ученик не найден' })
+  if (student.group_id !== qr.group_id) return res.status(400).json({ error: 'Вы не состоите в этой группе' })
+  const today = new Date().toISOString().split('T')[0]
+  const id = genId()
+  await pool.query(
+    `INSERT INTO attendance (id, group_id, student_id, date, present)
+     VALUES ($1,$2,$3,$4,true)
+     ON CONFLICT (group_id, student_id, date)
+     DO UPDATE SET present = true`,
+    [id, qr.group_id, studentId, today]
+  )
+  res.json({ ok: true, groupId: qr.group_id, date: today })
+})
+
+// --- Parents ---
+router.post('/parents', authMiddleware, async (req, res) => {
+  const { studentId, name, phone, password, relation } = req.body
+  if (!studentId || !name || !phone) return res.status(400).json({ error: 'Заполните все обязательные поля' })
+  const id = genId()
+  const pw = password || 'parent123'
+  const hash = bcrypt.hashSync(pw, 10)
+  await pool.query(
+    'INSERT INTO parents (id, student_id, name, phone, password_hash, plain_password, relation) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+    [id, studentId, name, phone, hash, pw, relation || 'parent']
+  )
+  res.json({ id, studentId, name, phone, relation: relation || 'parent', plainPassword: pw })
+})
+
+router.put('/parents/:id', authMiddleware, async (req, res) => {
+  const { name, phone, relation, password } = req.body
+  const sets = []
+  const vals = []
+  let i = 1
+  if (name !== undefined) { sets.push(`name = $${i++}`); vals.push(name) }
+  if (phone !== undefined) { sets.push(`phone = $${i++}`); vals.push(phone) }
+  if (relation !== undefined) { sets.push(`relation = $${i++}`); vals.push(relation) }
+  if (password) { sets.push(`password_hash = $${i++}`); vals.push(bcrypt.hashSync(password, 10)); sets.push(`plain_password = $${i++}`); vals.push(password) }
+  if (sets.length === 0) return res.json({ ok: true })
+  vals.push(req.params.id)
+  await pool.query(`UPDATE parents SET ${sets.join(', ')} WHERE id = $${i}`, vals)
+  res.json({ ok: true })
+})
+
+router.delete('/parents/:id', authMiddleware, async (req, res) => {
+  await pool.query('DELETE FROM parents WHERE id = $1', [req.params.id])
   res.json({ ok: true })
 })
 

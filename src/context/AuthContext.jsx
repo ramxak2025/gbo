@@ -38,8 +38,10 @@ export function AuthProvider({ children, onAuth }) {
       userId: result.userId,
       role: result.role,
       studentId: result.studentId || null,
+      parentId: result.parentId || null,
       user: result.user,
       student: result.student || null,
+      parent: result.parent || null,
     }
     localStorage.setItem('iborcuha_auth', JSON.stringify(authData))
     setAuth(authData)

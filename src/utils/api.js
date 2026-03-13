@@ -99,6 +99,9 @@ export const api = {
 
   // Attendance
   saveAttendanceBulk: (data) => request('/data/attendance/bulk', { method: 'POST', body: JSON.stringify(data) }),
+  getQrToken: (groupId) => request(`/data/qr-token/${groupId}`),
+  regenerateQrToken: (groupId) => request(`/data/qr-token/${groupId}/regenerate`, { method: 'POST' }),
+  qrCheckin: (token) => request('/data/attendance/qr-checkin', { method: 'POST', body: JSON.stringify({ token }) }),
 
   // Materials
   addMaterial: (data) => request('/data/materials', { method: 'POST', body: JSON.stringify(data) }),
@@ -111,6 +114,11 @@ export const api = {
   deleteClub: (id) => request(`/data/clubs/${id}`, { method: 'DELETE' }),
   assignTrainerToClub: (clubId, trainerId) => request(`/data/clubs/${clubId}/trainers`, { method: 'POST', body: JSON.stringify({ trainerId }) }),
   removeTrainerFromClub: (clubId, trainerId) => request(`/data/clubs/${clubId}/trainers/${trainerId}`, { method: 'DELETE' }),
+
+  // Parents
+  addParent: (data) => request('/data/parents', { method: 'POST', body: JSON.stringify(data) }),
+  updateParent: (id, data) => request(`/data/parents/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteParent: (id) => request(`/data/parents/${id}`, { method: 'DELETE' }),
 
   // Registration
   register: (data) => {

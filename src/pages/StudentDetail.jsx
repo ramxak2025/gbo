@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Phone, Calendar, Scale, Award, Trash2, Edit3, Camera, Dumbbell, CreditCard, ClipboardList, Key } from 'lucide-react'
+import { Phone, Calendar, Scale, Award, Trash2, Edit3, Camera, Dumbbell, CreditCard, ClipboardList, Key, ShieldCheck, UserPlus, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -75,10 +75,12 @@ export default function StudentDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { auth } = useAuth()
-  const { data, updateStudent, deleteStudent } = useData()
+  const { data, updateStudent, deleteStudent, addParent, deleteParent } = useData()
   const { dark } = useTheme()
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState(null)
+  const [showAddParent, setShowAddParent] = useState(false)
+  const [parentForm, setParentForm] = useState({ name: '', phone: '', relation: 'mother', password: 'parent123' })
 
   const student = data.students.find(s => s.id === id)
   if (!student) {
@@ -257,7 +259,69 @@ export default function StudentDetail() {
 
         {/* Attendance stats */}
         <AttendanceStats studentId={student.id} groupId={student.groupId} data={data} dark={dark} />
+
+        {/* Parents/Guardians section */}
+        {(canEdit || canEditAdmin) && (() => {
+          const parents = (data.parents || []).filter(p => p.studentId === student.id)
+          const RELATION_LABELS = { mother: 'Мать', father: 'Отец', guardian: 'Опекун', other: 'Другое', parent: 'Родитель' }
+          return (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5">
+                  <ShieldCheck size={14} className="text-blue-400" />
+                  <span className={`text-xs uppercase font-bold ${dark ? 'text-white/40' : 'text-gray-500'}`}>Родители</span>
+                </div>
+                <button onClick={() => setShowAddParent(true)} className="text-accent press-scale">
+                  <UserPlus size={16} />
+                </button>
+              </div>
+              {parents.length > 0 ? parents.map(p => (
+                <GlassCard key={p.id} className="mb-2 flex items-center justify-between">
+                  <div>
+                    <div className="font-semibold text-sm">{p.name}</div>
+                    <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+                      {RELATION_LABELS[p.relation] || p.relation} · {p.phone}
+                    </div>
+                  </div>
+                  <button onClick={() => { if (confirm('Удалить родителя?')) deleteParent(p.id) }} className="text-red-400 press-scale p-1">
+                    <X size={14} />
+                  </button>
+                </GlassCard>
+              )) : (
+                <GlassCard className="text-center">
+                  <p className={`text-xs ${dark ? 'text-white/25' : 'text-gray-400'}`}>Нет привязанных родителей</p>
+                </GlassCard>
+              )}
+            </div>
+          )
+        })()}
       </div>
+
+      {/* Add Parent Modal */}
+      <Modal open={showAddParent} onClose={() => setShowAddParent(false)} title="Добавить родителя">
+        <form onSubmit={async (e) => {
+          e.preventDefault()
+          const ph = cleanPhone(parentForm.phone)
+          if (!parentForm.name.trim() || ph.length < 11) return
+          await addParent({ studentId: student.id, name: parentForm.name.trim(), phone: ph, relation: parentForm.relation, password: parentForm.password })
+          setShowAddParent(false)
+          setParentForm({ name: '', phone: '', relation: 'mother', password: 'parent123' })
+        }} className="space-y-3">
+          <input type="text" placeholder="ФИО родителя *" value={parentForm.name} onChange={e => setParentForm(f => ({ ...f, name: e.target.value }))} className={inputCls} required />
+          <PhoneInput value={parentForm.phone} onChange={v => setParentForm(f => ({ ...f, phone: v }))} className={inputCls} required />
+          <div className="grid grid-cols-2 gap-3">
+            <select value={parentForm.relation} onChange={e => setParentForm(f => ({ ...f, relation: e.target.value }))} className={inputCls}>
+              <option value="mother">Мать</option>
+              <option value="father">Отец</option>
+              <option value="guardian">Опекун</option>
+              <option value="other">Другое</option>
+            </select>
+            <input type="text" placeholder="Пароль" value={parentForm.password} onChange={e => setParentForm(f => ({ ...f, password: e.target.value }))} className={inputCls} />
+          </div>
+          <p className={`text-[10px] ${dark ? 'text-white/25' : 'text-gray-400'}`}>Родитель сможет войти и видеть кабинет ребёнка</p>
+          <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale">Добавить</button>
+        </form>
+      </Modal>
 
       {/* Edit Modal */}
       <Modal open={editing} onClose={() => setEditing(false)} title="Редактировать">

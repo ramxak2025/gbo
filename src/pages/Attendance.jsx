@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Check, X, BarChart3, Users, Thermometer, HeartCrack, Zap } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, X, BarChart3, Users, Thermometer, HeartCrack, Zap, QrCode } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -8,6 +8,7 @@ import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
 import Avatar from '../components/Avatar'
+import QRGenerator from '../components/QRGenerator'
 
 const STATUS_CONFIG = {
   sick: { label: 'Болеет', icon: Thermometer, color: 'text-yellow-400', bg: 'bg-yellow-500/15' },
@@ -38,7 +39,7 @@ export default function Attendance() {
   const { dark } = useTheme()
 
   const [selectedDate, setSelectedDate] = useState(toDateStr(new Date()))
-  const [tab, setTab] = useState('mark') // 'mark' | 'stats'
+  const [tab, setTab] = useState('mark') // 'mark' | 'stats' | 'qr'
   const [saving, setSaving] = useState(false)
   const [localMarks, setLocalMarks] = useState({})
   const [dirty, setDirty] = useState(false)
@@ -157,6 +158,14 @@ export default function Attendance() {
             }`}
           >
             <BarChart3 size={12} className="inline mr-1" />Статистика
+          </button>
+          <button
+            onClick={() => setTab('qr')}
+            className={`px-3 py-1 rounded-full text-xs font-bold press-scale transition-all ${
+              tab === 'qr' ? 'bg-accent text-white' : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-400 border border-white/60 shadow-sm'
+            }`}
+          >
+            <QrCode size={12} className="inline mr-1" />QR
           </button>
         </div>
       </PageHeader>
@@ -313,6 +322,9 @@ export default function Attendance() {
               })}
             </div>
           </>
+        )}
+        {tab === 'qr' && (
+          <QRGenerator groupId={groupId} groupName={group.name} />
         )}
       </div>
     </Layout>
