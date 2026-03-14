@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Share, PlusSquare, Download, WifiOff, AppWindow } from 'lucide-react'
+import { X, Share, PlusSquare, Download, WifiOff, AppWindow, Smartphone } from 'lucide-react'
 
 function detectPlatform() {
   const ua = navigator.userAgent || ''
@@ -8,11 +8,28 @@ function detectPlatform() {
   return 'other'
 }
 
+function detectBrowser() {
+  const ua = navigator.userAgent || ''
+  if (/SamsungBrowser/i.test(ua)) return 'samsung'
+  if (/OPR|Opera/i.test(ua)) return 'opera'
+  if (/Firefox|FxiOS/i.test(ua)) return 'firefox'
+  if (/Edg/i.test(ua)) return 'edge'
+  if (/YaBrowser/i.test(ua)) return 'yandex'
+  if (/UCBrowser/i.test(ua)) return 'uc'
+  if (/Chrome|CriOS/i.test(ua)) return 'chrome'
+  if (/Safari/i.test(ua)) return 'safari'
+  return 'other'
+}
+
+const APK_URL = 'https://drive.google.com/uc?export=download&id=1zQps_3q2tu3_XnQeeXMXmHAbeFHjnWkV'
+
 export default function InstallPrompt() {
   const [visible, setVisible] = useState(false)
   const [animateIn, setAnimateIn] = useState(false)
   const [platform, setPlatform] = useState('android')
+  const [browser, setBrowser] = useState('chrome')
   const [deferredPrompt, setDeferredPrompt] = useState(null)
+  const [canPWA, setCanPWA] = useState(false)
 
   useEffect(() => {
     if (window.matchMedia('(display-mode: standalone)').matches) return
@@ -22,11 +39,14 @@ export default function InstallPrompt() {
     if (dismissed && Date.now() - parseInt(dismissed) < 24 * 60 * 60 * 1000) return
 
     const plat = detectPlatform()
+    const br = detectBrowser()
     setPlatform(plat)
+    setBrowser(br)
 
     const handleBeforeInstall = (e) => {
       e.preventDefault()
       setDeferredPrompt(e)
+      setCanPWA(true)
     }
     window.addEventListener('beforeinstallprompt', handleBeforeInstall)
 
@@ -43,22 +63,37 @@ export default function InstallPrompt() {
     }
   }, [])
 
-  const handleInstall = () => {
-    if (platform === 'android') {
-      const link = document.createElement('a')
-      link.href = 'https://drive.google.com/uc?export=download&id=1zQps_3q2tu3_XnQeeXMXmHAbeFHjnWkV'
-      link.download = 'iborcuha.apk'
-      link.target = '_blank'
-      link.click()
-      handleDismiss()
-      return
-    }
+  const handlePWAInstall = () => {
     if (deferredPrompt) {
       deferredPrompt.prompt()
       deferredPrompt.userChoice.then((result) => {
         if (result.outcome === 'accepted') handleDismiss()
         setDeferredPrompt(null)
       })
+    }
+  }
+
+  const handleAPKDownload = () => {
+    const link = document.createElement('a')
+    link.href = APK_URL
+    link.download = 'iborcuha.apk'
+    link.target = '_blank'
+    link.rel = 'noopener noreferrer'
+    link.click()
+    handleDismiss()
+  }
+
+  const handleInstall = () => {
+    if (platform === 'android') {
+      if (canPWA) {
+        handlePWAInstall()
+      } else {
+        handleAPKDownload()
+      }
+      return
+    }
+    if (deferredPrompt) {
+      handlePWAInstall()
     }
   }
 
@@ -135,17 +170,38 @@ export default function InstallPrompt() {
               ))}
             </div>
 
-            {/* Android: install button + fallback steps; iOS: steps only */}
+            {/* Android: PWA install + APK fallback; iOS: steps */}
             {platform === 'android' ? (
               <div className="mb-4">
-                <button
-                  onClick={handleInstall}
-                  className="w-full py-3.5 rounded-2xl text-white font-bold text-sm press-scale flex items-center justify-center gap-2.5 shadow-lg mb-3 bg-gradient-to-r from-purple-600 to-indigo-600 shadow-purple-600/25"
-                >
-                  <Download size={18} />
-                  Скачать приложение
-                </button>
-                <div className="text-white/30 text-[11px] text-center">APK · 52 МБ</div>
+                {canPWA ? (
+                  <>
+                    <button
+                      onClick={handlePWAInstall}
+                      className="w-full py-3.5 rounded-2xl text-white font-bold text-sm press-scale flex items-center justify-center gap-2.5 shadow-lg mb-3 bg-gradient-to-r from-purple-600 to-indigo-600 shadow-purple-600/25"
+                    >
+                      <Smartphone size={18} />
+                      Установить приложение
+                    </button>
+                    <button
+                      onClick={handleAPKDownload}
+                      className="w-full py-2.5 rounded-xl text-white/60 text-xs press-scale flex items-center justify-center gap-2 border border-white/10"
+                    >
+                      <Download size={14} />
+                      Или скачать APK (52 МБ)
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleAPKDownload}
+                      className="w-full py-3.5 rounded-2xl text-white font-bold text-sm press-scale flex items-center justify-center gap-2.5 shadow-lg mb-3 bg-gradient-to-r from-purple-600 to-indigo-600 shadow-purple-600/25"
+                    >
+                      <Download size={18} />
+                      Скачать приложение
+                    </button>
+                    <div className="text-white/30 text-[11px] text-center">APK · 52 МБ · Работает на любом Android</div>
+                  </>
+                )}
               </div>
             ) : (
               <div className="space-y-2.5 mb-4">

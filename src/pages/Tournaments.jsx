@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Calendar, MapPin, Trophy, Swords, Check, Archive, ChevronDown, ChevronUp, Scale, ScrollText, Medal, Menu, X } from 'lucide-react'
+import { Plus, Calendar, MapPin, Trophy, Swords, Check, Archive, ChevronDown, ChevronUp, Scale, ScrollText, Medal, Menu, X, Users } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -14,11 +14,17 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-function TournamentCard({ t, dark, onClick }) {
+function formatDateShort(iso) {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+}
+
+function TournamentCard({ t, dark, onClick, registrations }) {
   const [openSection, setOpenSection] = useState(null)
   const isPast = new Date(t.date) < new Date()
   const sportLabel = t.sportType ? getSportLabel(t.sportType) : null
   const wc = t.weightCategories || []
+  const regCount = registrations?.filter(r => r.tournamentId === t.id).length || 0
 
   const toggleSection = (section, e) => {
     e.stopPropagation()
@@ -26,158 +32,183 @@ function TournamentCard({ t, dark, onClick }) {
   }
 
   return (
-    <div className={`rounded-[24px] overflow-hidden backdrop-blur-xl transition-all ${
+    <div className={`rounded-[24px] overflow-hidden backdrop-blur-xl transition-all duration-300 press-scale ${
       dark
-        ? 'bg-white/[0.04] border border-white/[0.07]'
-        : 'bg-white/70 border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
+        ? 'bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.07]'
+        : 'bg-white/80 border border-white/60 shadow-[0_4px_30px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_40px_rgba(0,0,0,0.12)]'
     }`}>
       {/* Cover / Header */}
-      <div className="cursor-pointer press-scale" onClick={onClick}>
+      <div className="cursor-pointer" onClick={onClick}>
         {t.coverImage ? (
           <div className="relative">
-            <img src={t.coverImage} alt={t.title} className="w-full h-44 object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-4">
-              <h3 className="font-black text-lg text-white leading-tight">{t.title}</h3>
-              <div className="flex items-center gap-3 mt-1.5 text-white/70 text-xs">
-                <span className="flex items-center gap-1"><Calendar size={11} />{formatDate(t.date)}</span>
-                {t.location && <span className="flex items-center gap-1"><MapPin size={11} />{t.location}</span>}
+            <img src={t.coverImage} alt={t.title} className="w-full h-48 object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-5">
+              <h3 className="font-black text-lg text-white leading-tight drop-shadow-lg">{t.title}</h3>
+              <div className="flex items-center gap-3 mt-2 text-white/80 text-xs">
+                <span className="flex items-center gap-1.5"><Calendar size={12} />{formatDate(t.date)}</span>
+                {t.location && <span className="flex items-center gap-1.5 truncate"><MapPin size={12} />{t.location}</span>}
               </div>
             </div>
             {isPast && (
-              <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur text-[10px] font-bold text-white/70 uppercase">
+              <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] font-bold text-white/80 uppercase tracking-wide">
                 Прошёл
               </div>
             )}
             {sportLabel && (
-              <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-accent/90 backdrop-blur text-[10px] font-bold text-white uppercase">
+              <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-accent/90 backdrop-blur-md text-[10px] font-bold text-white uppercase tracking-wide shadow-lg">
                 {sportLabel}
+              </div>
+            )}
+            {regCount > 0 && (
+              <div className="absolute top-3 right-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-500/80 backdrop-blur-md text-[10px] font-bold text-white" style={isPast ? {right: 'auto', left: 'auto', top: 'auto', bottom: '60px', right: '12px'} : {}}>
+                <Users size={10} />{regCount}
               </div>
             )}
           </div>
         ) : (
           <div className="p-5">
-            <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap mb-2">
                   {sportLabel && (
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
                       dark ? 'bg-accent/20 text-accent-light' : 'bg-red-50 text-red-600'
                     }`}>{sportLabel}</span>
                   )}
                   {isPast && (
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${
                       dark ? 'bg-white/[0.08] text-white/40' : 'bg-gray-100 text-gray-400'
                     }`}>Прошёл</span>
                   )}
                 </div>
-                <h3 className="font-black text-base mt-1.5">{t.title}</h3>
-                <div className={`flex items-center gap-3 mt-1.5 text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>
-                  <span className="flex items-center gap-1"><Calendar size={11} />{formatDate(t.date)}</span>
-                  {t.location && <span className="flex items-center gap-1"><MapPin size={11} />{t.location}</span>}
+                <h3 className={`font-black text-base leading-snug ${dark ? 'text-white' : 'text-gray-900'}`}>{t.title}</h3>
+                <div className={`flex items-center gap-3 mt-2 text-xs ${dark ? 'text-white/45' : 'text-gray-500'}`}>
+                  <span className="flex items-center gap-1.5"><Calendar size={12} />{formatDate(t.date)}</span>
+                  {t.location && <span className="flex items-center gap-1.5 truncate"><MapPin size={12} />{t.location}</span>}
                 </div>
               </div>
+              {/* Date badge for cards without cover */}
+              <div className={`shrink-0 w-14 h-14 rounded-2xl flex flex-col items-center justify-center ${
+                isPast
+                  ? dark ? 'bg-white/[0.06]' : 'bg-gray-100'
+                  : 'bg-gradient-to-br from-accent/20 to-purple-500/20'
+              }`}>
+                <span className={`text-lg font-black leading-none ${
+                  isPast ? dark ? 'text-white/30' : 'text-gray-400' : 'text-accent'
+                }`}>{new Date(t.date).getDate()}</span>
+                <span className={`text-[9px] uppercase font-bold mt-0.5 ${
+                  isPast ? dark ? 'text-white/20' : 'text-gray-300' : dark ? 'text-accent-light/60' : 'text-accent/60'
+                }`}>{new Date(t.date).toLocaleDateString('ru-RU', { month: 'short' })}</span>
+              </div>
             </div>
+            {regCount > 0 && (
+              <div className={`flex items-center gap-1.5 mt-2 text-[11px] font-semibold ${dark ? 'text-green-400/70' : 'text-green-600'}`}>
+                <Users size={11} />{regCount} {regCount === 1 ? 'участник' : regCount < 5 ? 'участника' : 'участников'}
+              </div>
+            )}
           </div>
         )}
       </div>
 
       {/* Quick info pills */}
-      <div className="px-4 pb-3 flex flex-wrap gap-2">
-        {wc.length > 0 && (
-          <button
-            onClick={(e) => toggleSection('weights', e)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold press-scale transition-all ${
-              openSection === 'weights'
-                ? 'bg-accent text-white'
-                : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/80 text-gray-600 border border-white/70 shadow-sm'
-            }`}
-          >
-            <Scale size={12} />
-            Весовые ({wc.length})
-            {openSection === 'weights' ? <X size={10} /> : <Menu size={10} />}
-          </button>
-        )}
-        {t.regulations && (
-          <button
-            onClick={(e) => toggleSection('regulations', e)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold press-scale transition-all ${
-              openSection === 'regulations'
-                ? 'bg-accent text-white'
-                : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/80 text-gray-600 border border-white/70 shadow-sm'
-            }`}
-          >
-            <ScrollText size={12} />
-            Положение
-            {openSection === 'regulations' ? <X size={10} /> : <Menu size={10} />}
-          </button>
-        )}
-        {t.rules && (
-          <button
-            onClick={(e) => toggleSection('rules', e)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold press-scale transition-all ${
-              openSection === 'rules'
-                ? 'bg-accent text-white'
-                : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/80 text-gray-600 border border-white/70 shadow-sm'
-            }`}
-          >
-            <ScrollText size={12} />
-            Правила
-            {openSection === 'rules' ? <X size={10} /> : <Menu size={10} />}
-          </button>
-        )}
-        {t.prizes && (
-          <button
-            onClick={(e) => toggleSection('prizes', e)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold press-scale transition-all ${
-              openSection === 'prizes'
-                ? 'bg-accent text-white'
-                : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/80 text-gray-600 border border-white/70 shadow-sm'
-            }`}
-          >
-            <Medal size={12} />
-            Призы
-            {openSection === 'prizes' ? <X size={10} /> : <Menu size={10} />}
-          </button>
-        )}
-        {t.matsCount > 1 && (
-          <span className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-bold ${
-            dark ? 'bg-white/[0.06] text-white/40' : 'bg-white/80 text-gray-500 border border-white/70'
-          }`}>
-            {t.matsCount} ковр.
-          </span>
-        )}
-      </div>
+      {(wc.length > 0 || t.regulations || t.rules || t.prizes || t.matsCount > 1) && (
+        <div className="px-4 pb-4 flex flex-wrap gap-2">
+          {wc.length > 0 && (
+            <button
+              onClick={(e) => toggleSection('weights', e)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold press-scale transition-all duration-200 ${
+                openSection === 'weights'
+                  ? 'bg-accent text-white shadow-lg shadow-accent/25'
+                  : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white text-gray-600 border border-gray-200 shadow-sm'
+              }`}
+            >
+              <Scale size={12} />
+              {wc.length} вес.кат.
+              {openSection === 'weights' ? <X size={10} /> : <ChevronDown size={10} />}
+            </button>
+          )}
+          {t.regulations && (
+            <button
+              onClick={(e) => toggleSection('regulations', e)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold press-scale transition-all duration-200 ${
+                openSection === 'regulations'
+                  ? 'bg-accent text-white shadow-lg shadow-accent/25'
+                  : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white text-gray-600 border border-gray-200 shadow-sm'
+              }`}
+            >
+              <ScrollText size={12} />
+              Положение
+              {openSection === 'regulations' ? <X size={10} /> : <ChevronDown size={10} />}
+            </button>
+          )}
+          {t.rules && (
+            <button
+              onClick={(e) => toggleSection('rules', e)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold press-scale transition-all duration-200 ${
+                openSection === 'rules'
+                  ? 'bg-accent text-white shadow-lg shadow-accent/25'
+                  : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white text-gray-600 border border-gray-200 shadow-sm'
+              }`}
+            >
+              <ScrollText size={12} />
+              Правила
+              {openSection === 'rules' ? <X size={10} /> : <ChevronDown size={10} />}
+            </button>
+          )}
+          {t.prizes && (
+            <button
+              onClick={(e) => toggleSection('prizes', e)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold press-scale transition-all duration-200 ${
+                openSection === 'prizes'
+                  ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/25'
+                  : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white text-gray-600 border border-gray-200 shadow-sm'
+              }`}
+            >
+              <Medal size={12} />
+              Призы
+              {openSection === 'prizes' ? <X size={10} /> : <ChevronDown size={10} />}
+            </button>
+          )}
+          {t.matsCount > 1 && (
+            <span className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-bold ${
+              dark ? 'bg-white/[0.06] text-white/40' : 'bg-white text-gray-500 border border-gray-200'
+            }`}>
+              {t.matsCount} ковр.
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Expandable sections */}
       {openSection === 'weights' && wc.length > 0 && (
-        <div className={`mx-4 mb-4 p-3 rounded-[16px] ${dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white/50 border border-white/50'}`}>
-          <div className={`text-[10px] uppercase font-bold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Весовые категории</div>
-          <div className="flex flex-wrap gap-1.5">
+        <div className={`mx-4 mb-4 p-4 rounded-[18px] animate-in ${dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-gray-50/80 border border-gray-100'}`}>
+          <div className={`text-[10px] uppercase font-bold tracking-wider mb-2.5 ${dark ? 'text-white/40' : 'text-gray-400'}`}>Весовые категории</div>
+          <div className="flex flex-wrap gap-2">
             {wc.map((w, i) => (
-              <span key={i} className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                dark ? 'bg-purple-500/15 text-purple-300' : 'bg-purple-100 text-purple-600'
+              <span key={i} className={`px-3 py-1.5 rounded-xl text-xs font-bold ${
+                dark ? 'bg-purple-500/15 text-purple-300 border border-purple-500/10' : 'bg-purple-50 text-purple-700 border border-purple-100'
               }`}>{w}</span>
             ))}
           </div>
         </div>
       )}
       {openSection === 'regulations' && t.regulations && (
-        <div className={`mx-4 mb-4 p-3 rounded-[16px] ${dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white/50 border border-white/50'}`}>
-          <div className={`text-[10px] uppercase font-bold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Положение</div>
-          <p className={`text-xs leading-relaxed whitespace-pre-line ${dark ? 'text-white/60' : 'text-gray-600'}`}>{t.regulations}</p>
+        <div className={`mx-4 mb-4 p-4 rounded-[18px] animate-in ${dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-gray-50/80 border border-gray-100'}`}>
+          <div className={`text-[10px] uppercase font-bold tracking-wider mb-2.5 ${dark ? 'text-white/40' : 'text-gray-400'}`}>Положение</div>
+          <p className={`text-[13px] leading-relaxed whitespace-pre-line ${dark ? 'text-white/60' : 'text-gray-600'}`}>{t.regulations}</p>
         </div>
       )}
       {openSection === 'rules' && t.rules && (
-        <div className={`mx-4 mb-4 p-3 rounded-[16px] ${dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white/50 border border-white/50'}`}>
-          <div className={`text-[10px] uppercase font-bold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Правила</div>
-          <p className={`text-xs leading-relaxed whitespace-pre-line ${dark ? 'text-white/60' : 'text-gray-600'}`}>{t.rules}</p>
+        <div className={`mx-4 mb-4 p-4 rounded-[18px] animate-in ${dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-gray-50/80 border border-gray-100'}`}>
+          <div className={`text-[10px] uppercase font-bold tracking-wider mb-2.5 ${dark ? 'text-white/40' : 'text-gray-400'}`}>Правила</div>
+          <p className={`text-[13px] leading-relaxed whitespace-pre-line ${dark ? 'text-white/60' : 'text-gray-600'}`}>{t.rules}</p>
         </div>
       )}
       {openSection === 'prizes' && t.prizes && (
-        <div className={`mx-4 mb-4 p-3 rounded-[16px] ${dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white/50 border border-white/50'}`}>
-          <div className={`text-[10px] uppercase font-bold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Призы</div>
-          <p className={`text-xs leading-relaxed whitespace-pre-line ${dark ? 'text-white/60' : 'text-gray-600'}`}>{t.prizes}</p>
+        <div className={`mx-4 mb-4 p-4 rounded-[18px] animate-in ${dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-gray-50/80 border border-gray-100'}`}>
+          <div className={`text-[10px] uppercase font-bold tracking-wider mb-2.5 ${dark ? 'text-amber-400/60' : 'text-amber-600'}`}>Призы</div>
+          <p className={`text-[13px] leading-relaxed whitespace-pre-line ${dark ? 'text-white/60' : 'text-gray-600'}`}>{t.prizes}</p>
         </div>
       )}
     </div>
@@ -223,33 +254,49 @@ export default function Tournaments() {
       ? (t.brackets?.participants?.length || 0)
       : cats.reduce((s, c) => s + (c.participants?.length || 0), 0)
     const catCount = isLegacy ? 1 : cats.length
+    const sportLabel = t.sportType ? getSportLabel(t.sportType) : null
+
     return (
-      <GlassCard
+      <div
         key={t.id}
         onClick={() => navigate(`/internal-tournament/${t.id}`)}
-        className={`border ${t.status === 'completed' ? 'border-white/[0.06]' : 'border-accent/20'}`}
+        className={`rounded-[20px] overflow-hidden cursor-pointer press-scale transition-all duration-300 ${
+          dark
+            ? `bg-white/[0.05] border ${t.status === 'completed' ? 'border-white/[0.06]' : 'border-accent/20 shadow-[0_0_20px_rgba(139,92,246,0.05)]'} hover:bg-white/[0.07]`
+            : `bg-white/80 border ${t.status === 'completed' ? 'border-gray-200' : 'border-accent/20 shadow-[0_4px_20px_rgba(139,92,246,0.08)]'} hover:shadow-lg`
+        }`}
       >
-        <div className="flex items-center justify-between">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold text-sm truncate">{t.title}</h3>
+        {t.coverImage && (
+          <div className="relative">
+            <img src={t.coverImage} alt={t.title} className="w-full h-28 object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-3">
+              <h3 className="font-bold text-sm text-white truncate">{t.title}</h3>
+            </div>
+          </div>
+        )}
+        <div className={`p-4 ${t.coverImage ? 'pt-2' : ''}`}>
+          {!t.coverImage && (
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className={`font-bold text-sm truncate ${dark ? 'text-white' : 'text-gray-900'}`}>{t.title}</h3>
               {t.status === 'completed' && (
                 <span className="shrink-0 w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
                   <Check size={12} className="text-green-400" />
                 </span>
               )}
             </div>
-            <div className={`flex items-center gap-2 mt-1 text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>
-              <Calendar size={11} />
-              <span>{formatDate(t.date)}</span>
-              <span>•</span>
-              <span>{catCount} {catCount === 1 ? 'весовая' : 'весовых'}</span>
-              <span>•</span>
-              <span>{totalParticipants} чел.</span>
-            </div>
+          )}
+          <div className={`flex items-center gap-3 text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+            <span className="flex items-center gap-1"><Calendar size={11} />{formatDateShort(t.date)}</span>
+            {sportLabel && <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${dark ? 'bg-accent/15 text-accent-light' : 'bg-red-50 text-red-600'}`}>{sportLabel}</span>}
+            <span className={`ml-auto flex items-center gap-1 ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+              <Users size={10} />{totalParticipants}
+              <span className="mx-0.5">·</span>
+              <Scale size={10} />{catCount}
+            </span>
           </div>
         </div>
-      </GlassCard>
+      </div>
     )
   }
 
@@ -272,14 +319,14 @@ export default function Tournaments() {
         </div>
       </PageHeader>
 
-      <div className="px-4 space-y-4 slide-in">
+      <div className="px-4 space-y-5 pb-4 slide-in">
         {/* Active internal tournaments */}
         {activeInternalTournaments.length > 0 && (
           <div>
-            <h2 className={`text-sm uppercase font-bold mb-3 flex items-center gap-2 ${dark ? 'text-white/50' : 'text-gray-500'}`}>
+            <h2 className={`text-xs uppercase font-bold mb-3 flex items-center gap-2 tracking-wider ${dark ? 'text-white/50' : 'text-gray-500'}`}>
               <Swords size={14} className="text-accent" /> Клубные турниры
             </h2>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {activeInternalTournaments.map(renderInternalCard)}
             </div>
           </div>
@@ -290,16 +337,16 @@ export default function Tournaments() {
           <div>
             <button
               onClick={() => setShowArchive(!showArchive)}
-              className={`w-full flex items-center justify-between py-2 text-sm uppercase font-bold ${dark ? 'text-white/40' : 'text-gray-400'}`}
+              className={`w-full flex items-center justify-between py-2.5 text-xs uppercase font-bold tracking-wider ${dark ? 'text-white/35' : 'text-gray-400'}`}
             >
               <div className="flex items-center gap-2">
-                <Archive size={14} className={dark ? 'text-white/30' : 'text-gray-400'} />
+                <Archive size={14} className={dark ? 'text-white/25' : 'text-gray-300'} />
                 <span>Архив ({archivedInternalTournaments.length})</span>
               </div>
               {showArchive ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
             {showArchive && (
-              <div className="space-y-2 mt-2">
+              <div className="space-y-3 mt-2">
                 {archivedInternalTournaments.map(renderInternalCard)}
               </div>
             )}
@@ -310,8 +357,8 @@ export default function Tournaments() {
         {sorted.length > 0 && (
           <div>
             {(activeInternalTournaments.length > 0 || archivedInternalTournaments.length > 0) && (
-              <h2 className={`text-sm uppercase font-bold mb-3 flex items-center gap-2 ${dark ? 'text-white/50' : 'text-gray-500'}`}>
-                <Trophy size={14} className="text-orange-400" /> Официальные турниры
+              <h2 className={`text-xs uppercase font-bold mb-3 flex items-center gap-2 tracking-wider ${dark ? 'text-white/50' : 'text-gray-500'}`}>
+                <Trophy size={14} className="text-amber-400" /> Официальные турниры
               </h2>
             )}
             <div className="space-y-4">
@@ -321,6 +368,7 @@ export default function Tournaments() {
                   t={t}
                   dark={dark}
                   onClick={() => navigate(`/tournaments/${t.id}`)}
+                  registrations={data.tournamentRegistrations}
                 />
               ))}
             </div>
@@ -328,17 +376,24 @@ export default function Tournaments() {
         )}
 
         {sorted.length === 0 && allInternal.length === 0 && (
-          <div className="text-center py-12">
-            <Swords size={48} className={`mx-auto mb-3 ${dark ? 'text-white/10' : 'text-gray-200'}`} />
-            <p className={`text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>
+          <div className="text-center py-16">
+            <div className={`w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center ${
+              dark ? 'bg-white/[0.04]' : 'bg-gray-50'
+            }`}>
+              <Swords size={36} className={dark ? 'text-white/15' : 'text-gray-200'} />
+            </div>
+            <p className={`text-sm font-medium ${dark ? 'text-white/35' : 'text-gray-400'}`}>
               Нет турниров
+            </p>
+            <p className={`text-xs mt-1 ${dark ? 'text-white/20' : 'text-gray-300'}`}>
+              {auth.role === 'trainer' ? 'Создайте клубный турнир для ваших учеников' : 'Турниры появятся здесь'}
             </p>
             {auth.role === 'trainer' && (
               <button
                 onClick={() => navigate('/create-internal-tournament')}
-                className="mt-3 px-5 py-2 rounded-full bg-accent text-white text-sm font-bold press-scale"
+                className="mt-4 px-6 py-2.5 rounded-full bg-accent text-white text-sm font-bold press-scale shadow-lg shadow-accent/25"
               >
-                Создать клубный турнир
+                Создать турнир
               </button>
             )}
           </div>

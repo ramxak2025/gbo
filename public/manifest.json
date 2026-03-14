@@ -1,18 +1,28 @@
 {
-  "name": "iBorcuha",
+  "name": "iBorcuha — платформа для тренеров",
   "short_name": "iBorcuha",
   "description": "SaaS-платформа для тренеров единоборств",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#050505",
   "theme_color": "#050505",
   "orientation": "portrait",
+  "lang": "ru",
+  "categories": ["sports", "education", "productivity"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/logo.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icon-192.png",

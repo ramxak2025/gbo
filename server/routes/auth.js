@@ -17,9 +17,9 @@ router.post('/login', async (req, res) => {
     const digits = normalizePhone(phone)
     if (digits.length < 10) return res.status(400).json({ error: 'Введите корректный номер телефона' })
 
-    // Indexed search by last 10 digits instead of loading ALL users
+    // Indexed search by normalized last 10 digits — works with any phone format
     const { rows: [user] } = await pool.query(
-      `SELECT * FROM users WHERE phone LIKE $1 LIMIT 1`, [`%${digits}`]
+      `SELECT * FROM users WHERE RIGHT(regexp_replace(phone, '[^0-9]', '', 'g'), 10) = $1 LIMIT 1`, [digits]
     )
     if (user && await bcrypt.compare(password, user.password_hash)) {
       const token = signToken({ userId: user.id, role: user.role })
@@ -32,9 +32,9 @@ router.post('/login', async (req, res) => {
       })
     }
 
-    // Check students — indexed query
+    // Check students — normalized phone search
     const { rows: [student] } = await pool.query(
-      `SELECT * FROM students WHERE phone LIKE $1 LIMIT 1`, [`%${digits}`]
+      `SELECT * FROM students WHERE RIGHT(regexp_replace(phone, '[^0-9]', '', 'g'), 10) = $1 LIMIT 1`, [digits]
     )
     if (student && await bcrypt.compare(password, student.password_hash)) {
       const { rows: [trainer] } = await pool.query('SELECT * FROM users WHERE id = $1', [student.trainer_id])
@@ -56,9 +56,9 @@ router.post('/login', async (req, res) => {
       })
     }
 
-    // Check parents — indexed query
+    // Check parents — normalized phone search
     const { rows: [parent] } = await pool.query(
-      `SELECT * FROM parents WHERE phone LIKE $1 LIMIT 1`, [`%${digits}`]
+      `SELECT * FROM parents WHERE RIGHT(regexp_replace(phone, '[^0-9]', '', 'g'), 10) = $1 LIMIT 1`, [digits]
     )
     if (parent && await bcrypt.compare(password, parent.password_hash)) {
       const { rows: [pStudent] } = await pool.query('SELECT * FROM students WHERE id = $1', [parent.student_id])
@@ -106,11 +106,15 @@ router.post('/register', async (req, res) => {
     if (digits.length < 10) return res.status(400).json({ error: 'Введите корректный номер телефона' })
 
     // Check if phone already exists in users
-    const { rows: existingUsers } = await pool.query('SELECT id FROM users WHERE phone LIKE $1', [`%${digits}`])
+    const { rows: existingUsers } = await pool.query(
+      `SELECT id FROM users WHERE RIGHT(regexp_replace(phone, '[^0-9]', '', 'g'), 10) = $1`, [digits]
+    )
     if (existingUsers.length > 0) return res.status(400).json({ error: 'Этот номер уже зарегистрирован' })
 
     // Check if phone already has a pending request
-    const { rows: existingRegs } = await pool.query("SELECT id FROM pending_registrations WHERE phone LIKE $1 AND status = 'pending'", [`%${digits}`])
+    const { rows: existingRegs } = await pool.query(
+      `SELECT id FROM pending_registrations WHERE RIGHT(regexp_replace(phone, '[^0-9]', '', 'g'), 10) = $1 AND status = 'pending'`, [digits]
+    )
     if (existingRegs.length > 0) return res.status(400).json({ error: 'Заявка с этим номером уже отправлена. Ожидайте одобрения.' })
 
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
