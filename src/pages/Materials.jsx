@@ -420,11 +420,11 @@ export default function Materials() {
                 </div>
               )}
 
-              {/* Collapsed: horizontal card with thumbnail */}
+              {/* Collapsed: card with prominent thumbnail cover */}
               {!isExpanded && (
-                <div className="flex gap-3 -mx-4 -mt-4 -mb-4 cursor-pointer" onClick={() => setExpandedId(m.id)}>
-                  {/* Thumbnail on the left */}
-                  <div className={`relative w-28 h-24 shrink-0 flex items-center justify-center overflow-hidden rounded-l-[20px] ${
+                <div className="-mx-4 -mt-4 -mb-4 cursor-pointer" onClick={() => setExpandedId(m.id)}>
+                  {/* Video cover / thumbnail */}
+                  <div className={`relative w-full aspect-video flex items-center justify-center overflow-hidden rounded-t-[20px] ${
                     thumb ? '' : embed?.type === 'vk'
                       ? 'bg-gradient-to-br from-blue-600/20 via-blue-500/10 to-indigo-600/20'
                       : dark ? 'bg-white/[0.04]' : 'bg-black/[0.03]'
@@ -432,51 +432,60 @@ export default function Materials() {
                     {thumb ? (
                       <img src={thumb} alt={m.title} className="w-full h-full object-cover" />
                     ) : (
-                      <Video size={24} className={embed?.type === 'vk' ? 'text-blue-400' : dark ? 'text-white/15' : 'text-gray-300'} />
+                      <Video size={36} className={embed?.type === 'vk' ? 'text-blue-400' : dark ? 'text-white/15' : 'text-gray-300'} />
                     )}
+                    {/* Play button overlay */}
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${thumb ? 'bg-black/50' : dark ? 'bg-black/30' : 'bg-black/15'}`}>
-                        <Play size={14} className="text-white ml-0.5" fill="white" />
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 ${
+                        thumb ? 'bg-black/50 backdrop-blur-sm' : dark ? 'bg-black/30' : 'bg-black/15'
+                      }`}>
+                        <Play size={20} className="text-white ml-0.5" fill="white" />
                       </div>
                     </div>
+                    {/* Platform badge */}
                     {embed?.type && (
-                      <span className={`absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${
+                      <span className={`absolute top-2.5 left-2.5 px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase shadow-sm ${
                         embed.type === 'youtube' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'
-                      }`}>{embed.type === 'youtube' ? 'YT' : 'VK'}</span>
+                      }`}>{embed.type === 'youtube' ? 'YouTube' : 'VK Video'}</span>
+                    )}
+                    {/* Favorite button on cover */}
+                    <button onClick={(e) => { e.stopPropagation(); toggleFavorite(m.id) }}
+                      className="absolute top-2.5 right-2.5 press-scale p-1.5 rounded-xl bg-black/30 backdrop-blur-sm">
+                      <Heart size={14} className={isFav ? 'text-red-400' : 'text-white/70'} fill={isFav ? 'currentColor' : 'none'} strokeWidth={2} />
+                    </button>
+                    {/* Pinned badge */}
+                    {pinnedGroups.length > 0 && (
+                      <span className="absolute bottom-2.5 left-2.5 flex items-center gap-1 px-2 py-0.5 rounded-lg bg-green-500/90 text-[9px] font-bold text-white shadow-sm">
+                        <MapPin size={8} /> Отработка
+                      </span>
                     )}
                   </div>
 
-                  {/* Info on the right */}
-                  <div className="flex-1 min-w-0 py-3 pr-3 flex flex-col justify-center">
-                    <div className="flex items-start gap-1">
-                      <h3 className="font-bold text-sm truncate flex-1">{m.title}</h3>
-                      <button onClick={(e) => { e.stopPropagation(); toggleFavorite(m.id) }} className="press-scale p-0.5 shrink-0">
-                        <Heart size={14} className={isFav ? 'text-red-400' : dark ? 'text-white/20' : 'text-gray-300'} fill={isFav ? 'currentColor' : 'none'} strokeWidth={2} />
-                      </button>
-                    </div>
-                    {m.description && (
-                      <p className={`text-[11px] mt-0.5 line-clamp-1 ${dark ? 'text-white/35' : 'text-gray-500'}`}>{m.description}</p>
-                    )}
-                    <div className="flex flex-wrap items-center gap-1 mt-1.5">
-                      {m.category && (
-                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${dark ? 'bg-white/[0.06] text-white/40' : 'bg-gray-100 text-gray-500'}`}>{m.category}</span>
-                      )}
-                      {pinnedGroups.length > 0 && (
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400 flex items-center gap-0.5">
-                          <MapPin size={7} /> Отработка
-                        </span>
-                      )}
+                  {/* Info below thumbnail */}
+                  <div className="px-4 py-3">
+                    <div className="flex items-start gap-2">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-bold text-[14px] line-clamp-2 leading-snug">{m.title}</h3>
+                        {m.description && (
+                          <p className={`text-[11px] mt-0.5 line-clamp-1 ${dark ? 'text-white/35' : 'text-gray-500'}`}>{m.description}</p>
+                        )}
+                      </div>
                       {isTrainer && (
-                        <div className="ml-auto flex items-center gap-0.5">
-                          <button onClick={(e) => { e.stopPropagation(); startEdit(m) }} className="press-scale p-1">
-                            <Edit3 size={12} className={dark ? 'text-white/30' : 'text-gray-400'} />
+                        <div className="flex items-center gap-0.5 shrink-0 -mr-1">
+                          <button onClick={(e) => { e.stopPropagation(); startEdit(m) }} className="press-scale p-1.5">
+                            <Edit3 size={13} className={dark ? 'text-white/25' : 'text-gray-400'} />
                           </button>
-                          <button onClick={(e) => { e.stopPropagation(); handleDelete(m.id) }} className="press-scale p-1">
-                            <Trash2 size={12} className="text-red-400" />
+                          <button onClick={(e) => { e.stopPropagation(); handleDelete(m.id) }} className="press-scale p-1.5">
+                            <Trash2 size={13} className="text-red-400/60" />
                           </button>
                         </div>
                       )}
                     </div>
+                    {m.category && (
+                      <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-lg ${dark ? 'bg-white/[0.06] text-white/40' : 'bg-gray-100 text-gray-500'}`}>{m.category}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
