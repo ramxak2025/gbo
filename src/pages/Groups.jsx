@@ -157,13 +157,16 @@ export default function Groups() {
   )
 
   const TimePicker = ({ label, value, onChange }) => (
-    <div className="flex-1">
+    <div className="flex-1 min-w-0">
       <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>{label}</div>
       <input
         type="time"
         value={value}
         onChange={e => onChange(e.target.value)}
-        className={inputCls}
+        className={`w-full px-3 py-3 rounded-[16px] text-sm outline-none ${dark
+          ? 'bg-white/[0.07] border border-white/[0.08] text-white focus:border-purple-500/50 focus:bg-white/[0.1]'
+          : 'bg-white/70 border border-white/60 text-gray-900 focus:border-purple-500 shadow-sm'
+        }`}
       />
     </div>
   )

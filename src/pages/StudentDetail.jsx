@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Phone, Calendar, Scale, Award, Trash2, Edit3, Camera, Dumbbell, CreditCard, ClipboardList, Key, ShieldCheck, UserPlus, X } from 'lucide-react'
+import { Phone, Calendar, Scale, Award, Trash2, Edit3, Camera, Dumbbell, CreditCard, ClipboardList, Key, ShieldCheck, UserPlus, X, Percent } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -125,6 +125,7 @@ export default function StudentDetail() {
       birthDate: form.birthDate,
       trainingStartDate: form.trainingStartDate || null,
       subscriptionExpiresAt: form.subscriptionExpiresAt || null,
+      discount: parseInt(form.discount) || 0,
       groupIds: form.editGroupIds,
     }
     if (form.newPassword) {
@@ -247,6 +248,18 @@ export default function StudentDetail() {
             </div>
             <span className={`font-bold ${expired ? 'text-red-400' : ''}`}>{formatDate(student.subscriptionExpiresAt)}</span>
           </div>
+          {student.discount > 0 && group?.subscriptionCost > 0 && (
+            <div className={`mt-2 pt-2 flex items-center justify-between ${dark ? 'border-t border-white/[0.06]' : 'border-t border-black/[0.05]'}`}>
+              <div className="flex items-center gap-2">
+                <Percent size={12} className="text-green-400" />
+                <span className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>Скидка {student.discount}%</span>
+              </div>
+              <div className="text-right">
+                <span className={`text-xs line-through mr-2 ${dark ? 'text-white/25' : 'text-gray-400'}`}>{group.subscriptionCost.toLocaleString('ru-RU')} ₽</span>
+                <span className="font-bold text-green-400 text-sm">{Math.round(group.subscriptionCost * (1 - student.discount / 100)).toLocaleString('ru-RU')} ₽</span>
+              </div>
+            </div>
+          )}
         </GlassCard>
 
         <GlassCard>
@@ -366,6 +379,16 @@ export default function StudentDetail() {
               <option value="">— {rankLabel} —</option>
               {rankOptions.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
+            <input
+              type="number"
+              placeholder="Скидка на абонемент (%)"
+              value={form.discount || ''}
+              onChange={e => setForm(f => ({ ...f, discount: parseInt(e.target.value) || 0 }))}
+              className={inputCls}
+              inputMode="numeric"
+              min="0"
+              max="100"
+            />
             {/* Multi-group selection */}
             {trainerGroups.length > 0 && (
               <div>

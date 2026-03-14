@@ -22,7 +22,7 @@ export default function Clubs() {
   const { dark } = useTheme()
 
   const [showAdd, setShowAdd] = useState(false)
-  const [form, setForm] = useState({ name: '', city: '', sportTypes: [] })
+  const [form, setForm] = useState({ name: '', city: '', sportTypes: [], phone: '', vk: '', address: '' })
 
   const clubs = data.clubs || []
 
@@ -42,8 +42,11 @@ export default function Clubs() {
       name: form.name.trim(),
       city: form.city.trim(),
       sportTypes: form.sportTypes,
+      phone: form.phone.trim(),
+      vk: form.vk.trim(),
+      address: form.address.trim(),
     })
-    setForm({ name: '', city: '', sportTypes: [] })
+    setForm({ name: '', city: '', sportTypes: [], phone: '', vk: '', address: '' })
     setShowAdd(false)
     if (id) navigate(`/club/${id}`)
   }
@@ -176,6 +179,27 @@ export default function Clubs() {
               })}
             </div>
           </div>
+          <input
+            type="text"
+            placeholder="Адрес клуба"
+            value={form.address}
+            onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
+            className={inputCls}
+          />
+          <input
+            type="tel"
+            placeholder="Телефон клуба"
+            value={form.phone}
+            onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+            className={inputCls}
+          />
+          <input
+            type="url"
+            placeholder="Страница ВКонтакте (ссылка)"
+            value={form.vk}
+            onChange={e => setForm(f => ({ ...f, vk: e.target.value }))}
+            className={inputCls}
+          />
           <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale">
             Создать клуб
           </button>

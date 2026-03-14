@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check } from 'lucide-react'
+import { Check, Award, Trophy } from 'lucide-react'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
 import Layout from '../components/Layout'
@@ -29,6 +29,8 @@ export default function AddTrainer() {
     city: '',
     sportTypes: [],
     userRole: 'trainer',
+    rank: '',
+    achievements: '',
   })
 
   const toggleSport = (id) => {
@@ -60,6 +62,8 @@ export default function AddTrainer() {
       sportTypes: form.sportTypes,
       avatar: null,
       userRole: form.userRole,
+      rank: form.rank.trim(),
+      achievements: form.achievements.trim(),
     })
 
     // Auto-assign to selected club
@@ -173,6 +177,32 @@ export default function AddTrainer() {
                 <p className="text-[10px] mt-1.5 text-red-400">Выберите хотя бы один вид спорта</p>
               )}
             </div>
+          )}
+
+          {/* Rank and achievements - for trainers */}
+          {needsSports && (
+            <>
+              <div className="relative">
+                <Award size={16} className={`absolute left-3.5 top-1/2 -translate-y-1/2 ${dark ? 'text-white/20' : 'text-gray-400'}`} />
+                <input
+                  type="text"
+                  placeholder="Звание / разряд (напр. КМС, МС)"
+                  value={form.rank}
+                  onChange={e => setForm(f => ({ ...f, rank: e.target.value }))}
+                  className={`${inputCls} pl-10`}
+                />
+              </div>
+              <div className="relative">
+                <Trophy size={16} className={`absolute left-3.5 top-3.5 ${dark ? 'text-white/20' : 'text-gray-400'}`} />
+                <textarea
+                  placeholder="Регалии и достижения (напр. Чемпион мира по грэпплингу)"
+                  value={form.achievements}
+                  onChange={e => setForm(f => ({ ...f, achievements: e.target.value }))}
+                  className={`${inputCls} pl-10 min-h-[80px] resize-none`}
+                  rows={2}
+                />
+              </div>
+            </>
           )}
 
           <PhoneInput

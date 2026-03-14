@@ -715,36 +715,121 @@ function ClubManagerDash({ auth, data, dark, navigate }) {
 }
 
 /* ======================== PARENT ======================== */
-function ParentDash({ auth, data, dark, navigate }) {
-  const student = data.students.find(s => s.id === auth.studentId)
-  const group = student ? data.groups.find(g => g.id === student.groupId) : null
-  const trainer = data.users.find(u => u.id === auth.userId)
-  const expired = isExpired(student?.subscriptionExpiresAt)
-  const sportLabel = getSportLabel(trainer?.sportType)
-  const parentInfo = auth.parent
+function ParentChildCard({ child, data, dark, navigate }) {
+  const group = child ? data.groups.find(g => g.id === child.groupId) : null
+  const trainer = data.users.find(u => u.id === child?.trainerId)
+  const expired = isExpired(child?.subscriptionExpiresAt)
 
-  // Attendance stats
   const now = new Date()
   const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  const myAttendance = data.attendance.filter(a => a.studentId === auth.studentId && a.date.startsWith(monthPrefix))
-  const presentCount = myAttendance.filter(a => a.present).length
-  const totalCount = myAttendance.length
+  const childAttendance = data.attendance.filter(a => a.studentId === child?.id && a.date.startsWith(monthPrefix))
+  const presentCount = childAttendance.filter(a => a.present).length
+  const totalCount = childAttendance.length
   const pct = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0
 
-  // Recent attendance (last 14 days)
-  const last14Days = useMemo(() => {
-    const days = []
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date()
-      d.setDate(d.getDate() - i)
-      const dateStr = d.toISOString().split('T')[0]
-      const record = data.attendance.find(a => a.studentId === auth.studentId && a.date === dateStr)
-      days.push({ date: dateStr, day: d.toLocaleDateString('ru-RU', { weekday: 'narrow' }), num: d.getDate(), present: record?.present ?? null })
-    }
-    return days
-  }, [data.attendance, auth.studentId])
+  if (!child) return null
 
-  const myNews = data.news.filter(n => n.groupId === student?.groupId || (!n.groupId && n.trainerId === auth.userId))
+  return (
+    <div className="space-y-2">
+      <div
+        onClick={() => navigate(`/student/${child.id}`)}
+        className={`rounded-[24px] p-5 relative overflow-hidden backdrop-blur-xl press-scale cursor-pointer ${
+          dark
+            ? 'bg-gradient-to-br from-purple-500/10 via-white/[0.04] to-accent/10 border border-white/[0.07]'
+            : 'bg-gradient-to-br from-purple-50/80 via-white/70 to-red-50/80 border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
+        }`}
+      >
+        <div className="flex items-center gap-4">
+          <Avatar name={child.name || '?'} src={child.avatar} size={56} />
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg font-black truncate">{child.name}</h2>
+            <p className={`text-sm truncate ${dark ? 'text-white/50' : 'text-gray-600'}`}>
+              {trainer?.clubName} — {group?.name || 'Без группы'}
+            </p>
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+              {trainer?.sportType && (
+                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                  dark ? 'bg-accent/20 text-accent-light' : 'bg-red-100 text-red-600'
+                }`}>{getSportLabel(trainer.sportType)}</span>
+              )}
+              {child.belt && (
+                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                  dark ? 'bg-purple-500/20 text-purple-300' : 'bg-purple-100 text-purple-600'
+                }`}>{child.belt}</span>
+              )}
+            </div>
+          </div>
+          <ChevronRight size={18} className={dark ? 'text-white/20' : 'text-gray-300'} />
+        </div>
+        {trainer && (
+          <div className={`mt-3 pt-3 flex items-center gap-2 ${dark ? 'border-t border-white/[0.06]' : 'border-t border-black/[0.05]'}`}>
+            <Shield size={12} className={dark ? 'text-white/30' : 'text-gray-600'} />
+            <span className={`text-xs ${dark ? 'text-white/40' : 'text-gray-600'}`}>
+              Тренер: <span className="font-semibold">{trainer.name}</span>
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Status + Subscription + Attendance row */}
+      <div className="grid grid-cols-3 gap-2">
+        <GlassCard>
+          <div className={`text-[10px] uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-600'}`}>Абонемент</div>
+          <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
+            expired ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+          }`}>{expired ? 'Долг' : 'Активен'}</span>
+          <div className={`text-[10px] mt-1 ${dark ? 'text-white/30' : 'text-gray-600'}`}>
+            {formatDate(child.subscriptionExpiresAt)}
+          </div>
+        </GlassCard>
+        <GlassCard>
+          <div className={`text-[10px] uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-600'}`}>Статус</div>
+          {child.status && STATUS_CONFIG[child.status] ? (() => {
+            const cfg = STATUS_CONFIG[child.status]
+            return (
+              <div className={`flex items-center gap-1 px-1.5 py-1 rounded-full ${cfg.bg} border ${cfg.border} w-fit`}>
+                <cfg.icon size={10} className={cfg.color} />
+                <span className={`text-[10px] font-bold ${cfg.color}`}>{cfg.label}</span>
+              </div>
+            )
+          })() : (
+            <span className="text-[10px] text-green-400 font-bold bg-green-500/15 px-1.5 py-1 rounded-full">В строю</span>
+          )}
+        </GlassCard>
+        <GlassCard>
+          <div className={`text-[10px] uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-600'}`}>Посещения</div>
+          {totalCount > 0 ? (
+            <>
+              <span className={`text-lg font-black ${pct >= 80 ? 'text-green-500' : pct >= 50 ? 'text-yellow-500' : 'text-red-500'}`}>{pct}%</span>
+              <div className={`text-[10px] ${dark ? 'text-white/30' : 'text-gray-500'}`}>{presentCount}/{totalCount}</div>
+            </>
+          ) : (
+            <span className={`text-[10px] ${dark ? 'text-white/30' : 'text-gray-400'}`}>Нет данных</span>
+          )}
+        </GlassCard>
+      </div>
+    </div>
+  )
+}
+
+function ParentDash({ auth, data, dark, navigate }) {
+  const parentInfo = auth.parent
+
+  // Find ALL children for this parent (by matching phone across parent records)
+  const allChildren = useMemo(() => {
+    if (!parentInfo?.phone) return [data.students.find(s => s.id === auth.studentId)].filter(Boolean)
+    const parentRecords = (data.parents || []).filter(p => p.phone === parentInfo.phone)
+    if (parentRecords.length === 0) return [data.students.find(s => s.id === auth.studentId)].filter(Boolean)
+    const studentIds = [...new Set(parentRecords.map(p => p.studentId))]
+    const children = studentIds.map(sid => data.students.find(s => s.id === sid)).filter(Boolean)
+    return children.length > 0 ? children : [data.students.find(s => s.id === auth.studentId)].filter(Boolean)
+  }, [data.parents, data.students, parentInfo, auth.studentId])
+
+  const myNews = useMemo(() => {
+    const childGroupIds = new Set(allChildren.map(c => c.groupId).filter(Boolean))
+    const childTrainerIds = new Set(allChildren.map(c => c.trainerId).filter(Boolean))
+    return data.news.filter(n => childGroupIds.has(n.groupId) || (!n.groupId && childTrainerIds.has(n.trainerId)))
+  }, [allChildren, data.news])
 
   return (
     <Layout>
@@ -760,152 +845,24 @@ function ParentDash({ auth, data, dark, navigate }) {
             <div>
               <div className="font-bold text-sm">{parentInfo?.name || 'Родитель'}</div>
               <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-600'}`}>
-                {parentInfo?.relation === 'mother' ? 'Мать' : parentInfo?.relation === 'father' ? 'Отец' : parentInfo?.relation === 'guardian' ? 'Опекун' : 'Родитель'} ученика
+                {parentInfo?.relation === 'mother' ? 'Мать' : parentInfo?.relation === 'father' ? 'Отец' : parentInfo?.relation === 'guardian' ? 'Опекун' : 'Родитель'}
+                {allChildren.length > 1 ? ` · ${allChildren.length} детей` : ' ученика'}
               </div>
             </div>
           </div>
         </GlassCard>
 
-        {/* Child info */}
-        <div
-          onClick={() => navigate('/profile')}
-          className={`rounded-[24px] p-5 relative overflow-hidden backdrop-blur-xl press-scale cursor-pointer ${
-            dark
-              ? 'bg-gradient-to-br from-purple-500/10 via-white/[0.04] to-accent/10 border border-white/[0.07]'
-              : 'bg-gradient-to-br from-purple-50/80 via-white/70 to-red-50/80 border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
-          }`}
-        >
-          <div className={`text-[10px] uppercase font-bold tracking-wider mb-3 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Ваш ребёнок</div>
-          <div className="flex items-center gap-4">
-            <Avatar name={student?.name || '?'} src={student?.avatar} size={56} />
-            <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-black truncate">{student?.name}</h2>
-              <p className={`text-sm truncate ${dark ? 'text-white/50' : 'text-gray-600'}`}>
-                {trainer?.clubName} — {group?.name || 'Без группы'}
-              </p>
-              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                {trainer?.sportType && (
-                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                    dark ? 'bg-accent/20 text-accent-light' : 'bg-red-100 text-red-600'
-                  }`}>{sportLabel}</span>
-                )}
-                {student?.belt && (
-                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                    dark ? 'bg-purple-500/20 text-purple-300' : 'bg-purple-100 text-purple-600'
-                  }`}>{student.belt}</span>
-                )}
+        {/* Children */}
+        {allChildren.map((child, idx) => (
+          <div key={child.id}>
+            {allChildren.length > 1 && (
+              <div className={`text-[10px] uppercase font-bold tracking-wider mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+                {idx === 0 ? 'Ваши дети' : ''}
               </div>
-            </div>
-            <ChevronRight size={18} className={dark ? 'text-white/20' : 'text-gray-300'} />
-          </div>
-          {trainer && (
-            <div className={`mt-3 pt-3 flex items-center gap-2 ${dark ? 'border-t border-white/[0.06]' : 'border-t border-black/[0.05]'}`}>
-              <Shield size={12} className={dark ? 'text-white/30' : 'text-gray-600'} />
-              <span className={`text-xs ${dark ? 'text-white/40' : 'text-gray-600'}`}>
-                Тренер: <span className="font-semibold">{trainer.name}</span>
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Subscription + Status */}
-        <div className="grid grid-cols-2 gap-2">
-          <GlassCard>
-            <div className={`text-[10px] uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-600'}`}>Абонемент</div>
-            <span className={`inline-block px-2 py-1 rounded-full text-xs font-bold ${
-              expired ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
-            }`}>{expired ? 'Долг' : 'Активен'}</span>
-            <div className={`text-[10px] mt-1.5 ${dark ? 'text-white/30' : 'text-gray-600'}`}>
-              {expired ? 'Истёк' : 'До'}: <span className="font-semibold">{formatDate(student?.subscriptionExpiresAt)}</span>
-            </div>
-          </GlassCard>
-          <GlassCard>
-            <div className={`text-[10px] uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-600'}`}>
-              Статус
-            </div>
-            {student?.status && STATUS_CONFIG[student.status] ? (() => {
-              const cfg = STATUS_CONFIG[student.status]
-              return (
-                <div className={`flex items-center gap-1.5 px-2 py-1 rounded-full ${cfg.bg} border ${cfg.border} w-fit`}>
-                  <cfg.icon size={12} className={cfg.color} />
-                  <span className={`text-xs font-bold ${cfg.color}`}>{cfg.label}</span>
-                </div>
-              )
-            })() : (
-              <span className="text-xs text-green-400 font-bold bg-green-500/15 px-2 py-1 rounded-full">В строю</span>
             )}
-          </GlassCard>
-        </div>
-
-        {/* Attendance stats */}
-        <div>
-          <SectionTitle dark={dark}>
-            <span className="flex items-center gap-1.5"><BarChart3 size={12} className="text-accent" /> Посещаемость</span>
-          </SectionTitle>
-
-          {totalCount > 0 && (
-            <GlassCard className="mb-2">
-              <div className="flex items-center justify-between mb-2">
-                <span className={`text-xs ${dark ? 'text-white/50' : 'text-gray-600'}`}>
-                  {now.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}
-                </span>
-                <span className={`text-2xl font-black ${
-                  pct >= 80 ? 'text-green-500' : pct >= 50 ? 'text-yellow-500' : 'text-red-500'
-                }`}>{pct}%</span>
-              </div>
-              <div className={`h-2.5 rounded-full overflow-hidden ${dark ? 'bg-white/[0.08]' : 'bg-black/[0.06]'}`}>
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ${
-                    pct >= 80 ? 'bg-green-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-red-500'
-                  }`}
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-              <div className={`text-[11px] mt-1.5 ${dark ? 'text-white/30' : 'text-gray-500'}`}>
-                {presentCount} из {totalCount} тренировок
-              </div>
-            </GlassCard>
-          )}
-
-          {/* Last 14 days grid */}
-          <GlassCard>
-            <div className={`text-[10px] uppercase font-bold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Последние 2 недели</div>
-            <div className="grid grid-cols-7 gap-1.5">
-              {last14Days.map(d => (
-                <div key={d.date} className="text-center">
-                  <div className={`text-[9px] mb-0.5 ${dark ? 'text-white/25' : 'text-gray-400'}`}>{d.day}</div>
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-bold mx-auto ${
-                    d.present === true
-                      ? 'bg-green-500/20 text-green-500'
-                      : d.present === false
-                        ? 'bg-red-500/15 text-red-400'
-                        : dark ? 'bg-white/[0.04] text-white/15' : 'bg-gray-100 text-gray-300'
-                  }`}>
-                    {d.num}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </GlassCard>
-        </div>
-
-        {/* Schedule */}
-        {group && (
-          <div>
-            <SectionTitle dark={dark}>Расписание</SectionTitle>
-            <GlassCard>
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${dark ? 'bg-accent/15' : 'bg-red-100'}`}>
-                  <Calendar size={18} className="text-accent" />
-                </div>
-                <div>
-                  <div className="font-bold text-sm">{group.name}</div>
-                  <div className={`text-xs mt-0.5 ${dark ? 'text-white/40' : 'text-gray-600'}`}>{group.schedule || 'Не указано'}</div>
-                </div>
-              </div>
-            </GlassCard>
+            <ParentChildCard child={child} data={data} dark={dark} navigate={navigate} />
           </div>
-        )}
+        ))}
 
         {/* News */}
         {myNews.length > 0 && (
@@ -1143,6 +1100,18 @@ function StudentDash({ auth, data, dark, navigate }) {
             <div className={`text-[10px] mt-1.5 ${dark ? 'text-white/30' : 'text-gray-600'}`}>
               {expired ? 'Истек' : 'До'}: <span className="font-semibold">{formatDate(student?.subscriptionExpiresAt)}</span>
             </div>
+            {group?.subscriptionCost > 0 && (
+              <div className={`text-[10px] mt-1 ${dark ? 'text-white/30' : 'text-gray-600'}`}>
+                {student?.discount > 0 ? (
+                  <span className="flex items-center gap-1.5">
+                    <span className="line-through opacity-50">{group.subscriptionCost.toLocaleString('ru-RU')} ₽</span>
+                    <span className="font-bold text-green-400">{Math.round(group.subscriptionCost * (1 - student.discount / 100)).toLocaleString('ru-RU')} ₽</span>
+                  </span>
+                ) : (
+                  <span>{group.subscriptionCost.toLocaleString('ru-RU')} ₽/мес</span>
+                )}
+              </div>
+            )}
           </GlassCard>
         </div>
 

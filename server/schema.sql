@@ -330,3 +330,33 @@ DO $$ BEGIN
   ALTER TABLE groups ADD COLUMN time_to VARCHAR(10);
 EXCEPTION WHEN duplicate_column THEN NULL;
 END $$;
+
+-- Student personal discount (percentage, 0-100)
+DO $$ BEGIN
+  ALTER TABLE students ADD COLUMN discount INTEGER DEFAULT 0;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+-- Club extended fields
+DO $$ BEGIN
+  ALTER TABLE clubs ADD COLUMN phone VARCHAR(50);
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE clubs ADD COLUMN vk VARCHAR(255);
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE clubs ADD COLUMN address TEXT;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+-- Trainer achievements/rank
+DO $$ BEGIN
+  ALTER TABLE users ADD COLUMN rank VARCHAR(255);
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE users ADD COLUMN achievements TEXT;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
