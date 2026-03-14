@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Plus, UserPlus, Phone, MessageCircle, X, Thermometer, HeartCrack, Zap } from 'lucide-react'
+import { Search, Plus, UserPlus, Phone, MessageCircle, X, Thermometer, HeartCrack, Zap, Shield, Trophy, MapPin, Users, Crown } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
+import { getSportLabel } from '../utils/sports'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
@@ -63,19 +64,24 @@ export default function Team() {
   const { dark } = useTheme()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
-  const [tab, setTab] = useState('students')
+  const [tab, setTab] = useState('trainers')
 
   if (auth.role === 'student') return <StudentTeam auth={auth} data={data} dark={dark} navigate={navigate} search={search} setSearch={setSearch} />
 
   const isAdmin = auth.role === 'superadmin'
   const trainers = data.users.filter(u => u.role === 'trainer')
+  const clubOwners = data.users.filter(u => u.role === 'club_owner')
+  const clubAdmins = data.users.filter(u => u.role === 'club_admin')
+  const organizers = data.users.filter(u => u.role === 'organizer')
   const students = isAdmin ? data.students : data.students.filter(s => s.trainerId === auth.userId)
   const myGroups = isAdmin ? data.groups : data.groups.filter(g => g.trainerId === auth.userId)
 
-  const filteredTrainers = trainers.filter(t =>
-    t.name.toLowerCase().includes(search.toLowerCase()) || t.clubName?.toLowerCase().includes(search.toLowerCase())
-  )
-  const filteredStudents = students.filter(s => s.name.toLowerCase().includes(search.toLowerCase()))
+  const q = search.toLowerCase()
+  const filteredTrainers = trainers.filter(t => t.name.toLowerCase().includes(q) || t.clubName?.toLowerCase().includes(q))
+  const filteredStudents = students.filter(s => s.name.toLowerCase().includes(q))
+  const filteredOwners = clubOwners.filter(u => u.name.toLowerCase().includes(q))
+  const filteredAdmins = clubAdmins.filter(u => u.name.toLowerCase().includes(q))
+  const filteredOrganizers = organizers.filter(u => u.name.toLowerCase().includes(q))
 
   // Group students by group for trainer view (using studentGroups junction table)
   const studentsByGroup = myGroups.map(g => {
@@ -97,6 +103,17 @@ export default function Team() {
 
   const inputCls = `w-full pl-10 pr-4 py-2.5 rounded-[16px] text-sm outline-none ${dark ? 'bg-white/[0.07] border border-white/[0.08] text-white placeholder-white/25 focus:border-purple-500/50 focus:bg-white/[0.1]' : 'bg-white/70 border border-white/60 text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] shadow-sm'}`
 
+  // Admin tabs config
+  const adminTabs = [
+    { key: 'trainers', label: 'Тренеры', count: filteredTrainers.length },
+    { key: 'students', label: 'Спортсмены', count: filteredStudents.length },
+    { key: 'owners', label: 'Владельцы', count: filteredOwners.length },
+    { key: 'admins', label: 'Админы', count: filteredAdmins.length },
+    { key: 'organizers', label: 'Организаторы', count: filteredOrganizers.length },
+  ]
+
+  const getClubName = (clubId) => (data.clubs || []).find(c => c.id === clubId)?.name
+
   return (
     <Layout>
       <PageHeader title={isAdmin ? 'Люди' : 'Команда'}>
@@ -109,10 +126,14 @@ export default function Team() {
           <input type="text" placeholder="Поиск по имени..." value={search} onChange={e => setSearch(e.target.value)} className={inputCls} />
         </div>
         {isAdmin && (
-          <div className={`flex rounded-[16px] p-1 ${dark ? 'bg-white/[0.06] border border-white/[0.06]' : 'bg-white/50 border border-white/60'}`}>
-            {[{ key: 'students', label: `Спортсмены (${filteredStudents.length})` }, { key: 'trainers', label: `Тренеры (${filteredTrainers.length})` }].map(({ key, label }) => (
-              <button key={key} onClick={() => setTab(key)} className={`flex-1 py-2 rounded-[12px] text-xs font-semibold transition-all ${tab === key ? (dark ? 'bg-white/[0.12] text-white' : 'bg-white text-gray-900 shadow-sm') : (dark ? 'text-white/40' : 'text-gray-500')}`}>{label}</button>
-            ))}
+          <div className="overflow-x-auto -mx-4 px-4 pb-1">
+            <div className={`inline-flex rounded-[16px] p-1 ${dark ? 'bg-white/[0.06] border border-white/[0.06]' : 'bg-white/50 border border-white/60'}`} style={{ minWidth: 'max-content' }}>
+              {adminTabs.map(({ key, label, count }) => (
+                <button key={key} onClick={() => setTab(key)} className={`px-3 py-2 rounded-[12px] text-xs font-semibold transition-all whitespace-nowrap ${tab === key ? (dark ? 'bg-white/[0.12] text-white' : 'bg-white text-gray-900 shadow-sm') : (dark ? 'text-white/40' : 'text-gray-500')}`}>
+                  {label} <span className={`ml-0.5 ${tab === key ? '' : 'opacity-50'}`}>{count}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -126,9 +147,13 @@ export default function Team() {
                   <Avatar name={person.name} src={person.avatar} size={44} />
                   <div className="min-w-0 flex-1">
                     <div className="font-bold text-sm truncate">{person.name}</div>
-                    <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>{person.clubName}</div>
+                    <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'} flex items-center gap-1 flex-wrap`}>
+                      {person.clubName && <span>{person.clubName}</span>}
+                      {person.city && <><span>•</span><MapPin size={10} /><span>{person.city}</span></>}
+                      {person.sportType && <><span>•</span><span>{getSportLabel(person.sportType)}</span></>}
+                    </div>
                   </div>
-                  <span className={`text-xs ${dark ? 'text-white/30' : 'text-gray-500'}`}>{count} чел.</span>
+                  <span className={`text-xs shrink-0 flex items-center gap-1 ${dark ? 'text-white/30' : 'text-gray-500'}`}><Users size={12} />{count}</span>
                 </GlassCard>
               )
             })}
@@ -147,6 +172,94 @@ export default function Team() {
             })}
             {filteredStudents.length === 0 && (
               <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>{search ? 'Никого не найдено' : 'Список пуст'}</p>
+            )}
+          </div>
+        )}
+
+        {/* Club owners */}
+        {isAdmin && tab === 'owners' && (
+          <div className="space-y-2">
+            {filteredOwners.map(person => {
+              const club = getClubName(person.clubId)
+              return (
+                <GlassCard key={person.id} onClick={() => person.clubId ? navigate(`/club/${person.clubId}`) : null} className="flex items-center gap-3">
+                  <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${dark ? 'bg-amber-500/15' : 'bg-amber-50'}`}>
+                    <Crown size={20} className={dark ? 'text-amber-400' : 'text-amber-600'} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-sm truncate">{person.name}</div>
+                    <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'} flex items-center gap-1 flex-wrap`}>
+                      {club && <><Shield size={10} /><span>{club}</span></>}
+                      {person.city && <><span>•</span><MapPin size={10} /><span>{person.city}</span></>}
+                    </div>
+                  </div>
+                  {person.phone && (
+                    <span className={`text-[10px] shrink-0 ${dark ? 'text-white/25' : 'text-gray-400'}`}>{person.phone}</span>
+                  )}
+                </GlassCard>
+              )
+            })}
+            {filteredOwners.length === 0 && (
+              <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>{search ? 'Никого не найдено' : 'Нет владельцев клубов'}</p>
+            )}
+          </div>
+        )}
+
+        {/* Club admins */}
+        {isAdmin && tab === 'admins' && (
+          <div className="space-y-2">
+            {filteredAdmins.map(person => {
+              const club = getClubName(person.clubId)
+              return (
+                <GlassCard key={person.id} onClick={() => person.clubId ? navigate(`/club/${person.clubId}`) : null} className="flex items-center gap-3">
+                  <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${dark ? 'bg-blue-500/15' : 'bg-blue-50'}`}>
+                    <Shield size={20} className={dark ? 'text-blue-400' : 'text-blue-600'} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-sm truncate">{person.name}</div>
+                    <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'} flex items-center gap-1 flex-wrap`}>
+                      {club && <><Shield size={10} /><span>{club}</span></>}
+                      {person.city && <><span>•</span><MapPin size={10} /><span>{person.city}</span></>}
+                    </div>
+                  </div>
+                  {person.phone && (
+                    <span className={`text-[10px] shrink-0 ${dark ? 'text-white/25' : 'text-gray-400'}`}>{person.phone}</span>
+                  )}
+                </GlassCard>
+              )
+            })}
+            {filteredAdmins.length === 0 && (
+              <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>{search ? 'Никого не найдено' : 'Нет администраторов'}</p>
+            )}
+          </div>
+        )}
+
+        {/* Organizers */}
+        {isAdmin && tab === 'organizers' && (
+          <div className="space-y-2">
+            {filteredOrganizers.map(person => {
+              const tournamentsCount = data.tournaments.filter(t => t.createdBy === person.id).length
+              return (
+                <GlassCard key={person.id} onClick={() => navigate(`/trainer/${person.id}`)} className="flex items-center gap-3">
+                  <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${dark ? 'bg-orange-500/15' : 'bg-orange-50'}`}>
+                    <Trophy size={20} className={dark ? 'text-orange-400' : 'text-orange-600'} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-sm truncate">{person.name}</div>
+                    <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'} flex items-center gap-1 flex-wrap`}>
+                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${dark ? 'bg-green-500/15 text-green-400' : 'bg-green-50 text-green-600'}`}>Организатор</span>
+                      {person.city && <><span>•</span><MapPin size={10} /><span>{person.city}</span></>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Trophy size={13} className="text-orange-400" />
+                    <span className={`text-xs ${dark ? 'text-white/30' : 'text-gray-500'}`}>{tournamentsCount}</span>
+                  </div>
+                </GlassCard>
+              )
+            })}
+            {filteredOrganizers.length === 0 && (
+              <p className={`text-center py-8 text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>{search ? 'Никого не найдено' : 'Нет организаторов'}</p>
             )}
           </div>
         )}
