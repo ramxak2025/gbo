@@ -75,6 +75,7 @@ export default function Dashboard() {
 
   if (auth.role === 'superadmin') return <SuperAdminDash data={data} dark={dark} navigate={navigate} />
   if (auth.role === 'trainer') return <TrainerDash auth={auth} data={data} dark={dark} navigate={navigate} />
+  if (auth.role === 'club_owner' || auth.role === 'club_admin') return <ClubManagerDash auth={auth} data={data} dark={dark} navigate={navigate} />
   if (auth.role === 'parent') return <ParentDash auth={auth} data={data} dark={dark} navigate={navigate} />
   return <StudentDash auth={auth} data={data} dark={dark} navigate={navigate} />
 }
@@ -82,7 +83,7 @@ export default function Dashboard() {
 /* ======================== SUPER ADMIN ======================== */
 function SuperAdminDash({ data, dark, navigate }) {
   const { reload } = useData()
-  const allTrainers = data.users.filter(u => u.role === 'trainer' && !u.isDemo)
+  const allTrainers = data.users.filter(u => (u.role === 'trainer' || u.role === 'club_owner' || u.role === 'club_admin') && !u.isDemo)
   const pendingRegs = data.pendingRegistrations || []
   const [cityFilter, setCityFilter] = useState('')
   const [sportFilter, setSportFilter] = useState('')
@@ -585,6 +586,131 @@ function AuthorBlock({ data, dark, navigate }) {
         </div>
       </div>
     </div>
+  )
+}
+
+/* ======================== CLUB OWNER / ADMIN ======================== */
+function ClubManagerDash({ auth, data, dark, navigate }) {
+  const user = data.users.find(u => u.id === auth.userId) || auth.user
+  const club = user?.clubId ? (data.clubs || []).find(c => c.id === user.clubId) : null
+  const clubTrainers = club ? data.users.filter(u => u.role === 'trainer' && u.clubId === club.id) : []
+  const trainerIds = new Set(clubTrainers.map(t => t.id))
+  const allStudents = data.students.filter(s => trainerIds.has(s.trainerId))
+  const allGroups = data.groups.filter(g => trainerIds.has(g.trainerId))
+  const activeStudents = allStudents.filter(s => !isExpired(s.subscriptionExpiresAt)).length
+  const allTx = data.transactions.filter(t => trainerIds.has(t.trainerId))
+  const income = allTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+  const expense = allTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+
+  const roleLabel = auth.role === 'club_owner' ? 'Владелец' : 'Администратор'
+
+  return (
+    <Layout>
+      <PageHeader title={club?.name || 'Мой клуб'} logo />
+      <div className="px-4 space-y-4 slide-in stagger">
+        {/* Hero */}
+        <div
+          onClick={() => navigate('/profile')}
+          className={`rounded-[24px] p-5 relative overflow-hidden backdrop-blur-xl press-scale cursor-pointer ${
+            dark
+              ? 'bg-gradient-to-br from-blue-500/10 via-white/[0.04] to-purple-500/10 border border-white/[0.07]'
+              : 'bg-gradient-to-br from-blue-50/80 via-white/70 to-purple-50/80 border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
+          }`}
+        >
+          <div className="flex items-center gap-4">
+            <Avatar name={user?.name || '?'} src={user?.avatar} size={56} />
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-black truncate">{user?.name}</h2>
+              <div className="flex items-center gap-2 mt-1">
+                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                  auth.role === 'club_owner'
+                    ? dark ? 'bg-yellow-500/20 text-yellow-300' : 'bg-yellow-100 text-yellow-700'
+                    : dark ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-600'
+                }`}>{roleLabel}</span>
+                {user?.city && (
+                  <span className={`text-[10px] font-medium flex items-center gap-0.5 ${dark ? 'text-white/35' : 'text-gray-600'}`}>
+                    <MapPin size={9} />{user.city}
+                  </span>
+                )}
+              </div>
+            </div>
+            <ChevronRight size={18} className={dark ? 'text-white/20' : 'text-gray-300'} />
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-3">
+          <GlassCard>
+            <div className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-600'}`}>Тренеры</div>
+            <div className="text-3xl font-black mt-1">{clubTrainers.length}</div>
+          </GlassCard>
+          <GlassCard>
+            <div className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-600'}`}>Ученики</div>
+            <div className="text-3xl font-black mt-1">{allStudents.length}</div>
+            <div className={`text-xs mt-0.5 ${dark ? 'text-white/30' : 'text-gray-500'}`}>{activeStudents} активных</div>
+          </GlassCard>
+        </div>
+
+        {/* Finances */}
+        <GlassCard>
+          <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-600'}`}>Финансы</div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div>
+              <div className="text-sm font-black text-green-500">{income.toLocaleString('ru-RU')} ₽</div>
+              <div className={`text-[9px] uppercase ${dark ? 'text-white/25' : 'text-gray-400'}`}>Доход</div>
+            </div>
+            <div>
+              <div className="text-sm font-black text-red-400">{expense.toLocaleString('ru-RU')} ₽</div>
+              <div className={`text-[9px] uppercase ${dark ? 'text-white/25' : 'text-gray-400'}`}>Расход</div>
+            </div>
+            <div>
+              <div className={`text-sm font-black ${(income - expense) >= 0 ? 'text-green-500' : 'text-red-400'}`}>{(income - expense).toLocaleString('ru-RU')} ₽</div>
+              <div className={`text-[9px] uppercase ${dark ? 'text-white/25' : 'text-gray-400'}`}>Баланс</div>
+            </div>
+          </div>
+        </GlassCard>
+
+        {/* Quick link to club detail */}
+        {club && (
+          <button
+            onClick={() => navigate(`/club/${club.id}`)}
+            className={`w-full py-4 rounded-[20px] font-bold text-sm press-scale flex items-center gap-3 px-5 backdrop-blur-xl transition-all ${
+              dark ? 'bg-white/[0.05] border border-white/[0.07] text-white' : 'bg-white/70 border border-white/60 text-gray-900 shadow-sm'
+            }`}
+          >
+            <Shield size={20} className="text-blue-500" />
+            <span className="flex-1 text-left">Управление клубом</span>
+            <ChevronRight size={16} className={dark ? 'text-white/15' : 'text-gray-300'} />
+          </button>
+        )}
+
+        {/* Trainers list */}
+        {clubTrainers.length > 0 && (
+          <div>
+            <SectionTitle dark={dark}>Тренеры</SectionTitle>
+            <div className="space-y-2">
+              {clubTrainers.map(t => {
+                const tStudents = data.students.filter(s => s.trainerId === t.id)
+                const tGroups = data.groups.filter(g => g.trainerId === t.id)
+                return (
+                  <GlassCard key={t.id}>
+                    <div className="flex items-center gap-3">
+                      <Avatar name={t.name} src={t.avatar} size={40} />
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold text-sm truncate">{t.name}</div>
+                        <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-600'}`}>
+                          {tStudents.length} учеников • {tGroups.length} групп
+                        </div>
+                      </div>
+                    </div>
+                  </GlassCard>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    </Layout>
   )
 }
 

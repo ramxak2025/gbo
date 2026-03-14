@@ -8,6 +8,12 @@ import PageHeader from '../components/PageHeader'
 import PhoneInput, { cleanPhone } from '../components/PhoneInput'
 import { SPORT_TYPES } from '../utils/sports'
 
+const USER_ROLES = [
+  { id: 'trainer', label: 'Тренер' },
+  { id: 'club_owner', label: 'Владелец клуба' },
+  { id: 'club_admin', label: 'Администратор' },
+]
+
 export default function AddTrainer() {
   const navigate = useNavigate()
   const { data, addTrainer, assignTrainerToClub } = useData()
@@ -22,6 +28,7 @@ export default function AddTrainer() {
     clubId: '',
     city: '',
     sportTypes: [],
+    userRole: 'trainer',
   })
 
   const toggleSport = (id) => {
@@ -33,11 +40,13 @@ export default function AddTrainer() {
     }))
   }
 
+  const needsSports = form.userRole === 'trainer'
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     const phoneDigits = cleanPhone(form.phone)
     if (!form.name.trim() || phoneDigits.length < 11) return
-    if (form.sportTypes.length === 0) return
+    if (needsSports && form.sportTypes.length === 0) return
 
     const selectedClub = clubs.find(c => c.id === form.clubId)
 
@@ -47,9 +56,10 @@ export default function AddTrainer() {
       phone: phoneDigits,
       clubName: selectedClub?.name || '',
       city: form.city.trim(),
-      sportType: form.sportTypes[0],
+      sportType: form.sportTypes[0] || null,
       sportTypes: form.sportTypes,
       avatar: null,
+      userRole: form.userRole,
     })
 
     // Auto-assign to selected club
@@ -70,9 +80,35 @@ export default function AddTrainer() {
 
   return (
     <Layout>
-      <PageHeader title="Новый тренер" back />
+      <PageHeader title="Новый сотрудник" back />
       <div className="px-4 slide-in">
         <form onSubmit={handleSubmit} className="space-y-3">
+          {/* Role selection */}
+          <div>
+            <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+              Роль *
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {USER_ROLES.map(r => {
+                const active = form.userRole === r.id
+                return (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, userRole: r.id }))}
+                    className={`px-3.5 py-2 rounded-2xl text-xs font-bold press-scale transition-all ${
+                      active
+                        ? r.id === 'club_owner' ? 'bg-yellow-500 text-white' : r.id === 'club_admin' ? 'bg-blue-500 text-white' : 'bg-accent text-white'
+                        : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60'
+                    }`}
+                  >
+                    {r.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
           <input
             type="text"
             placeholder="ФИО *"
@@ -107,35 +143,37 @@ export default function AddTrainer() {
             </datalist>
           </div>
 
-          {/* Multiple sports selection */}
-          <div>
-            <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
-              Виды спорта *
+          {/* Multiple sports selection - only for trainers */}
+          {needsSports && (
+            <div>
+              <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+                Виды спорта *
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {SPORT_TYPES.map(s => {
+                  const selected = form.sportTypes.includes(s.id)
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => toggleSport(s.id)}
+                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold press-scale transition-all ${
+                        selected
+                          ? 'bg-accent text-white'
+                          : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60'
+                      }`}
+                    >
+                      {selected && <Check size={12} />}
+                      {s.label}
+                    </button>
+                  )
+                })}
+              </div>
+              {form.sportTypes.length === 0 && (
+                <p className="text-[10px] mt-1.5 text-red-400">Выберите хотя бы один вид спорта</p>
+              )}
             </div>
-            <div className="flex flex-wrap gap-2">
-              {SPORT_TYPES.map(s => {
-                const selected = form.sportTypes.includes(s.id)
-                return (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => toggleSport(s.id)}
-                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold press-scale transition-all ${
-                      selected
-                        ? 'bg-accent text-white'
-                        : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60'
-                    }`}
-                  >
-                    {selected && <Check size={12} />}
-                    {s.label}
-                  </button>
-                )
-              })}
-            </div>
-            {form.sportTypes.length === 0 && (
-              <p className="text-[10px] mt-1.5 text-red-400">Выберите хотя бы один вид спорта</p>
-            )}
-          </div>
+          )}
 
           <PhoneInput
             value={form.phone}
@@ -152,12 +190,12 @@ export default function AddTrainer() {
           />
           <button
             type="submit"
-            disabled={form.sportTypes.length === 0}
+            disabled={needsSports && form.sportTypes.length === 0}
             className={`w-full py-3.5 rounded-[16px] font-bold press-scale mt-4 ${
-              form.sportTypes.length > 0 ? 'bg-accent text-white' : 'bg-accent/30 text-white/50 cursor-not-allowed'
+              (!needsSports || form.sportTypes.length > 0) ? 'bg-accent text-white' : 'bg-accent/30 text-white/50 cursor-not-allowed'
             }`}
           >
-            Добавить тренера
+            {form.userRole === 'club_owner' ? 'Добавить владельца' : form.userRole === 'club_admin' ? 'Добавить администратора' : 'Добавить тренера'}
           </button>
         </form>
       </div>

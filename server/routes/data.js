@@ -32,7 +32,10 @@ function mapStudent(s, includeSecrets = false) {
   return base
 }
 function mapGroup(g) {
-  return { id: g.id, trainerId: g.trainer_id, name: g.name, schedule: g.schedule, subscriptionCost: g.subscription_cost, attendanceEnabled: !!g.attendance_enabled, sportType: g.sport_type || null, pinnedMaterialId: g.pinned_material_id || null }
+  return { id: g.id, trainerId: g.trainer_id, name: g.name, schedule: g.schedule, subscriptionCost: g.subscription_cost, attendanceEnabled: !!g.attendance_enabled, sportType: g.sport_type || null, pinnedMaterialId: g.pinned_material_id || null, scheduleDays: g.schedule_days || [], timeFrom: g.time_from || null, timeTo: g.time_to || null }
+}
+function mapBranch(b) {
+  return { id: b.id, clubId: b.club_id, name: b.name, city: b.city || '', address: b.address || '', createdAt: b.created_at }
 }
 function mapAttendance(a) {
   return { id: a.id, groupId: a.group_id, studentId: a.student_id, date: a.date, present: a.present }
@@ -71,11 +74,12 @@ router.get('/', authMiddleware, async (req, res) => {
     pool.query('SELECT * FROM clubs ORDER BY created_at DESC'),
     pool.query('SELECT * FROM parents ORDER BY created_at DESC'),
     pool.query('SELECT * FROM student_groups'),
+    pool.query('SELECT * FROM branches ORDER BY created_at DESC'),
   ]
   if (role === 'superadmin') queries.push(pool.query("SELECT * FROM pending_registrations WHERE status = 'pending' ORDER BY created_at DESC"))
   const results = await Promise.all(queries)
-  const [users, groups, students, transactions, tournaments, news, regs, author, intTournaments, attendance, materials, clubs, parents, studentGroups] = results
-  const pendingRegs = results[14] || { rows: [] }
+  const [users, groups, students, transactions, tournaments, news, regs, author, intTournaments, attendance, materials, clubs, parents, studentGroups, branches] = results
+  const pendingRegs = results[15] || { rows: [] }
 
   const isSuperadmin = role === 'superadmin'
   // Superadmin sees passwords + no demo data; demo users see only their demo data
@@ -106,6 +110,7 @@ router.get('/', authMiddleware, async (req, res) => {
       relation: p.relation, plainPassword: isSuperadmin ? (p.plain_password || '') : undefined,
     })),
     studentGroups: studentGroups.rows.map(sg => ({ studentId: sg.student_id, groupId: sg.group_id })),
+    branches: branches.rows.map(mapBranch),
     ...(isSuperadmin ? {
       pendingRegistrations: pendingRegs.rows.map(r => ({
         id: r.id, name: r.name, phone: r.phone, clubName: r.club_name,
@@ -183,15 +188,16 @@ router.delete('/students/:id', authMiddleware, async (req, res) => {
 
 // --- Groups ---
 router.post('/groups', authMiddleware, async (req, res) => {
-  const { name, schedule, subscriptionCost, trainerId, sportType } = req.body
+  const { name, schedule, subscriptionCost, trainerId, sportType, scheduleDays, timeFrom, timeTo } = req.body
   const id = genId()
-  await pool.query('INSERT INTO groups (id, trainer_id, name, schedule, subscription_cost, sport_type) VALUES ($1,$2,$3,$4,$5,$6)',
-    [id, trainerId || req.user.userId, name, schedule || '', subscriptionCost || 0, sportType || null])
-  res.json({ id, trainerId: trainerId || req.user.userId, name, schedule: schedule || '', subscriptionCost: subscriptionCost || 0, sportType: sportType || null })
+  const tid = trainerId || req.user.userId
+  await pool.query('INSERT INTO groups (id, trainer_id, name, schedule, subscription_cost, sport_type, schedule_days, time_from, time_to) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+    [id, tid, name, schedule || '', subscriptionCost || 0, sportType || null, JSON.stringify(scheduleDays || []), timeFrom || null, timeTo || null])
+  res.json({ id, trainerId: tid, name, schedule: schedule || '', subscriptionCost: subscriptionCost || 0, sportType: sportType || null, scheduleDays: scheduleDays || [], timeFrom: timeFrom || null, timeTo: timeTo || null })
 })
 
 router.put('/groups/:id', authMiddleware, async (req, res) => {
-  const { name, schedule, subscriptionCost, attendanceEnabled, sportType, pinnedMaterialId } = req.body
+  const { name, schedule, subscriptionCost, attendanceEnabled, sportType, pinnedMaterialId, scheduleDays, timeFrom, timeTo } = req.body
   const sets = ['name = COALESCE($1, name)', 'schedule = COALESCE($2, schedule)', 'subscription_cost = COALESCE($3, subscription_cost)']
   const vals = [name, schedule, subscriptionCost]
   if (attendanceEnabled !== undefined) {
@@ -205,6 +211,18 @@ router.put('/groups/:id', authMiddleware, async (req, res) => {
   if (pinnedMaterialId !== undefined) {
     sets.push(`pinned_material_id = $${vals.length + 1}`)
     vals.push(pinnedMaterialId)
+  }
+  if (scheduleDays !== undefined) {
+    sets.push(`schedule_days = $${vals.length + 1}`)
+    vals.push(JSON.stringify(scheduleDays))
+  }
+  if (timeFrom !== undefined) {
+    sets.push(`time_from = $${vals.length + 1}`)
+    vals.push(timeFrom)
+  }
+  if (timeTo !== undefined) {
+    sets.push(`time_to = $${vals.length + 1}`)
+    vals.push(timeTo)
   }
   vals.push(req.params.id)
   await pool.query(`UPDATE groups SET ${sets.join(', ')} WHERE id = $${vals.length}`, vals)
@@ -546,16 +564,19 @@ router.delete('/news/:id', authMiddleware, async (req, res) => {
 
 // --- Trainers (admin only) ---
 router.post('/trainers', authMiddleware, async (req, res) => {
-  const { name, phone, password, clubName, avatar, sportType, sportTypes, city } = req.body
+  const { name, phone, password, clubName, avatar, sportType, sportTypes, city, userRole } = req.body
   const id = genId()
   const pw = password || 'trainer123'
   const hash = bcrypt.hashSync(pw, 10)
   // Support both sportType (single) and sportTypes (array)
   const sTypes = sportTypes || (sportType ? [sportType] : [])
   const sType = sportType || (sTypes[0] || null)
+  // Allow superadmin to create club_owner or club_admin roles
+  const validRoles = ['trainer', 'club_owner', 'club_admin']
+  const role = validRoles.includes(userRole) ? userRole : 'trainer'
   await pool.query('INSERT INTO users (id, name, phone, password_hash, role, club_name, avatar, sport_type, sport_types, city, plain_password) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',
-    [id, name, phone, hash, 'trainer', clubName || '', avatar || null, sType, JSON.stringify(sTypes), city || null, pw])
-  res.json({ id, name, phone, role: 'trainer', clubName, avatar, sportType: sType, sportTypes: sTypes, city, plainPassword: pw })
+    [id, name, phone, hash, role, clubName || '', avatar || null, sType, JSON.stringify(sTypes), city || null, pw])
+  res.json({ id, name, phone, role, clubName, avatar, sportType: sType, sportTypes: sTypes, city, plainPassword: pw })
 })
 
 router.put('/trainers/:id', authMiddleware, async (req, res) => {
@@ -724,6 +745,41 @@ router.post('/clubs/:id/trainers', authMiddleware, async (req, res) => {
 router.delete('/clubs/:id/trainers/:trainerId', authMiddleware, async (req, res) => {
   await pool.query('UPDATE users SET club_id = NULL, is_head_trainer = false, club_name = NULL WHERE id = $1 AND club_id = $2',
     [req.params.trainerId, req.params.id])
+  res.json({ ok: true })
+})
+
+// --- Branches ---
+router.post('/branches', authMiddleware, async (req, res) => {
+  const { clubId, name, city, address } = req.body
+  if (!clubId || !name) return res.status(400).json({ error: 'Укажите клуб и название' })
+  const { role } = req.user
+  if (role !== 'superadmin' && role !== 'club_owner' && role !== 'club_admin') return res.status(403).json({ error: 'Нет доступа' })
+  const id = genId()
+  await pool.query('INSERT INTO branches (id, club_id, name, city, address) VALUES ($1,$2,$3,$4,$5)',
+    [id, clubId, name, city || '', address || ''])
+  res.json({ id, clubId, name, city: city || '', address: address || '', createdAt: new Date().toISOString() })
+})
+
+router.put('/branches/:id', authMiddleware, async (req, res) => {
+  const { name, city, address } = req.body
+  const { role } = req.user
+  if (role !== 'superadmin' && role !== 'club_owner' && role !== 'club_admin') return res.status(403).json({ error: 'Нет доступа' })
+  const sets = []
+  const vals = []
+  let i = 1
+  if (name !== undefined) { sets.push(`name = $${i++}`); vals.push(name) }
+  if (city !== undefined) { sets.push(`city = $${i++}`); vals.push(city) }
+  if (address !== undefined) { sets.push(`address = $${i++}`); vals.push(address) }
+  if (sets.length === 0) return res.json({ ok: true })
+  vals.push(req.params.id)
+  await pool.query(`UPDATE branches SET ${sets.join(', ')} WHERE id = $${i}`, vals)
+  res.json({ ok: true })
+})
+
+router.delete('/branches/:id', authMiddleware, async (req, res) => {
+  const { role } = req.user
+  if (role !== 'superadmin' && role !== 'club_owner' && role !== 'club_admin') return res.status(403).json({ error: 'Нет доступа' })
+  await pool.query('DELETE FROM branches WHERE id = $1', [req.params.id])
   res.json({ ok: true })
 })
 

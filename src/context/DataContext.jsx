@@ -7,7 +7,7 @@ const EMPTY_DATA = {
   users: [], groups: [], students: [], transactions: [],
   tournaments: [], news: [], tournamentRegistrations: [], authorInfo: {},
   internalTournaments: [], attendance: [], pendingRegistrations: [],
-  materials: [], clubs: [], parents: [], studentGroups: [],
+  materials: [], clubs: [], parents: [], studentGroups: [], branches: [],
 }
 
 export function DataProvider({ children }) {
@@ -325,6 +325,25 @@ export function DataProvider({ children }) {
     setData(d => ({ ...d, parents: d.parents.filter(p => p.id !== id) }))
   }, [])
 
+  const addBranch = useCallback(async (branch) => {
+    const b = await api.addBranch(branch)
+    setData(d => ({ ...d, branches: [b, ...d.branches] }))
+    return b.id
+  }, [])
+
+  const updateBranch = useCallback(async (id, changes) => {
+    await api.updateBranch(id, changes)
+    setData(d => ({
+      ...d,
+      branches: d.branches.map(b => b.id === id ? { ...b, ...changes } : b)
+    }))
+  }, [])
+
+  const deleteBranch = useCallback(async (id) => {
+    await api.deleteBranch(id)
+    setData(d => ({ ...d, branches: d.branches.filter(b => b.id !== id) }))
+  }, [])
+
   const updateStudentGroups = useCallback(async (studentId, groupIds) => {
     await api.updateStudentGroups(studentId, groupIds)
     setData(d => ({
@@ -367,6 +386,7 @@ export function DataProvider({ children }) {
       saveAttendanceBulk,
       addMaterial, updateMaterial, deleteMaterial,
       addClub, updateClub, deleteClub, assignTrainerToClub, removeTrainerFromClub,
+      addBranch, updateBranch, deleteBranch,
       addParent, updateParent, deleteParent, qrCheckin, updateStudentGroups,
     }}>
       {children}

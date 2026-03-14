@@ -299,3 +299,34 @@ CREATE TABLE IF NOT EXISTS pending_registrations (
   status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Extend user roles: club_owner, club_admin
+DO $$ BEGIN
+  ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+  ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('superadmin', 'trainer', 'club_owner', 'club_admin'));
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+-- Club branches (филиалы)
+CREATE TABLE IF NOT EXISTS branches (
+  id TEXT PRIMARY KEY,
+  club_id TEXT NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  city VARCHAR(255),
+  address TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Schedule structured fields for groups
+DO $$ BEGIN
+  ALTER TABLE groups ADD COLUMN schedule_days JSONB DEFAULT '[]';
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE groups ADD COLUMN time_from VARCHAR(10);
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE groups ADD COLUMN time_to VARCHAR(10);
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;

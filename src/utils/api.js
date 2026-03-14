@@ -125,6 +125,11 @@ export const api = {
   updateParent: (id, data) => request(`/data/parents/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteParent: (id) => request(`/data/parents/${id}`, { method: 'DELETE' }),
 
+  // Branches
+  addBranch: (data) => request('/data/branches', { method: 'POST', body: JSON.stringify(data) }),
+  updateBranch: (id, data) => request(`/data/branches/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteBranch: (id) => request(`/data/branches/${id}`, { method: 'DELETE' }),
+
   // Registration
   register: (data) => {
     const headers = { 'Content-Type': 'application/json' }

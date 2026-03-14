@@ -135,11 +135,15 @@ export default function Profile() {
                   <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                     auth.role === 'superadmin'
                       ? dark ? 'bg-purple-500/20 text-purple-300' : 'bg-purple-100 text-purple-600'
-                      : auth.role === 'trainer'
-                        ? dark ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-600'
-                        : dark ? 'bg-green-500/20 text-green-300' : 'bg-green-100 text-green-600'
+                      : auth.role === 'club_owner'
+                        ? dark ? 'bg-yellow-500/20 text-yellow-300' : 'bg-yellow-100 text-yellow-700'
+                        : auth.role === 'club_admin'
+                          ? dark ? 'bg-cyan-500/20 text-cyan-300' : 'bg-cyan-100 text-cyan-600'
+                          : auth.role === 'trainer'
+                            ? dark ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-600'
+                            : dark ? 'bg-green-500/20 text-green-300' : 'bg-green-100 text-green-600'
                   }`}>
-                    {auth.role === 'superadmin' ? 'Админ' : auth.role === 'trainer' ? 'Тренер' : 'Спортсмен'}
+                    {auth.role === 'superadmin' ? 'Админ' : auth.role === 'club_owner' ? 'Владелец' : auth.role === 'club_admin' ? 'Администратор' : auth.role === 'trainer' ? 'Тренер' : 'Спортсмен'}
                   </span>
                   {sportLabel && (
                     <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${

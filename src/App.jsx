@@ -27,6 +27,7 @@ import Materials from './pages/Materials'
 import Clubs from './pages/Clubs'
 import ClubDetail from './pages/ClubDetail'
 import QRCheckin from './pages/QRCheckin'
+import ParentClub from './pages/ParentClub'
 
 function AppRoutes() {
   const { auth } = useAuth()
@@ -63,12 +64,14 @@ function AppRoutes() {
       {auth.role === 'trainer' && <Route path="/attendance/:groupId" element={<Attendance />} />}
       <Route path="/internal-tournament/:id" element={<InternalTournamentDetail />} />
       <Route path="/qr-checkin/:token" element={<QRCheckin />} />
-      {auth.role === 'parent' && <Route path="/profile" element={<Profile />} />}
+      {auth.role === 'parent' && <Route path="/my-club" element={<ParentClub />} />}
+      {auth.role === 'parent' && <Route path="/author" element={<Author />} />}
+      {(auth.role === 'club_owner' || auth.role === 'club_admin') && <Route path="/my-club" element={auth.user?.clubId ? <Navigate to={`/club/${auth.user.clubId}`} replace /> : <Clubs />} />}
       {auth.role === 'superadmin' && <Route path="/add-tournament" element={<AddTournament />} />}
       {auth.role === 'superadmin' && <Route path="/add-trainer" element={<AddTrainer />} />}
       {auth.role === 'superadmin' && <Route path="/trainer/:id" element={<TrainerDetail />} />}
       {auth.role === 'superadmin' && <Route path="/clubs" element={<Clubs />} />}
-      {(auth.role === 'superadmin' || (auth.role === 'trainer' && auth.user?.isHeadTrainer)) && <Route path="/club/:id" element={<ClubDetail />} />}
+      {(auth.role === 'superadmin' || auth.role === 'club_owner' || auth.role === 'club_admin' || (auth.role === 'trainer' && auth.user?.isHeadTrainer)) && <Route path="/club/:id" element={<ClubDetail />} />}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

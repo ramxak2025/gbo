@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Shield, Users, Trash2, Plus, Crown, UserMinus, ChevronRight, MapPin, Award, Dumbbell, TrendingUp, Edit3 } from 'lucide-react'
+import { Shield, Users, Trash2, Plus, Crown, UserMinus, ChevronRight, MapPin, Award, Dumbbell, TrendingUp, Edit3, Building2, DollarSign, BarChart3, Activity } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -16,19 +16,37 @@ function isExpired(dateStr) {
   return new Date(dateStr) < new Date()
 }
 
+function getRoleLabel(role) {
+  if (role === 'club_owner') return 'Владелец'
+  if (role === 'club_admin') return 'Администратор'
+  return 'Тренер'
+}
+
+function getRoleBadgeCls(role, dark) {
+  if (role === 'club_owner') return dark ? 'bg-yellow-500/20 text-yellow-300' : 'bg-yellow-100 text-yellow-700'
+  if (role === 'club_admin') return dark ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-600'
+  return dark ? 'bg-green-500/20 text-green-300' : 'bg-green-100 text-green-600'
+}
+
 export default function ClubDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { auth } = useAuth()
-  const { data, updateClub, deleteClub, assignTrainerToClub, removeTrainerFromClub } = useData()
+  const { data, updateClub, deleteClub, assignTrainerToClub, removeTrainerFromClub, addBranch, deleteBranch } = useData()
   const { dark } = useTheme()
 
   const [showAddTrainer, setShowAddTrainer] = useState(false)
   const [showHeadPicker, setShowHeadPicker] = useState(false)
+  const [showAddBranch, setShowAddBranch] = useState(false)
+  const [branchForm, setBranchForm] = useState({ name: '', city: '', address: '' })
+  const [expandedTrainer, setExpandedTrainer] = useState(null)
 
   const club = (data.clubs || []).find(c => c.id === id)
   const isSuperadmin = auth.role === 'superadmin'
+  const isOwner = auth.role === 'club_owner' && auth.user?.clubId === id
+  const isAdmin = auth.role === 'club_admin' && auth.user?.clubId === id
   const isHead = auth.role === 'trainer' && auth.user?.isHeadTrainer && auth.user?.clubId === id
+  const canManage = isSuperadmin || isOwner || isAdmin || isHead
 
   if (!club) {
     return (
@@ -41,9 +59,13 @@ export default function ClubDetail() {
     )
   }
 
-  const clubTrainers = data.users.filter(u => u.role === 'trainer' && u.clubId === id)
+  const clubMembers = data.users.filter(u => u.clubId === id)
+  const clubTrainers = clubMembers.filter(u => u.role === 'trainer')
+  const clubOwners = clubMembers.filter(u => u.role === 'club_owner')
+  const clubAdmins = clubMembers.filter(u => u.role === 'club_admin')
   const headTrainer = clubTrainers.find(t => t.isHeadTrainer)
-  const availableTrainers = data.users.filter(u => u.role === 'trainer' && !u.clubId)
+  const availableTrainers = data.users.filter(u => (u.role === 'trainer' || u.role === 'club_owner' || u.role === 'club_admin') && !u.clubId)
+  const clubBranches = (data.branches || []).filter(b => b.clubId === id)
 
   // Stats
   const stats = useMemo(() => {
@@ -51,8 +73,24 @@ export default function ClubDetail() {
     const allStudents = data.students.filter(s => trainerIds.has(s.trainerId))
     const active = allStudents.filter(s => !isExpired(s.subscriptionExpiresAt)).length
     const allGroups = data.groups.filter(g => trainerIds.has(g.trainerId))
-    return { trainers: clubTrainers.length, students: allStudents.length, active, groups: allGroups.length }
-  }, [clubTrainers, data.students, data.groups])
+    // Finances
+    const allTx = data.transactions.filter(t => trainerIds.has(t.trainerId))
+    const totalIncome = allTx.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+    const totalExpense = allTx.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+    return { trainers: clubTrainers.length, students: allStudents.length, active, groups: allGroups.length, totalIncome, totalExpense, allGroups, allStudents, allTx }
+  }, [clubTrainers, data.students, data.groups, data.transactions])
+
+  // Per-group finance stats
+  const groupFinances = useMemo(() => {
+    return stats.allGroups.map(g => {
+      const sgStudentIds = new Set(data.studentGroups.filter(sg => sg.groupId === g.id).map(sg => sg.studentId))
+      data.students.forEach(s => { if (s.groupId === g.id) sgStudentIds.add(s.id) })
+      const students = data.students.filter(s => sgStudentIds.has(s.id))
+      const activeCount = students.filter(s => !isExpired(s.subscriptionExpiresAt)).length
+      const expectedIncome = activeCount * (g.subscriptionCost || 0)
+      return { ...g, studentCount: students.length, activeCount, expectedIncome }
+    })
+  }, [stats.allGroups, data.studentGroups, data.students])
 
   const handleDelete = () => {
     if (confirm('Удалить клуб? Все тренеры будут откреплены.')) {
@@ -77,10 +115,30 @@ export default function ClubDetail() {
   }
 
   const handleRemoveTrainer = (trainerId) => {
-    if (confirm('Убрать тренера из клуба?')) {
+    if (confirm('Убрать из клуба?')) {
       removeTrainerFromClub(id, trainerId)
     }
   }
+
+  const handleAddBranch = (e) => {
+    e.preventDefault()
+    if (!branchForm.name.trim()) return
+    addBranch({ clubId: id, name: branchForm.name.trim(), city: branchForm.city.trim(), address: branchForm.address.trim() })
+    setBranchForm({ name: '', city: '', address: '' })
+    setShowAddBranch(false)
+  }
+
+  const handleDeleteBranch = (branchId) => {
+    if (confirm('Удалить филиал?')) deleteBranch(branchId)
+  }
+
+  const inputCls = `
+    w-full px-4 py-3 rounded-[16px] text-base outline-none
+    ${dark
+      ? 'bg-white/[0.07] border border-white/[0.08] text-white placeholder-white/25 focus:border-purple-500/50 focus:bg-white/[0.1]'
+      : 'bg-white/70 border border-white/60 text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:shadow-[0_0_0_3px_rgba(139,92,246,0.1)] shadow-sm'
+    }
+  `
 
   return (
     <Layout>
@@ -148,11 +206,140 @@ export default function ClubDetail() {
           ))}
         </div>
 
-        {/* Head trainer — tappable to change */}
+        {/* Finances overview */}
+        {canManage && (
+          <div className={`rounded-[20px] p-4 backdrop-blur-xl ${
+            dark ? 'bg-white/[0.05] border border-white/[0.07]' : 'bg-white/70 border border-white/60 shadow-sm'
+          }`}>
+            <div className="flex items-center gap-2 mb-3">
+              <DollarSign size={16} className="text-green-500" />
+              <span className={`text-xs uppercase font-bold ${dark ? 'text-white/40' : 'text-gray-500'}`}>Финансы клуба</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className={`text-[10px] uppercase font-semibold ${dark ? 'text-white/30' : 'text-gray-400'}`}>Доходы</div>
+                <div className="text-lg font-black text-green-500">{stats.totalIncome.toLocaleString('ru-RU')} ₽</div>
+              </div>
+              <div>
+                <div className={`text-[10px] uppercase font-semibold ${dark ? 'text-white/30' : 'text-gray-400'}`}>Расходы</div>
+                <div className="text-lg font-black text-red-400">{stats.totalExpense.toLocaleString('ru-RU')} ₽</div>
+              </div>
+            </div>
+            <div className={`mt-2 pt-2 ${dark ? 'border-t border-white/[0.06]' : 'border-t border-black/[0.05]'}`}>
+              <div className={`text-[10px] uppercase font-semibold ${dark ? 'text-white/30' : 'text-gray-400'}`}>Баланс</div>
+              <div className={`text-xl font-black ${(stats.totalIncome - stats.totalExpense) >= 0 ? 'text-green-500' : 'text-red-400'}`}>
+                {(stats.totalIncome - stats.totalExpense).toLocaleString('ru-RU')} ₽
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Group finances */}
+        {canManage && groupFinances.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <BarChart3 size={14} className="text-purple-500" />
+              <h3 className={`text-xs uppercase font-bold ${dark ? 'text-white/40' : 'text-gray-500'}`}>Финансы по группам</h3>
+            </div>
+            <div className="space-y-2">
+              {groupFinances.map(g => (
+                <GlassCard key={g.id}>
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-sm truncate">{g.name}</div>
+                      <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+                        {g.activeCount}/{g.studentCount} учеников • {(g.subscriptionCost || 0).toLocaleString('ru-RU')} ₽/мес
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0 ml-3">
+                      <div className="text-sm font-black text-green-500">{g.expectedIncome.toLocaleString('ru-RU')} ₽</div>
+                      <div className={`text-[9px] uppercase ${dark ? 'text-white/25' : 'text-gray-400'}`}>ожидаемый</div>
+                    </div>
+                  </div>
+                </GlassCard>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Branches */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Building2 size={14} className="text-cyan-500" />
+              <h3 className={`text-xs uppercase font-bold ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+                Филиалы ({clubBranches.length})
+              </h3>
+            </div>
+            {canManage && (
+              <button onClick={() => setShowAddBranch(true)} className="press-scale p-1">
+                <Plus size={18} className="text-accent" />
+              </button>
+            )}
+          </div>
+          {clubBranches.length > 0 ? (
+            <div className="space-y-2">
+              {clubBranches.map(b => (
+                <GlassCard key={b.id}>
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-sm truncate">{b.name}</div>
+                      <div className={`text-xs flex items-center gap-1 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+                        {b.city && <><MapPin size={10} /> {b.city}</>}
+                        {b.city && b.address && <span>•</span>}
+                        {b.address && <span>{b.address}</span>}
+                      </div>
+                    </div>
+                    {canManage && (
+                      <button onClick={() => handleDeleteBranch(b.id)} className="press-scale p-1.5 shrink-0">
+                        <Trash2 size={14} className="text-red-400" />
+                      </button>
+                    )}
+                  </div>
+                </GlassCard>
+              ))}
+            </div>
+          ) : (
+            <GlassCard className="text-center py-3">
+              <p className={`text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>Нет филиалов</p>
+            </GlassCard>
+          )}
+        </div>
+
+        {/* Club owners & admins */}
+        {(clubOwners.length > 0 || clubAdmins.length > 0) && (
+          <div>
+            <h3 className={`text-xs uppercase font-bold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+              Руководство
+            </h3>
+            <div className="space-y-2">
+              {[...clubOwners, ...clubAdmins].map(t => (
+                <GlassCard key={t.id}>
+                  <div className="flex items-center gap-3">
+                    <Avatar name={t.name} src={t.avatar} size={40} />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-sm truncate">{t.name}</div>
+                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${getRoleBadgeCls(t.role, dark)}`}>
+                        {getRoleLabel(t.role)}
+                      </span>
+                    </div>
+                    {canManage && (
+                      <button onClick={() => handleRemoveTrainer(t.id)} className="press-scale p-1.5 shrink-0">
+                        <UserMinus size={14} className="text-red-400" />
+                      </button>
+                    )}
+                  </div>
+                </GlassCard>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Head trainer */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <h3 className={`text-xs uppercase font-bold ${dark ? 'text-white/40' : 'text-gray-500'}`}>Главный тренер</h3>
-            {(isSuperadmin || isHead) && clubTrainers.length > 0 && (
+            {canManage && clubTrainers.length > 0 && (
               <button onClick={() => setShowHeadPicker(true)} className="press-scale p-1">
                 <Edit3 size={14} className="text-accent" />
               </button>
@@ -160,8 +347,8 @@ export default function ClubDetail() {
           </div>
           {headTrainer ? (
             <GlassCard
-              onClick={() => (isSuperadmin || isHead) && clubTrainers.length > 0 && setShowHeadPicker(true)}
-              className={`flex items-center gap-3 ${(isSuperadmin || isHead) ? 'cursor-pointer' : ''}`}
+              onClick={() => canManage && clubTrainers.length > 0 && setShowHeadPicker(true)}
+              className={`flex items-center gap-3 ${canManage ? 'cursor-pointer' : ''}`}
             >
               <Avatar name={headTrainer.name} src={headTrainer.avatar} size={44} />
               <div className="min-w-0 flex-1">
@@ -174,8 +361,8 @@ export default function ClubDetail() {
             </GlassCard>
           ) : (
             <GlassCard
-              onClick={() => (isSuperadmin || isHead) && clubTrainers.length > 0 && setShowHeadPicker(true)}
-              className={`text-center py-3 ${(isSuperadmin || isHead) && clubTrainers.length > 0 ? 'cursor-pointer' : ''}`}
+              onClick={() => canManage && clubTrainers.length > 0 && setShowHeadPicker(true)}
+              className={`text-center py-3 ${canManage && clubTrainers.length > 0 ? 'cursor-pointer' : ''}`}
             >
               <p className={`text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>
                 {clubTrainers.length > 0 ? 'Нажмите, чтобы назначить' : 'Сначала добавьте тренеров'}
@@ -184,13 +371,13 @@ export default function ClubDetail() {
           )}
         </div>
 
-        {/* Trainers list */}
+        {/* Trainers list with expandable stats */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <h3 className={`text-xs uppercase font-bold ${dark ? 'text-white/40' : 'text-gray-500'}`}>
               Тренеры ({clubTrainers.length})
             </h3>
-            {(isSuperadmin || isHead) && (
+            {canManage && (
               <button onClick={() => setShowAddTrainer(true)} className="press-scale p-1">
                 <Plus size={18} className="text-accent" />
               </button>
@@ -199,9 +386,14 @@ export default function ClubDetail() {
           <div className="space-y-2">
             {clubTrainers.map(t => {
               const tStudents = data.students.filter(s => s.trainerId === t.id)
+              const tActive = tStudents.filter(s => !isExpired(s.subscriptionExpiresAt)).length
               const tGroups = data.groups.filter(g => g.trainerId === t.id)
+              const tTx = data.transactions.filter(tx => tx.trainerId === t.id)
+              const tIncome = tTx.filter(tx => tx.type === 'income').reduce((s, tx) => s + tx.amount, 0)
+              const tExpense = tTx.filter(tx => tx.type === 'expense').reduce((s, tx) => s + tx.amount, 0)
+              const expanded = expandedTrainer === t.id
               return (
-                <GlassCard key={t.id} onClick={() => isSuperadmin && navigate(`/trainer/${t.id}`)} className="cursor-pointer">
+                <GlassCard key={t.id} onClick={() => setExpandedTrainer(expanded ? null : t.id)} className="cursor-pointer">
                   <div className="flex items-center gap-3">
                     <Avatar name={t.name} src={t.avatar} size={40} />
                     <div className="min-w-0 flex-1">
@@ -214,14 +406,59 @@ export default function ClubDetail() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      {(isSuperadmin || isHead) && !t.isHeadTrainer && (
+                      {canManage && !t.isHeadTrainer && (
                         <button onClick={(e) => { e.stopPropagation(); handleRemoveTrainer(t.id) }} className="press-scale p-1.5">
                           <UserMinus size={14} className="text-red-400" />
                         </button>
                       )}
-                      {isSuperadmin && <ChevronRight size={16} className={dark ? 'text-white/15' : 'text-gray-300'} />}
+                      <ChevronRight size={16} className={`transition-transform ${expanded ? 'rotate-90' : ''} ${dark ? 'text-white/15' : 'text-gray-300'}`} />
                     </div>
                   </div>
+                  {/* Expanded details */}
+                  {expanded && canManage && (
+                    <div className={`mt-3 pt-3 space-y-2 ${dark ? 'border-t border-white/[0.06]' : 'border-t border-black/[0.05]'}`}>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="text-center">
+                          <div className="text-sm font-black text-blue-500">{tStudents.length}</div>
+                          <div className={`text-[8px] uppercase font-bold ${dark ? 'text-white/25' : 'text-gray-400'}`}>Всего</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm font-black text-green-500">{tActive}</div>
+                          <div className={`text-[8px] uppercase font-bold ${dark ? 'text-white/25' : 'text-gray-400'}`}>Активных</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-sm font-black text-purple-500">{tGroups.length}</div>
+                          <div className={`text-[8px] uppercase font-bold ${dark ? 'text-white/25' : 'text-gray-400'}`}>Групп</div>
+                        </div>
+                      </div>
+                      <div className={`grid grid-cols-2 gap-2 p-2.5 rounded-[12px] ${dark ? 'bg-white/[0.03]' : 'bg-black/[0.02]'}`}>
+                        <div>
+                          <div className={`text-[9px] uppercase font-bold ${dark ? 'text-white/25' : 'text-gray-400'}`}>Доходы</div>
+                          <div className="text-sm font-bold text-green-500">{tIncome.toLocaleString('ru-RU')} ₽</div>
+                        </div>
+                        <div>
+                          <div className={`text-[9px] uppercase font-bold ${dark ? 'text-white/25' : 'text-gray-400'}`}>Расходы</div>
+                          <div className="text-sm font-bold text-red-400">{tExpense.toLocaleString('ru-RU')} ₽</div>
+                        </div>
+                      </div>
+                      {/* Trainer's groups */}
+                      {tGroups.length > 0 && (
+                        <div>
+                          <div className={`text-[9px] uppercase font-bold mb-1 ${dark ? 'text-white/25' : 'text-gray-400'}`}>Группы</div>
+                          {tGroups.map(g => {
+                            const sgIds = new Set(data.studentGroups.filter(sg => sg.groupId === g.id).map(sg => sg.studentId))
+                            data.students.forEach(s => { if (s.groupId === g.id) sgIds.add(s.id) })
+                            return (
+                              <div key={g.id} className={`flex items-center justify-between py-1.5 text-xs ${dark ? 'text-white/50' : 'text-gray-600'}`}>
+                                <span className="font-medium">{g.name}</span>
+                                <span>{sgIds.size} чел. • {(g.subscriptionCost || 0).toLocaleString('ru-RU')} ₽</span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </GlassCard>
               )
             })}
@@ -267,7 +504,6 @@ export default function ClubDetail() {
             )
           })}
 
-          {/* Remove head trainer option */}
           {headTrainer && (
             <button
               onClick={handleRemoveHead}
@@ -281,12 +517,12 @@ export default function ClubDetail() {
         </div>
       </Modal>
 
-      {/* Add Trainer Modal */}
-      <Modal open={showAddTrainer} onClose={() => setShowAddTrainer(false)} title="Добавить тренера в клуб">
+      {/* Add Trainer/Member Modal */}
+      <Modal open={showAddTrainer} onClose={() => setShowAddTrainer(false)} title="Добавить в клуб">
         <div className="space-y-2">
           {availableTrainers.length === 0 ? (
             <p className={`text-center py-6 text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>
-              Нет свободных тренеров
+              Нет свободных сотрудников
             </p>
           ) : (
             availableTrainers.map(t => (
@@ -299,7 +535,7 @@ export default function ClubDetail() {
                 <div className="min-w-0 flex-1">
                   <div className="font-semibold text-sm truncate">{t.name}</div>
                   <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-500'}`}>
-                    {t.clubName || '—'} • {getSportLabel(t.sportType)}
+                    <span className={`font-bold ${getRoleBadgeCls(t.role, dark)} px-1.5 py-0.5 rounded-full text-[9px] uppercase`}>{getRoleLabel(t.role)}</span>
                   </div>
                 </div>
                 <Plus size={16} className="text-accent shrink-0" />
@@ -307,6 +543,37 @@ export default function ClubDetail() {
             ))
           )}
         </div>
+      </Modal>
+
+      {/* Add Branch Modal */}
+      <Modal open={showAddBranch} onClose={() => setShowAddBranch(false)} title="Новый филиал">
+        <form onSubmit={handleAddBranch} className="space-y-3">
+          <input
+            type="text"
+            placeholder="Название филиала *"
+            value={branchForm.name}
+            onChange={e => setBranchForm(f => ({ ...f, name: e.target.value }))}
+            className={inputCls}
+            required
+          />
+          <input
+            type="text"
+            placeholder="Город"
+            value={branchForm.city}
+            onChange={e => setBranchForm(f => ({ ...f, city: e.target.value }))}
+            className={inputCls}
+          />
+          <input
+            type="text"
+            placeholder="Адрес"
+            value={branchForm.address}
+            onChange={e => setBranchForm(f => ({ ...f, address: e.target.value }))}
+            className={inputCls}
+          />
+          <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale">
+            Добавить филиал
+          </button>
+        </form>
       </Modal>
     </Layout>
   )

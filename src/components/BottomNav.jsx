@@ -18,6 +18,20 @@ const navConfigs = {
     { path: '/tournaments', icon: Trophy, label: 'Турниры' },
     { path: '/materials', icon: Film, label: 'Материалы' },
   ],
+  club_owner: [
+    { path: '/', icon: Home, label: 'Главная' },
+    { path: '/my-club', icon: Shield, label: 'Клуб' },
+    { path: '/team', icon: Users, label: 'Люди' },
+    { path: '/tournaments', icon: Trophy, label: 'Турниры' },
+    { path: '/profile', icon: User, label: 'Профиль' },
+  ],
+  club_admin: [
+    { path: '/', icon: Home, label: 'Главная' },
+    { path: '/my-club', icon: Shield, label: 'Клуб' },
+    { path: '/team', icon: Users, label: 'Люди' },
+    { path: '/tournaments', icon: Trophy, label: 'Турниры' },
+    { path: '/profile', icon: User, label: 'Профиль' },
+  ],
   student: [
     { path: '/', icon: Home, label: 'Главная' },
     { path: '/team', icon: Users, label: 'Команда' },
@@ -27,9 +41,10 @@ const navConfigs = {
   ],
   parent: [
     { path: '/', icon: Home, label: 'Главная' },
+    { path: '/my-club', icon: Shield, label: 'Клуб' },
     { path: '/tournaments', icon: Trophy, label: 'Турниры' },
+    { path: '/author', icon: Sparkles, label: 'Автор' },
     { path: '/materials', icon: Film, label: 'Материалы' },
-    { path: '/profile', icon: User, label: 'Профиль' },
   ],
 }
 
