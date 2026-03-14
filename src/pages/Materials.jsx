@@ -420,55 +420,55 @@ export default function Materials() {
                 </div>
               )}
 
-              {/* Collapsed: card with prominent thumbnail cover */}
+              {/* Collapsed: card with video cover */}
               {!isExpanded && (
                 <div className="-mx-4 -mt-4 -mb-4 cursor-pointer" onClick={() => setExpandedId(m.id)}>
                   {/* Video cover / thumbnail */}
-                  <div className={`relative w-full aspect-video flex items-center justify-center overflow-hidden rounded-t-[20px] ${
-                    thumb ? '' : embed?.type === 'vk'
-                      ? 'bg-gradient-to-br from-[#2787F5]/20 via-[#2787F5]/8 to-blue-900/15'
-                      : dark ? 'bg-white/[0.04]' : 'bg-gray-50'
+                  <div className={`relative w-full aspect-video overflow-hidden rounded-t-[20px] ${
+                    !thumb && !embed ? (dark ? 'bg-white/[0.04] flex items-center justify-center' : 'bg-gray-50 flex items-center justify-center') : ''
                   }`}>
                     {thumb ? (
                       <img src={thumb} alt={m.title} className="w-full h-full object-cover" />
-                    ) : embed?.type === 'vk' ? (
-                      <div className="flex flex-col items-center gap-1.5">
-                        <div className="w-12 h-12 rounded-2xl bg-[#2787F5]/20 flex items-center justify-center">
-                          <span className="text-[#2787F5] font-black text-lg">VK</span>
-                        </div>
-                        <span className={`text-[10px] font-semibold ${dark ? 'text-blue-300/40' : 'text-blue-500/50'}`}>Видео</span>
-                      </div>
+                    ) : embed ? (
+                      /* Show actual video embed as poster (muted, no interaction) */
+                      <iframe
+                        src={embed.src + (embed.type === 'youtube' ? '?controls=0&showinfo=0&rel=0&mute=1' : '&autoplay=0')}
+                        className="w-full h-full pointer-events-none"
+                        frameBorder="0"
+                        loading="lazy"
+                        allow=""
+                      />
                     ) : (
                       <Video size={36} className={dark ? 'text-white/10' : 'text-gray-200'} />
                     )}
-                    {/* Play button overlay */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 ${
-                        thumb ? 'bg-black/50 backdrop-blur-sm' : dark ? 'bg-black/30' : 'bg-black/15'
-                      }`}>
+                    {/* Play button overlay — always on top */}
+                    <div className="absolute inset-0 flex items-center justify-center z-10">
+                      <div className="w-12 h-12 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center">
                         <Play size={20} className="text-white ml-0.5" fill="white" />
                       </div>
                     </div>
+                    {/* Click overlay to block iframe interaction */}
+                    {embed && !thumb && <div className="absolute inset-0 z-[5]" />}
                     {/* Platform badge */}
                     {embed?.type && (
-                      <span className={`absolute top-2.5 left-2.5 px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase shadow-sm ${
-                        embed.type === 'youtube' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'
-                      }`}>{embed.type === 'youtube' ? 'YouTube' : 'VK Video'}</span>
+                      <span className={`absolute top-2.5 left-2.5 z-10 px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase shadow-sm ${
+                        embed.type === 'youtube' ? 'bg-red-600 text-white' : 'bg-[#2787F5] text-white'
+                      }`}>{embed.type === 'youtube' ? 'YouTube' : 'VK'}</span>
                     )}
-                    {/* Favorite button on cover */}
+                    {/* Favorite button */}
                     <button onClick={(e) => { e.stopPropagation(); toggleFavorite(m.id) }}
-                      className="absolute top-2.5 right-2.5 press-scale p-1.5 rounded-xl bg-black/30 backdrop-blur-sm">
+                      className="absolute top-2.5 right-2.5 z-10 press-scale p-1.5 rounded-xl bg-black/30 backdrop-blur-sm">
                       <Heart size={14} className={isFav ? 'text-red-400' : 'text-white/70'} fill={isFav ? 'currentColor' : 'none'} strokeWidth={2} />
                     </button>
                     {/* Pinned badge */}
                     {pinnedGroups.length > 0 && (
-                      <span className="absolute bottom-2.5 left-2.5 flex items-center gap-1 px-2 py-0.5 rounded-lg bg-green-500/90 text-[9px] font-bold text-white shadow-sm">
+                      <span className="absolute bottom-2.5 left-2.5 z-10 flex items-center gap-1 px-2 py-0.5 rounded-lg bg-green-500/90 text-[9px] font-bold text-white shadow-sm">
                         <MapPin size={8} /> Отработка
                       </span>
                     )}
                   </div>
 
-                  {/* Info below thumbnail */}
+                  {/* Info below */}
                   <div className="px-4 py-3">
                     <div className="flex items-start gap-2">
                       <div className="min-w-0 flex-1">

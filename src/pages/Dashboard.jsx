@@ -1283,7 +1283,7 @@ function StudentDash({ auth, data, dark, navigate }) {
           const checkedInToday = data.attendance.some(a => a.studentId === auth.studentId && a.date === todayStr && a.present)
 
           return (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {/* Scan QR button */}
               <button
                 onClick={() => setShowScanner(true)}

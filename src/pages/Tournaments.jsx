@@ -125,8 +125,8 @@ export default function Tournaments() {
         {/* ═══ UPCOMING ═══ */}
         {activeTab === 'upcoming' && (
           <div className="space-y-3">
-            {upcoming.length > 0 ? upcoming.map((t, i) => (
-              <HeroCard key={t.id} t={t} dark={dark} featured={i === 0}
+            {upcoming.length > 0 ? upcoming.map(t => (
+              <HeroCard key={t.id} t={t} dark={dark}
                 onClick={() => navigate(`/tournaments/${t.id}`)}
                 regCount={data.tournamentRegistrations?.filter(r => r.tournamentId === t.id).length || 0} />
             )) : (
@@ -170,8 +170,16 @@ export default function Tournaments() {
   )
 }
 
+/* ── Extract city from location string ── */
+function extractCity(location) {
+  if (!location) return null
+  // Take first part before comma, or the whole string if short
+  const parts = location.split(',').map(s => s.trim())
+  return parts[0]
+}
+
 /* ═══ Hero Card — Official Upcoming Tournament ═══ */
-function HeroCard({ t, dark, onClick, regCount, featured }) {
+function HeroCard({ t, dark, onClick, regCount }) {
   const [open, setOpen] = useState(null)
   const sportLabel = t.sportType ? getSportLabel(t.sportType) : null
   const wc = t.weightCategories || []
@@ -179,6 +187,7 @@ function HeroCard({ t, dark, onClick, regCount, featured }) {
   const dLabel = days !== null ? getDaysLabel(days) : null
   const urgent = days !== null && days >= 0 && days <= 3
   const d = t.date ? new Date(t.date) : null
+  const city = extractCity(t.location)
 
   const toggle = (s, e) => { e.stopPropagation(); setOpen(open === s ? null : s) }
 
@@ -191,9 +200,9 @@ function HeroCard({ t, dark, onClick, regCount, featured }) {
       <div className="cursor-pointer" onClick={onClick}>
         {t.coverImage ? (
           <div className="relative">
-            <img src={t.coverImage} alt={t.title} className={`w-full object-cover ${featured ? 'h-48' : 'h-36'}`} />
+            <img src={t.coverImage} alt={t.title} className="w-full h-40 object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/20" />
-            {/* Top row */}
+            {/* Top badges */}
             <div className="absolute top-3 left-3 right-3 flex justify-between">
               <div className="flex gap-1.5">
                 {sportLabel && <span className="px-2 py-0.5 rounded-lg bg-white/20 backdrop-blur-md text-[9px] font-bold text-white uppercase">{sportLabel}</span>}
@@ -206,50 +215,57 @@ function HeroCard({ t, dark, onClick, regCount, featured }) {
             </div>
             {/* Bottom */}
             <div className="absolute bottom-0 left-0 right-0 p-4">
-              <h3 className={`font-black text-white leading-snug ${featured ? 'text-[17px]' : 'text-[15px]'}`}>{t.title}</h3>
-              <div className="flex items-center gap-1 mt-1.5 text-white/70 text-[11px]">
-                <Calendar size={11} /><span className="whitespace-nowrap">{formatDate(t.date)}</span>
-                {t.location && <><span className="mx-1 opacity-40">·</span><MapPin size={10} /><span className="truncate">{t.location}</span></>}
+              <h3 className="font-black text-[16px] text-white leading-snug">{t.title}</h3>
+              <div className="flex items-center gap-3 mt-2 text-[11px]">
+                <span className="flex items-center gap-1 text-white/80 whitespace-nowrap">
+                  <Calendar size={11} />{formatDate(t.date)}
+                </span>
+                {city && (
+                  <span className="flex items-center gap-1 text-white/60 whitespace-nowrap">
+                    <MapPin size={10} />{city}
+                  </span>
+                )}
+                {regCount > 0 && (
+                  <span className="flex items-center gap-1 text-white/50 font-semibold">
+                    <Users size={10} />{regCount}
+                  </span>
+                )}
               </div>
-              {regCount > 0 && (
-                <div className="mt-2 flex items-center gap-1 text-white/50 text-[10px] font-semibold">
-                  <Users size={10} />{regCount} участн.
-                </div>
-              )}
             </div>
           </div>
         ) : (
-          /* No cover — clean layout */
-          <div className="p-4">
-            <div className="flex items-start gap-3">
-              {/* Date block */}
-              <div className={`shrink-0 w-14 rounded-2xl py-2 flex flex-col items-center ${
-                urgent ? 'bg-gradient-to-b from-orange-500/15 to-red-500/10' : dark ? 'bg-white/[0.05]' : 'bg-gray-50'
-              }`}>
-                <span className={`text-2xl font-black leading-none ${urgent ? 'text-orange-400' : 'text-accent'}`}>{d?.getDate() || '—'}</span>
-                <span className={`text-[9px] uppercase font-bold mt-0.5 ${dark ? 'text-white/30' : 'text-gray-400'}`}>
-                  {d?.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}
-                </span>
-                {d && <span className={`text-[8px] font-semibold ${dark ? 'text-white/15' : 'text-gray-300'}`}>{d.getFullYear()}</span>}
-              </div>
-              {/* Info */}
-              <div className="min-w-0 flex-1 pt-0.5">
-                <h3 className={`font-bold text-[15px] leading-snug ${dark ? 'text-white' : 'text-gray-900'}`}>{t.title}</h3>
-                {t.location && (
-                  <div className={`flex items-center gap-1 mt-1 text-[11px] ${dark ? 'text-white/35' : 'text-gray-500'}`}>
-                    <MapPin size={10} className="shrink-0" /><span className="truncate">{t.location}</span>
-                  </div>
+          /* No cover */
+          <div className="p-4 flex items-center gap-3.5">
+            {/* Date block — fixed size */}
+            <div className={`shrink-0 w-14 h-16 rounded-2xl flex flex-col items-center justify-center ${
+              urgent ? 'bg-gradient-to-b from-orange-500/15 to-red-500/10' : dark ? 'bg-white/[0.05]' : 'bg-gray-50'
+            }`}>
+              <span className={`text-2xl font-black leading-none ${urgent ? 'text-orange-400' : 'text-accent'}`}>{d?.getDate() || '—'}</span>
+              <span className={`text-[9px] uppercase font-bold mt-0.5 ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+                {d?.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}
+              </span>
+            </div>
+            {/* Info */}
+            <div className="min-w-0 flex-1">
+              <h3 className={`font-bold text-[15px] leading-snug line-clamp-2 ${dark ? 'text-white' : 'text-gray-900'}`}>{t.title}</h3>
+              <div className="flex items-center gap-3 mt-1.5 text-[11px]">
+                {city && (
+                  <span className={`flex items-center gap-1 whitespace-nowrap ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+                    <MapPin size={10} />{city}
+                  </span>
                 )}
-                <div className="flex items-center gap-2.5 mt-2">
-                  {sportLabel && <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold uppercase ${dark ? 'bg-accent/12 text-accent-light' : 'bg-red-50 text-red-600'}`}>{sportLabel}</span>}
-                  {dLabel && <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold ${urgent ? 'bg-orange-500/10 text-orange-400' : dark ? 'bg-white/[0.06] text-white/35' : 'bg-gray-100 text-gray-500'}`}>
+                {sportLabel && <span className={`px-1.5 py-px rounded text-[8px] font-bold uppercase ${dark ? 'bg-accent/12 text-accent-light' : 'bg-red-50 text-red-600'}`}>{sportLabel}</span>}
+              </div>
+              {(dLabel || regCount > 0) && (
+                <div className="flex items-center gap-2 mt-1.5">
+                  {dLabel && <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold ${urgent ? 'bg-orange-500/10 text-orange-400' : dark ? 'bg-white/[0.06] text-white/30' : 'bg-gray-100 text-gray-500'}`}>
                     {urgent && <Flame size={8} className="inline mr-0.5 -mt-px" />}{dLabel}
                   </span>}
                   {regCount > 0 && <span className={`text-[10px] font-semibold ${dark ? 'text-white/25' : 'text-gray-400'}`}><Users size={9} className="inline mr-0.5" />{regCount}</span>}
                 </div>
-              </div>
-              <ChevronRight size={16} className={dark ? 'text-white/12 mt-1' : 'text-gray-200 mt-1'} />
+              )}
             </div>
+            <ChevronRight size={16} className={dark ? 'text-white/12' : 'text-gray-200'} />
           </div>
         )}
       </div>
@@ -291,27 +307,28 @@ function ClubCard({ t, dark, onClick }) {
     }`}>
       {t.coverImage ? (
         <div className="relative">
-          <img src={t.coverImage} alt={t.title} className="w-full h-32 object-cover" />
+          <img src={t.coverImage} alt={t.title} className="w-full h-40 object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-3">
-            <h3 className="font-bold text-sm text-white">{t.title}</h3>
-            <div className="flex items-center gap-2 mt-1 text-white/60 text-[10px]">
-              <Calendar size={9} />{formatDate(t.date)}
-              {sportLabel && <span className="px-1.5 py-px rounded text-[8px] font-bold bg-white/15">{sportLabel}</span>}
+          <div className="absolute bottom-0 left-0 right-0 p-4">
+            <h3 className="font-bold text-[15px] text-white">{t.title}</h3>
+            <div className="flex items-center gap-3 mt-1.5 text-[11px]">
+              <span className="flex items-center gap-1 text-white/70 whitespace-nowrap"><Calendar size={10} />{formatDate(t.date)}</span>
+              {sportLabel && <span className="px-1.5 py-px rounded text-[8px] font-bold bg-white/15 text-white/80">{sportLabel}</span>}
+              <span className="flex items-center gap-1 text-white/50"><Users size={9} />{pCount}</span>
             </div>
           </div>
           {isActive && <div className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-green-400 shadow-lg shadow-green-400/50 animate-pulse" />}
         </div>
       ) : (
-        <div className="p-4 flex items-center gap-3">
-          {/* Date block */}
-          <div className={`shrink-0 w-12 rounded-xl py-1.5 flex flex-col items-center ${
+        <div className="p-4 flex items-center gap-3.5">
+          {/* Date block — same fixed size as HeroCard */}
+          <div className={`shrink-0 w-14 h-16 rounded-2xl flex flex-col items-center justify-center ${
             isActive
               ? 'bg-gradient-to-b from-purple-500/12 to-indigo-500/12'
               : dark ? 'bg-white/[0.04]' : 'bg-gray-50'
           }`}>
-            <span className={`text-lg font-black leading-none ${isActive ? 'text-purple-400' : dark ? 'text-white/25' : 'text-gray-400'}`}>{d?.getDate() || '—'}</span>
-            <span className={`text-[8px] uppercase font-bold mt-px ${dark ? 'text-white/25' : 'text-gray-400'}`}>{d?.toLocaleDateString('ru-RU',{month:'short'}).replace('.','')}</span>
+            <span className={`text-xl font-black leading-none ${isActive ? 'text-purple-400' : dark ? 'text-white/25' : 'text-gray-400'}`}>{d?.getDate() || '—'}</span>
+            <span className={`text-[8px] uppercase font-bold mt-0.5 ${dark ? 'text-white/25' : 'text-gray-400'}`}>{d?.toLocaleDateString('ru-RU',{month:'short'}).replace('.','')}</span>
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
