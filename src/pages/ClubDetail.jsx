@@ -29,26 +29,25 @@ function getRoleBadgeCls(role, dark) {
   return dark ? 'bg-green-500/20 text-green-300' : 'bg-green-100 text-green-600'
 }
 
-/* ═══ Segment Control ═══ */
-function SegmentControl({ tabs, active, onChange, dark }) {
+/* ═══ Scrollable Tab Bar ═══ */
+function TabBar({ tabs, active, onChange, dark }) {
   return (
-    <div className={`flex rounded-2xl p-1 ${dark ? 'bg-white/[0.06]' : 'bg-black/[0.04]'}`}>
+    <div className="flex gap-1.5 overflow-x-auto -mx-4 px-4 scrollbar-hide">
       {tabs.map(tab => (
         <button
           key={tab.id}
           onClick={() => onChange(tab.id)}
-          className={`flex-1 flex items-center justify-center gap-1 py-2.5 px-2 rounded-xl text-[12px] font-bold transition-all duration-200 press-scale whitespace-nowrap ${
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-bold transition-all press-scale whitespace-nowrap shrink-0 ${
             active === tab.id
-              ? dark ? 'bg-white/[0.12] text-white shadow-sm' : 'bg-white text-gray-900 shadow-sm'
-              : dark ? 'text-white/40' : 'text-gray-400'
+              ? 'bg-accent text-white shadow-lg shadow-accent/20'
+              : dark ? 'bg-white/[0.06] text-white/40' : 'bg-white/60 text-gray-500 border border-gray-200/40'
           }`}
         >
-          {tab.icon && <tab.icon size={13} />}
           {tab.label}
           {tab.count !== undefined && tab.count > 0 && (
             <span className={`min-w-[16px] h-[16px] flex items-center justify-center rounded-full text-[9px] font-black ${
               active === tab.id
-                ? dark ? 'bg-accent/20 text-accent-light' : 'bg-accent/10 text-accent'
+                ? 'bg-white/25 text-white'
                 : dark ? 'bg-white/[0.06] text-white/25' : 'bg-gray-200/60 text-gray-400'
             }`}>{tab.count}</span>
           )}
@@ -378,15 +377,15 @@ export default function ClubDetail() {
         </div>
 
         {/* ═══ Tabs ═══ */}
-        <SegmentControl
+        <TabBar
           dark={dark}
           active={activeTab}
           onChange={setActiveTab}
           tabs={[
-            { id: 'overview', label: 'Обзор', icon: BarChart3 },
-            { id: 'structure', label: 'Структура', icon: Building2, count: clubBranches.length },
-            { id: 'trainers', label: 'Тренеры', icon: GraduationCap, count: clubTrainers.length },
-            { id: 'groups', label: 'Группы', icon: Dumbbell, count: stats.groups },
+            { id: 'overview', label: 'Обзор' },
+            { id: 'structure', label: 'Филиалы', count: clubBranches.length },
+            { id: 'trainers', label: 'Тренеры', count: clubTrainers.length },
+            { id: 'groups', label: 'Группы', count: stats.groups },
           ]}
         />
 

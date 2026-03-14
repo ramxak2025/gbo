@@ -1287,46 +1287,38 @@ function StudentDash({ auth, data, dark, navigate }) {
               {/* Scan QR button */}
               <button
                 onClick={() => setShowScanner(true)}
-                className={`w-full relative overflow-hidden rounded-[22px] press-scale transition-all ${
+                className={`w-full rounded-3xl press-scale transition-all ${
                   checkedInToday
                     ? dark
-                      ? 'bg-gradient-to-r from-green-500/12 to-emerald-500/8 border border-green-500/20'
-                      : 'bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/60 shadow-sm'
-                    : 'bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 shadow-xl shadow-purple-600/30'
+                      ? 'bg-green-500/10 border border-green-500/20'
+                      : 'bg-green-50 border border-green-200/50 shadow-sm'
+                    : 'bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-violet-600/25'
                 }`}
               >
-                {/* Decorative elements */}
-                {!checkedInToday && (
-                  <>
-                    <div className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-white/[0.08]" />
-                    <div className="absolute -bottom-4 -left-4 w-14 h-14 rounded-full bg-white/[0.05]" />
-                  </>
-                )}
-                <div className="relative flex items-center gap-4 p-4">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                <div className="flex items-center gap-3.5 px-4 py-3.5">
+                  <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
                     checkedInToday
                       ? dark ? 'bg-green-500/15' : 'bg-green-100'
-                      : 'bg-white/15 backdrop-blur-sm'
+                      : 'bg-white/15'
                   }`}>
-                    {checkedInToday ? (
-                      <Check size={24} className="text-green-500" strokeWidth={3} />
-                    ) : (
-                      <QrCode size={24} className="text-white" />
-                    )}
+                    {checkedInToday
+                      ? <Check size={22} className="text-green-500" strokeWidth={3} />
+                      : <QrCode size={22} className="text-white" />
+                    }
                   </div>
                   <div className="text-left flex-1 min-w-0">
-                    <div className={`font-black text-[15px] ${
+                    <div className={`font-bold text-[14px] leading-tight ${
                       checkedInToday ? (dark ? 'text-green-400' : 'text-green-600') : 'text-white'
                     }`}>
-                      {checkedInToday ? 'Вы отмечены!' : 'Отметить посещение'}
+                      {checkedInToday ? 'Вы отмечены' : 'Отметить посещение'}
                     </div>
                     <div className={`text-[11px] mt-0.5 ${
-                      checkedInToday ? (dark ? 'text-green-400/45' : 'text-green-600/50') : 'text-white/55'
+                      checkedInToday ? (dark ? 'text-green-400/40' : 'text-green-600/50') : 'text-white/50'
                     }`}>
-                      {checkedInToday ? 'Нажмите, чтобы сканировать ещё раз' : 'Сканируйте QR-код тренера'}
+                      {checkedInToday ? 'Сканировать ещё раз' : 'Сканируйте QR-код'}
                     </div>
                   </div>
-                  <ChevronRight size={18} className={checkedInToday ? (dark ? 'text-green-400/30' : 'text-green-500/30') : 'text-white/40'} />
+                  <ChevronRight size={16} className={`shrink-0 ${checkedInToday ? (dark ? 'text-green-400/25' : 'text-green-500/25') : 'text-white/30'}`} />
                 </div>
               </button>
 

@@ -22,7 +22,7 @@ function getVideoEmbed(url) {
 
 function getVideoThumb(url) {
   const embed = getVideoEmbed(url)
-  if (embed?.type === 'youtube') return `https://img.youtube.com/vi/${embed.id}/mqdefault.jpg`
+  if (embed?.type === 'youtube') return `https://img.youtube.com/vi/${embed.id}/hqdefault.jpg`
   return null
 }
 
@@ -426,13 +426,20 @@ export default function Materials() {
                   {/* Video cover / thumbnail */}
                   <div className={`relative w-full aspect-video flex items-center justify-center overflow-hidden rounded-t-[20px] ${
                     thumb ? '' : embed?.type === 'vk'
-                      ? 'bg-gradient-to-br from-blue-600/20 via-blue-500/10 to-indigo-600/20'
-                      : dark ? 'bg-white/[0.04]' : 'bg-black/[0.03]'
+                      ? 'bg-gradient-to-br from-[#2787F5]/20 via-[#2787F5]/8 to-blue-900/15'
+                      : dark ? 'bg-white/[0.04]' : 'bg-gray-50'
                   }`}>
                     {thumb ? (
                       <img src={thumb} alt={m.title} className="w-full h-full object-cover" />
+                    ) : embed?.type === 'vk' ? (
+                      <div className="flex flex-col items-center gap-1.5">
+                        <div className="w-12 h-12 rounded-2xl bg-[#2787F5]/20 flex items-center justify-center">
+                          <span className="text-[#2787F5] font-black text-lg">VK</span>
+                        </div>
+                        <span className={`text-[10px] font-semibold ${dark ? 'text-blue-300/40' : 'text-blue-500/50'}`}>Видео</span>
+                      </div>
                     ) : (
-                      <Video size={36} className={embed?.type === 'vk' ? 'text-blue-400' : dark ? 'text-white/15' : 'text-gray-300'} />
+                      <Video size={36} className={dark ? 'text-white/10' : 'text-gray-200'} />
                     )}
                     {/* Play button overlay */}
                     <div className="absolute inset-0 flex items-center justify-center">
