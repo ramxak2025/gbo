@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url'
 import { initDB } from './db.js'
 import { seedDatabase } from './seed.js'
 import { checkDemoReset } from './demo.js'
+import { startBackupScheduler } from './backup.js'
 import authRoutes from './routes/auth.js'
 import dataRoutes from './routes/data.js'
 import uploadRoutes from './routes/upload.js'
@@ -61,6 +62,8 @@ async function start() {
   await checkDemoReset()
   // Check demo reset every hour
   setInterval(() => checkDemoReset(), 3600000)
+  // Start automatic database backup scheduler (every 6h, 7-day retention)
+  startBackupScheduler()
   app.listen(PORT, () => {
     console.log(`iBorcuha server running on port ${PORT}`)
   })
