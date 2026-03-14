@@ -11,6 +11,7 @@ const genId = () => Date.now().toString(36) + crypto.randomBytes(4).toString('he
 
 async function verifyTrainerOwnsStudent(userId, role, studentId) {
   if (role === 'superadmin') return true
+  // Parents are authenticated with userId = trainer's id, so trainer_id check works for them
   const { rows } = await pool.query('SELECT trainer_id FROM students WHERE id = $1', [studentId])
   return rows.length > 0 && rows[0].trainer_id === userId
 }
@@ -79,7 +80,7 @@ function mapTx(t) {
   return { id: t.id, trainerId: t.trainer_id, type: t.type, amount: t.amount, category: t.category, description: t.description, studentId: t.student_id, date: t.date }
 }
 function mapTournament(t) {
-  return { id: t.id, title: t.title, coverImage: t.cover_image, date: t.date, location: t.location, description: t.description, createdBy: t.created_by, regulations: t.regulations || '', weightCategories: t.weight_categories || [], prizes: t.prizes || '', rules: t.rules || '', sportType: t.sport_type || null, status: t.status || 'upcoming', brackets: t.brackets || {}, matsCount: t.mats_count || 1 }
+  return { id: t.id, title: t.title, coverImage: t.cover_image, date: t.date, location: t.location, city: t.city || '', description: t.description, createdBy: t.created_by, regulations: t.regulations || '', weightCategories: t.weight_categories || [], prizes: t.prizes || '', rules: t.rules || '', sportType: t.sport_type || null, status: t.status || 'upcoming', brackets: t.brackets || {}, matsCount: t.mats_count || 1, ageGroups: t.age_groups || [] }
 }
 function mapNews(n) {
   return { id: n.id, trainerId: n.trainer_id, groupId: n.group_id, title: n.title, content: n.content, date: n.date }
@@ -198,6 +199,16 @@ router.put('/students/:id', authMiddleware, async (req, res) => {
     const { userId, role } = req.user
     if (!await verifyTrainerOwnsStudent(userId, role, req.params.id)) {
       return res.status(403).json({ error: 'Нет доступа' })
+    }
+
+    // Parents can only change status
+    if (role === 'parent') {
+      const { status } = req.body
+      if (status !== undefined) {
+        await pool.query('UPDATE students SET status = $1 WHERE id = $2', [status, req.params.id])
+      }
+      const { rows: [updated] } = await pool.query('SELECT * FROM students WHERE id = $1', [req.params.id])
+      return res.json(updated ? mapStudent(updated) : { ok: true })
     }
 
     const { name, phone, weight, belt, birthDate, avatar, subscriptionExpiresAt, status, groupId, groupIds, password, trainingStartDate } = req.body
@@ -395,13 +406,13 @@ router.post('/tournaments', authMiddleware, async (req, res) => {
   try {
     const r = req.user.role
     if (r !== 'superadmin' && r !== 'organizer') return res.status(403).json({ error: 'Нет доступа' })
-    const { title, date, location, description, coverImage, regulations, weightCategories, prizes, rules, sportType, matsCount } = req.body
+    const { title, date, location, city, description, coverImage, regulations, weightCategories, prizes, rules, sportType, matsCount, ageGroups } = req.body
     if (!title || !date) return res.status(400).json({ error: 'Укажите название и дату турнира' })
 
     const id = genId()
-    await pool.query('INSERT INTO tournaments (id, title, date, location, description, cover_image, created_by, regulations, weight_categories, prizes, rules, sport_type, mats_count) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)',
-      [id, title, date, location || '', description || '', coverImage || null, req.user.userId, regulations || '', JSON.stringify(weightCategories || []), prizes || '', rules || '', sportType || null, matsCount || 1])
-    res.json(mapTournament({ id, title, date, location, description, cover_image: coverImage, created_by: req.user.userId, regulations, weight_categories: weightCategories || [], prizes, rules, sport_type: sportType, status: 'upcoming', brackets: {}, mats_count: matsCount || 1, created_at: new Date() }))
+    await pool.query('INSERT INTO tournaments (id, title, date, location, city, description, cover_image, created_by, regulations, weight_categories, prizes, rules, sport_type, mats_count, age_groups) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)',
+      [id, title, date, location || '', city || '', description || '', coverImage || null, req.user.userId, regulations || '', JSON.stringify(weightCategories || []), prizes || '', rules || '', sportType || null, matsCount || 1, JSON.stringify(ageGroups || [])])
+    res.json(mapTournament({ id, title, date, location, city, description, cover_image: coverImage, created_by: req.user.userId, regulations, weight_categories: weightCategories || [], prizes, rules, sport_type: sportType, status: 'upcoming', brackets: {}, mats_count: matsCount || 1, age_groups: ageGroups || [], created_at: new Date() }))
   } catch (err) {
     console.error('POST /tournaments error:', err)
     res.status(500).json({ error: 'Ошибка создания турнира' })
@@ -410,13 +421,14 @@ router.post('/tournaments', authMiddleware, async (req, res) => {
 
 router.put('/tournaments/:id', authMiddleware, async (req, res) => {
   try {
-    const { title, date, location, description, coverImage, regulations, weightCategories, prizes, rules, sportType, status, brackets, matsCount } = req.body
+    const { title, date, location, city, description, coverImage, regulations, weightCategories, prizes, rules, sportType, status, brackets, matsCount, ageGroups } = req.body
     const sets = []
     const vals = []
     let i = 1
     if (title !== undefined) { sets.push(`title = $${i++}`); vals.push(title) }
     if (date !== undefined) { sets.push(`date = $${i++}`); vals.push(date) }
     if (location !== undefined) { sets.push(`location = $${i++}`); vals.push(location) }
+    if (city !== undefined) { sets.push(`city = $${i++}`); vals.push(city) }
     if (description !== undefined) { sets.push(`description = $${i++}`); vals.push(description) }
     if (coverImage !== undefined) { sets.push(`cover_image = $${i++}`); vals.push(coverImage) }
     if (regulations !== undefined) { sets.push(`regulations = $${i++}`); vals.push(regulations) }
@@ -427,6 +439,7 @@ router.put('/tournaments/:id', authMiddleware, async (req, res) => {
     if (status !== undefined) { sets.push(`status = $${i++}`); vals.push(status) }
     if (brackets !== undefined) { sets.push(`brackets = $${i++}`); vals.push(JSON.stringify(brackets)) }
     if (matsCount !== undefined) { sets.push(`mats_count = $${i++}`); vals.push(matsCount) }
+    if (ageGroups !== undefined) { sets.push(`age_groups = $${i++}`); vals.push(JSON.stringify(ageGroups)) }
     if (sets.length === 0) return res.json({ ok: true })
     vals.push(req.params.id)
     await pool.query(`UPDATE tournaments SET ${sets.join(', ')} WHERE id = $${i}`, vals)

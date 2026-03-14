@@ -397,6 +397,14 @@ DO $$ BEGIN
   ALTER TABLE tournaments ADD COLUMN mats_count INTEGER DEFAULT 1;
 EXCEPTION WHEN duplicate_column THEN NULL;
 END $$;
+DO $$ BEGIN
+  ALTER TABLE tournaments ADD COLUMN city VARCHAR(255);
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE tournaments ADD COLUMN age_groups JSONB DEFAULT '[]';
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
 
 -- Trainer achievements/rank
 DO $$ BEGIN

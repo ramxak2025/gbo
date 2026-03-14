@@ -1,12 +1,14 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Calendar, MapPin, Trophy, Swords, Check, ChevronDown, ChevronRight, Scale, ScrollText, Medal, Users, Flame, Archive, X, Clock } from 'lucide-react'
+import { Plus, Calendar, MapPin, Trophy, Swords, Check, ChevronRight, Scale, ScrollText, Medal, Users, Flame, Archive, Clock } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
 import { getSportLabel } from '../utils/sports'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
+
+const MONTH_NAMES = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
 
 function formatDate(iso) {
   if (!iso) return '—'
@@ -27,6 +29,20 @@ function getDaysLabel(days) {
   if (days % 10 === 1 && days % 100 !== 11) return `${days} день`
   if ([2,3,4].includes(days % 10) && ![12,13,14].includes(days % 100)) return `${days} дня`
   return `${days} дней`
+}
+
+function getMonthKey(iso) {
+  if (!iso) return '0000-00'
+  const d = new Date(iso)
+  return `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`
+}
+
+function getMonthLabel(key) {
+  const [year, month] = key.split('-').map(Number)
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const monthName = MONTH_NAMES[month] || ''
+  return year === currentYear ? monthName : `${monthName} ${year}`
 }
 
 /* ═══ Main Component ═══ */
@@ -64,6 +80,28 @@ export default function Tournaments() {
     ...clubDone.map(t => ({ ...t, _kind: 'internal' })),
   ].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)), [pastOfficial, clubDone])
 
+  // Group upcoming by month
+  const upcomingByMonth = useMemo(() => {
+    const groups = {}
+    upcoming.forEach(t => {
+      const key = getMonthKey(t.date)
+      if (!groups[key]) groups[key] = []
+      groups[key].push(t)
+    })
+    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))
+  }, [upcoming])
+
+  // Group archive by month
+  const archiveByMonth = useMemo(() => {
+    const groups = {}
+    archive.forEach(t => {
+      const key = getMonthKey(t.date)
+      if (!groups[key]) groups[key] = []
+      groups[key].push(t)
+    })
+    return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a))
+  }, [archive])
+
   const canAdd = auth.role === 'superadmin' || auth.role === 'organizer'
 
   const tabs = [
@@ -91,7 +129,7 @@ export default function Tournaments() {
 
       <div className="px-4 pb-4 slide-in">
         {/* ── Tabs ── */}
-        <div className={`flex rounded-2xl p-1 mb-4 ${dark ? 'bg-white/[0.06]' : 'bg-black/[0.04]'}`}>
+        <div className={`flex rounded-2xl p-1 mb-5 ${dark ? 'bg-white/[0.06]' : 'bg-black/[0.04]'}`}>
           {tabs.map(tab => (
             <button
               key={tab.id}
@@ -122,13 +160,33 @@ export default function Tournaments() {
           </div>
         )}
 
-        {/* ═══ UPCOMING ═══ */}
+        {/* ═══ UPCOMING — Vertical cards grouped by month ═══ */}
         {activeTab === 'upcoming' && (
-          <div className="space-y-3">
-            {upcoming.length > 0 ? upcoming.map(t => (
-              <HeroCard key={t.id} t={t} dark={dark}
-                onClick={() => navigate(`/tournaments/${t.id}`)}
-                regCount={data.tournamentRegistrations?.filter(r => r.tournamentId === t.id).length || 0} />
+          <div className="space-y-6">
+            {upcomingByMonth.length > 0 ? upcomingByMonth.map(([monthKey, tournaments]) => (
+              <div key={monthKey}>
+                {/* Month header */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`px-3 py-1 rounded-xl text-[11px] font-black uppercase tracking-wider ${
+                    dark ? 'bg-accent/12 text-accent-light' : 'bg-red-50 text-red-600'
+                  }`}>
+                    {getMonthLabel(monthKey)}
+                  </div>
+                  <div className={`flex-1 h-px ${dark ? 'bg-white/[0.06]' : 'bg-gray-200/60'}`} />
+                </div>
+                {/* Two-column grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  {tournaments.map(t => (
+                    <TournamentCard
+                      key={t.id}
+                      t={t}
+                      dark={dark}
+                      onClick={() => navigate(`/tournaments/${t.id}`)}
+                      regCount={data.tournamentRegistrations?.filter(r => r.tournamentId === t.id).length || 0}
+                    />
+                  ))}
+                </div>
+              </div>
             )) : (
               <Empty dark={dark} icon={Trophy} text="Нет предстоящих турниров"
                 sub={canAdd ? 'Создайте новый' : 'Следите за обновлениями'}
@@ -139,27 +197,41 @@ export default function Tournaments() {
 
         {/* ═══ CLUB ═══ */}
         {activeTab === 'club' && (
-          <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
             {(clubSub === 'active' ? clubActive : clubDone).length > 0 ? (
               (clubSub === 'active' ? clubActive : clubDone).map(t => (
                 <ClubCard key={t.id} t={t} dark={dark}
                   onClick={() => navigate(`/internal-tournament/${t.id}`)} />
               ))
             ) : (
-              <Empty dark={dark} icon={Swords}
-                text={clubSub === 'active' ? 'Нет активных турниров' : 'Нет прошедших турниров'}
-                sub={auth.role === 'trainer' && clubSub === 'active' ? 'Создайте клубный турнир' : null}
-                action={auth.role === 'trainer' && clubSub === 'active' ? { label: 'Создать', onClick: () => navigate('/create-internal-tournament') } : null} />
+              <div className="col-span-2">
+                <Empty dark={dark} icon={Swords}
+                  text={clubSub === 'active' ? 'Нет активных турниров' : 'Нет прошедших турниров'}
+                  sub={auth.role === 'trainer' && clubSub === 'active' ? 'Создайте клубный турнир' : null}
+                  action={auth.role === 'trainer' && clubSub === 'active' ? { label: 'Создать', onClick: () => navigate('/create-internal-tournament') } : null} />
+              </div>
             )}
           </div>
         )}
 
-        {/* ═══ ARCHIVE ═══ */}
+        {/* ═══ ARCHIVE — grouped by month ═══ */}
         {activeTab === 'archive' && (
-          <div className="space-y-2">
-            {archive.length > 0 ? archive.map(t => (
-              <ArchiveRow key={t.id} t={t} dark={dark}
-                onClick={() => navigate(t._kind === 'internal' ? `/internal-tournament/${t.id}` : `/tournaments/${t.id}`)} />
+          <div className="space-y-5">
+            {archiveByMonth.length > 0 ? archiveByMonth.map(([monthKey, tournaments]) => (
+              <div key={monthKey}>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${dark ? 'text-white/25' : 'text-gray-400'}`}>
+                    {getMonthLabel(monthKey)}
+                  </span>
+                  <div className={`flex-1 h-px ${dark ? 'bg-white/[0.04]' : 'bg-gray-100'}`} />
+                </div>
+                <div className="space-y-1.5">
+                  {tournaments.map(t => (
+                    <ArchiveRow key={t.id} t={t} dark={dark}
+                      onClick={() => navigate(t._kind === 'internal' ? `/internal-tournament/${t.id}` : `/tournaments/${t.id}`)} />
+                  ))}
+                </div>
+              </div>
             )) : (
               <Empty dark={dark} icon={Archive} text="Архив пуст" sub="Завершённые турниры появятся здесь" />
             )}
@@ -170,124 +242,122 @@ export default function Tournaments() {
   )
 }
 
-/* ── Extract city from location string ── */
-function extractCity(location) {
-  if (!location) return null
-  // Take first part before comma, or the whole string if short
-  const parts = location.split(',').map(s => s.trim())
-  return parts[0]
-}
-
-/* ═══ Hero Card — Official Upcoming Tournament ═══ */
-function HeroCard({ t, dark, onClick, regCount }) {
-  const [open, setOpen] = useState(null)
+/* ═══ Vertical Tournament Card ═══ */
+function TournamentCard({ t, dark, onClick, regCount }) {
   const sportLabel = t.sportType ? getSportLabel(t.sportType) : null
-  const wc = t.weightCategories || []
   const days = getDaysUntil(t.date)
   const dLabel = days !== null ? getDaysLabel(days) : null
   const urgent = days !== null && days >= 0 && days <= 3
   const d = t.date ? new Date(t.date) : null
-  const city = extractCity(t.location)
-
-  const toggle = (s, e) => { e.stopPropagation(); setOpen(open === s ? null : s) }
+  const city = t.city || extractCity(t.location)
 
   return (
-    <div className={`rounded-3xl overflow-hidden transition-all ${
-      dark
-        ? 'bg-white/[0.05] border border-white/[0.08]'
-        : 'bg-white border border-gray-100 shadow-[0_2px_16px_rgba(0,0,0,0.06)]'
-    }`}>
-      <div className="cursor-pointer" onClick={onClick}>
-        {t.coverImage ? (
-          <div className="relative">
-            <img src={t.coverImage} alt={t.title} className="w-full h-40 object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/20" />
-            {/* Top badges */}
-            <div className="absolute top-3 left-3 right-3 flex justify-between">
-              <div className="flex gap-1.5">
-                {sportLabel && <span className="px-2 py-0.5 rounded-lg bg-white/20 backdrop-blur-md text-[9px] font-bold text-white uppercase">{sportLabel}</span>}
-              </div>
-              {dLabel && (
-                <span className={`px-2 py-0.5 rounded-lg backdrop-blur-md text-[9px] font-bold text-white ${urgent ? 'bg-orange-500/80' : 'bg-black/30'}`}>
-                  {urgent && <Flame size={9} className="inline mr-0.5 -mt-px" />}{dLabel}
+    <div
+      onClick={onClick}
+      className={`rounded-2xl overflow-hidden cursor-pointer press-scale transition-all flex flex-col ${
+        dark
+          ? 'bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.07]'
+          : 'bg-white border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.1)]'
+      }`}
+    >
+      {/* Cover or Date header */}
+      {t.coverImage ? (
+        <div className="relative h-28">
+          <img src={t.coverImage} alt={t.title} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20" />
+          {/* Date badge on cover */}
+          {d && (
+            <div className="absolute top-2 left-2">
+              <div className={`w-11 h-12 rounded-xl flex flex-col items-center justify-center backdrop-blur-md ${
+                urgent ? 'bg-orange-500/90' : 'bg-black/40'
+              }`}>
+                <span className="text-lg font-black text-white leading-none">{d.getDate()}</span>
+                <span className="text-[8px] uppercase font-bold text-white/70 mt-0.5">
+                  {d.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}
                 </span>
-              )}
-            </div>
-            {/* Bottom */}
-            <div className="absolute bottom-0 left-0 right-0 p-4">
-              <h3 className="font-black text-[16px] text-white leading-snug">{t.title}</h3>
-              <div className="flex items-center gap-3 mt-2 text-[11px]">
-                <span className="flex items-center gap-1 text-white/80 whitespace-nowrap">
-                  <Calendar size={11} />{formatDate(t.date)}
-                </span>
-                {city && (
-                  <span className="flex items-center gap-1 text-white/60 whitespace-nowrap">
-                    <MapPin size={10} />{city}
-                  </span>
-                )}
-                {regCount > 0 && (
-                  <span className="flex items-center gap-1 text-white/50 font-semibold">
-                    <Users size={10} />{regCount}
-                  </span>
-                )}
               </div>
             </div>
-          </div>
-        ) : (
-          /* No cover */
-          <div className="p-4 flex items-center gap-3.5">
-            {/* Date block — fixed size */}
-            <div className={`shrink-0 w-14 h-16 rounded-2xl flex flex-col items-center justify-center ${
-              urgent ? 'bg-gradient-to-b from-orange-500/15 to-red-500/10' : dark ? 'bg-white/[0.05]' : 'bg-gray-50'
-            }`}>
-              <span className={`text-2xl font-black leading-none ${urgent ? 'text-orange-400' : 'text-accent'}`}>{d?.getDate() || '—'}</span>
-              <span className={`text-[9px] uppercase font-bold mt-0.5 ${dark ? 'text-white/30' : 'text-gray-400'}`}>
-                {d?.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}
+          )}
+          {/* Sport badge */}
+          {sportLabel && (
+            <div className="absolute top-2 right-2">
+              <span className="px-1.5 py-0.5 rounded-lg bg-white/20 backdrop-blur-md text-[8px] font-bold text-white uppercase">{sportLabel}</span>
+            </div>
+          )}
+          {/* Days badge */}
+          {dLabel && (
+            <div className="absolute bottom-2 right-2">
+              <span className={`px-1.5 py-0.5 rounded-lg backdrop-blur-md text-[8px] font-bold text-white ${urgent ? 'bg-orange-500/80' : 'bg-black/30'}`}>
+                {urgent && <Flame size={8} className="inline mr-0.5 -mt-px" />}{dLabel}
               </span>
             </div>
-            {/* Info */}
-            <div className="min-w-0 flex-1">
-              <h3 className={`font-bold text-[15px] leading-snug line-clamp-2 ${dark ? 'text-white' : 'text-gray-900'}`}>{t.title}</h3>
-              <div className="flex items-center gap-3 mt-1.5 text-[11px]">
-                {city && (
-                  <span className={`flex items-center gap-1 whitespace-nowrap ${dark ? 'text-white/40' : 'text-gray-500'}`}>
-                    <MapPin size={10} />{city}
-                  </span>
-                )}
-                {sportLabel && <span className={`px-1.5 py-px rounded text-[8px] font-bold uppercase ${dark ? 'bg-accent/12 text-accent-light' : 'bg-red-50 text-red-600'}`}>{sportLabel}</span>}
-              </div>
-              {(dLabel || regCount > 0) && (
-                <div className="flex items-center gap-2 mt-1.5">
-                  {dLabel && <span className={`px-2 py-0.5 rounded-lg text-[9px] font-bold ${urgent ? 'bg-orange-500/10 text-orange-400' : dark ? 'bg-white/[0.06] text-white/30' : 'bg-gray-100 text-gray-500'}`}>
-                    {urgent && <Flame size={8} className="inline mr-0.5 -mt-px" />}{dLabel}
-                  </span>}
-                  {regCount > 0 && <span className={`text-[10px] font-semibold ${dark ? 'text-white/25' : 'text-gray-400'}`}><Users size={9} className="inline mr-0.5" />{regCount}</span>}
-                </div>
-              )}
-            </div>
-            <ChevronRight size={16} className={dark ? 'text-white/12' : 'text-gray-200'} />
+          )}
+        </div>
+      ) : (
+        /* No cover — colored date header */
+        <div className={`p-3 flex items-center gap-2.5 ${
+          urgent
+            ? 'bg-gradient-to-r from-orange-500/15 to-red-500/10'
+            : dark ? 'bg-white/[0.03]' : 'bg-gray-50/80'
+        }`}>
+          <div className={`shrink-0 w-11 h-12 rounded-xl flex flex-col items-center justify-center ${
+            urgent
+              ? 'bg-gradient-to-b from-orange-500/20 to-red-500/15'
+              : dark ? 'bg-white/[0.06]' : 'bg-white'
+          }`}>
+            <span className={`text-lg font-black leading-none ${urgent ? 'text-orange-400' : 'text-accent'}`}>
+              {d?.getDate() || '—'}
+            </span>
+            <span className={`text-[8px] uppercase font-bold mt-0.5 ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+              {d?.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', '')}
+            </span>
           </div>
-        )}
-      </div>
-
-      {/* Detail pills */}
-      {(wc.length > 0 || t.regulations || t.rules || t.prizes) && (
-        <div className={`px-4 pb-3 flex flex-wrap gap-1.5 ${t.coverImage ? '' : 'pt-0'}`}>
-          {wc.length > 0 && <Pill active={open === 'w'} label={`${wc.length} вес.кат.`} icon={Scale} dark={dark} onClick={e => toggle('w', e)} />}
-          {t.regulations && <Pill active={open === 'r'} label="Положение" icon={ScrollText} dark={dark} onClick={e => toggle('r', e)} />}
-          {t.rules && <Pill active={open === 'ru'} label="Правила" icon={ScrollText} dark={dark} onClick={e => toggle('ru', e)} />}
-          {t.prizes && <Pill active={open === 'p'} label="Призы" icon={Medal} dark={dark} accent onClick={e => toggle('p', e)} />}
+          <div className="min-w-0 flex-1">
+            {dLabel && (
+              <span className={`text-[9px] font-bold ${urgent ? 'text-orange-400' : dark ? 'text-white/30' : 'text-gray-500'}`}>
+                {urgent && <Flame size={8} className="inline mr-0.5 -mt-px" />}{dLabel}
+              </span>
+            )}
+            {sportLabel && (
+              <span className={`ml-1.5 px-1.5 py-px rounded text-[7px] font-bold uppercase ${dark ? 'bg-accent/12 text-accent-light' : 'bg-red-50 text-red-600'}`}>{sportLabel}</span>
+            )}
+          </div>
         </div>
       )}
-      {open === 'w' && wc.length > 0 && <Expand dark={dark}><div className="flex flex-wrap gap-1.5">{wc.map((w,i)=><span key={i} className={`px-2.5 py-1 rounded-xl text-[11px] font-bold ${dark?'bg-purple-500/12 text-purple-300':'bg-purple-50 text-purple-700'}`}>{w}</span>)}</div></Expand>}
-      {open === 'r' && t.regulations && <Expand dark={dark}><p className={`text-[12px] leading-relaxed whitespace-pre-line ${dark?'text-white/55':'text-gray-600'}`}>{t.regulations}</p></Expand>}
-      {open === 'ru' && t.rules && <Expand dark={dark}><p className={`text-[12px] leading-relaxed whitespace-pre-line ${dark?'text-white/55':'text-gray-600'}`}>{t.rules}</p></Expand>}
-      {open === 'p' && t.prizes && <Expand dark={dark}><p className={`text-[12px] leading-relaxed whitespace-pre-line ${dark?'text-white/55':'text-gray-600'}`}>{t.prizes}</p></Expand>}
+
+      {/* Info section */}
+      <div className="p-3 flex-1 flex flex-col">
+        <h3 className={`font-bold text-[13px] leading-snug line-clamp-2 mb-2 ${dark ? 'text-white' : 'text-gray-900'}`}>
+          {t.title}
+        </h3>
+
+        <div className="mt-auto space-y-1.5">
+          {/* City */}
+          {city && (
+            <div className={`flex items-center gap-1.5 text-[11px] ${dark ? 'text-white/45' : 'text-gray-500'}`}>
+              <MapPin size={11} className="shrink-0" />
+              <span className="font-semibold truncate">{city}</span>
+            </div>
+          )}
+
+          {/* Date + participants */}
+          <div className="flex items-center justify-between">
+            <span className={`flex items-center gap-1 text-[10px] ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+              <Calendar size={10} />{formatDate(t.date)}
+            </span>
+            {regCount > 0 && (
+              <span className={`flex items-center gap-0.5 text-[10px] font-semibold ${dark ? 'text-white/25' : 'text-gray-400'}`}>
+                <Users size={9} />{regCount}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
 
-/* ═══ Club Card ═══ */
+/* ═══ Club Card — Vertical ═══ */
 function ClubCard({ t, dark, onClick }) {
   const cats = t.brackets?.categories || []
   const legacy = !cats.length && t.brackets?.rounds
@@ -300,53 +370,61 @@ function ClubCard({ t, dark, onClick }) {
   const dLabel = days !== null && days >= 0 ? getDaysLabel(days) : null
 
   return (
-    <div onClick={onClick} className={`rounded-3xl overflow-hidden cursor-pointer press-scale transition-all ${
+    <div onClick={onClick} className={`rounded-2xl overflow-hidden cursor-pointer press-scale transition-all flex flex-col ${
       dark
         ? `bg-white/[0.05] border ${isActive ? 'border-purple-500/15' : 'border-white/[0.06]'}`
-        : `bg-white border ${isActive ? 'border-purple-200/60' : 'border-gray-100'} shadow-[0_2px_16px_rgba(0,0,0,0.05)]`
+        : `bg-white border ${isActive ? 'border-purple-200/60' : 'border-gray-100'} shadow-[0_2px_12px_rgba(0,0,0,0.05)]`
     }`}>
       {t.coverImage ? (
-        <div className="relative">
-          <img src={t.coverImage} alt={t.title} className="w-full h-40 object-cover" />
+        <div className="relative h-28">
+          <img src={t.coverImage} alt={t.title} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            <h3 className="font-bold text-[15px] text-white">{t.title}</h3>
-            <div className="flex items-center gap-3 mt-1.5 text-[11px]">
-              <span className="flex items-center gap-1 text-white/70 whitespace-nowrap"><Calendar size={10} />{formatDate(t.date)}</span>
-              {sportLabel && <span className="px-1.5 py-px rounded text-[8px] font-bold bg-white/15 text-white/80">{sportLabel}</span>}
-              <span className="flex items-center gap-1 text-white/50"><Users size={9} />{pCount}</span>
-            </div>
+          {isActive && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-green-400 shadow-lg shadow-green-400/50 animate-pulse" />}
+          <div className="absolute bottom-0 left-0 right-0 p-2.5">
+            <h3 className="font-bold text-[12px] text-white line-clamp-2">{t.title}</h3>
           </div>
-          {isActive && <div className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-green-400 shadow-lg shadow-green-400/50 animate-pulse" />}
         </div>
       ) : (
-        <div className="p-4 flex items-center gap-3.5">
-          {/* Date block — same fixed size as HeroCard */}
-          <div className={`shrink-0 w-14 h-16 rounded-2xl flex flex-col items-center justify-center ${
-            isActive
-              ? 'bg-gradient-to-b from-purple-500/12 to-indigo-500/12'
-              : dark ? 'bg-white/[0.04]' : 'bg-gray-50'
-          }`}>
-            <span className={`text-xl font-black leading-none ${isActive ? 'text-purple-400' : dark ? 'text-white/25' : 'text-gray-400'}`}>{d?.getDate() || '—'}</span>
-            <span className={`text-[8px] uppercase font-bold mt-0.5 ${dark ? 'text-white/25' : 'text-gray-400'}`}>{d?.toLocaleDateString('ru-RU',{month:'short'}).replace('.','')}</span>
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              {isActive && <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />}
-              <h3 className={`font-bold text-[14px] truncate ${dark ? 'text-white' : 'text-gray-900'}`}>{t.title}</h3>
-              {!isActive && <Check size={14} className="text-green-500/50 shrink-0" />}
+        <div className={`p-3 ${
+          isActive
+            ? 'bg-gradient-to-r from-purple-500/8 to-indigo-500/8'
+            : dark ? 'bg-white/[0.02]' : 'bg-gray-50/50'
+        }`}>
+          <div className="flex items-center gap-2">
+            {/* Date block */}
+            <div className={`shrink-0 w-10 h-11 rounded-lg flex flex-col items-center justify-center ${
+              isActive
+                ? 'bg-gradient-to-b from-purple-500/15 to-indigo-500/15'
+                : dark ? 'bg-white/[0.04]' : 'bg-gray-50'
+            }`}>
+              <span className={`text-base font-black leading-none ${isActive ? 'text-purple-400' : dark ? 'text-white/25' : 'text-gray-400'}`}>{d?.getDate() || '—'}</span>
+              <span className={`text-[7px] uppercase font-bold mt-0.5 ${dark ? 'text-white/25' : 'text-gray-400'}`}>{d?.toLocaleDateString('ru-RU',{month:'short'}).replace('.','')}</span>
             </div>
-            <div className="flex items-center gap-2 mt-1">
-              {sportLabel && <span className={`px-1.5 py-px rounded text-[8px] font-bold uppercase ${dark?'bg-accent/12 text-accent-light':'bg-red-50 text-red-600'}`}>{sportLabel}</span>}
-              {dLabel && <span className={`text-[9px] font-semibold ${dark ? 'text-purple-300/50' : 'text-purple-500/70'}`}>{dLabel}</span>}
-              <span className={`ml-auto text-[10px] ${dark ? 'text-white/25' : 'text-gray-400'}`}>
-                <Users size={9} className="inline mr-0.5" />{pCount} · <Scale size={9} className="inline mr-0.5" />{catCount}
-              </span>
-            </div>
+            {isActive && <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />}
           </div>
-          <ChevronRight size={14} className={dark ? 'text-white/10' : 'text-gray-200'} />
         </div>
       )}
+
+      <div className="p-3 flex-1 flex flex-col">
+        {!t.coverImage && (
+          <h3 className={`font-bold text-[12px] leading-snug line-clamp-2 mb-1.5 ${dark ? 'text-white' : 'text-gray-900'}`}>{t.title}</h3>
+        )}
+        <div className="mt-auto space-y-1">
+          {sportLabel && <span className={`inline-block px-1.5 py-px rounded text-[8px] font-bold uppercase ${dark?'bg-accent/12 text-accent-light':'bg-red-50 text-red-600'}`}>{sportLabel}</span>}
+          <div className="flex items-center justify-between">
+            {dLabel && <span className={`text-[9px] font-semibold ${dark ? 'text-purple-300/50' : 'text-purple-500/70'}`}>{dLabel}</span>}
+            <span className={`text-[9px] ${dark ? 'text-white/25' : 'text-gray-400'}`}>
+              <Users size={8} className="inline mr-0.5" />{pCount} · <Scale size={8} className="inline mr-0.5" />{catCount}
+            </span>
+          </div>
+          {!isActive && (
+            <div className="flex items-center gap-1">
+              <Check size={10} className="text-green-500/60" />
+              <span className={`text-[9px] font-medium ${dark ? 'text-green-400/40' : 'text-green-600/60'}`}>Завершён</span>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -355,6 +433,7 @@ function ClubCard({ t, dark, onClick }) {
 function ArchiveRow({ t, dark, onClick }) {
   const d = t.date ? new Date(t.date) : null
   const isClub = t._kind === 'internal'
+  const city = t.city || extractCity(t.location)
   return (
     <div onClick={onClick} className={`flex items-center gap-3 px-3.5 py-3 rounded-2xl cursor-pointer press-scale transition-all ${
       dark ? 'hover:bg-white/[0.04]' : 'hover:bg-white/60'
@@ -365,28 +444,24 @@ function ArchiveRow({ t, dark, onClick }) {
       </div>
       <div className="min-w-0 flex-1">
         <h4 className={`font-semibold text-[13px] truncate ${dark ? 'text-white/40' : 'text-gray-500'}`}>{t.title}</h4>
-        {isClub && <span className={`text-[9px] font-bold ${dark ? 'text-white/15' : 'text-gray-300'}`}>Клубный</span>}
+        <div className="flex items-center gap-2 mt-0.5">
+          {city && <span className={`text-[9px] ${dark ? 'text-white/20' : 'text-gray-400'}`}>{city}</span>}
+          {isClub && <span className={`text-[9px] font-bold ${dark ? 'text-white/15' : 'text-gray-300'}`}>Клубный</span>}
+        </div>
       </div>
       <Check size={12} className={dark ? 'text-green-500/30' : 'text-green-500/40'} />
     </div>
   )
 }
 
+/* ── Extract city from location string (fallback) ── */
+function extractCity(location) {
+  if (!location) return null
+  const parts = location.split(',').map(s => s.trim())
+  return parts[0]
+}
+
 /* ── Helpers ── */
-function Pill({ active, label, icon: Icon, dark, onClick, accent }) {
-  return (
-    <button onClick={onClick} className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-bold press-scale transition-all ${
-      active
-        ? accent ? 'bg-amber-500 text-white' : 'bg-accent text-white'
-        : dark ? 'bg-white/[0.05] text-white/35' : 'bg-gray-50 text-gray-500'
-    }`}><Icon size={10} />{label}</button>
-  )
-}
-
-function Expand({ dark, children }) {
-  return <div className={`mx-3 mb-3 p-3 rounded-2xl animate-in ${dark ? 'bg-white/[0.03] border border-white/[0.04]' : 'bg-gray-50/60 border border-gray-100'}`}>{children}</div>
-}
-
 function Empty({ dark, icon: Icon, text, sub, action }) {
   return (
     <div className="text-center py-14">

@@ -871,7 +871,8 @@ function OrganizerDash({ auth, data, dark, navigate }) {
 }
 
 /* ======================== PARENT ======================== */
-function ParentChildCard({ child, data, dark, navigate }) {
+function ParentChildCard({ child, data, dark, navigate, onStatusChange }) {
+  const [showStatus, setShowStatus] = useState(false)
   const group = child ? data.groups.find(g => g.id === child.groupId) : null
   const trainer = data.users.find(u => u.id === child?.trainerId)
   const expired = isExpired(child?.subscriptionExpiresAt)
@@ -882,6 +883,7 @@ function ParentChildCard({ child, data, dark, navigate }) {
   const presentCount = childAttendance.filter(a => a.present).length
   const totalCount = childAttendance.length
   const pct = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0
+  const statusCfg = child?.status ? STATUS_CONFIG[child.status] : null
 
   if (!child) return null
 
@@ -938,17 +940,14 @@ function ParentChildCard({ child, data, dark, navigate }) {
             {formatDate(child.subscriptionExpiresAt)}
           </div>
         </GlassCard>
-        <GlassCard>
+        <GlassCard onClick={(e) => { e.stopPropagation(); setShowStatus(true) }} className="cursor-pointer">
           <div className={`text-[10px] uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-600'}`}>Статус</div>
-          {child.status && STATUS_CONFIG[child.status] ? (() => {
-            const cfg = STATUS_CONFIG[child.status]
-            return (
-              <div className={`flex items-center gap-1 px-1.5 py-1 rounded-full ${cfg.bg} border ${cfg.border} w-fit`}>
-                <cfg.icon size={10} className={cfg.color} />
-                <span className={`text-[10px] font-bold ${cfg.color}`}>{cfg.label}</span>
-              </div>
-            )
-          })() : (
+          {statusCfg ? (
+            <div className={`flex items-center gap-1 px-1.5 py-1 rounded-full ${statusCfg.bg} border ${statusCfg.border} w-fit`}>
+              <statusCfg.icon size={10} className={statusCfg.color} />
+              <span className={`text-[10px] font-bold ${statusCfg.color}`}>{statusCfg.label}</span>
+            </div>
+          ) : (
             <span className="text-[10px] text-green-400 font-bold bg-green-500/15 px-1.5 py-1 rounded-full">В строю</span>
           )}
         </GlassCard>
@@ -964,12 +963,39 @@ function ParentChildCard({ child, data, dark, navigate }) {
           )}
         </GlassCard>
       </div>
+
+      {/* Status picker modal */}
+      <Modal open={showStatus} onClose={() => setShowStatus(false)} title="Изменить статус">
+        <div className="space-y-2">
+          <button onClick={() => { onStatusChange(child.id, null); setShowStatus(false) }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl press-scale text-left ${
+              !child.status
+                ? dark ? 'bg-green-500/10 border-2 border-green-500/25' : 'bg-green-50 border-2 border-green-300/40'
+                : dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white/60 border border-white/50'
+            }`}>
+            <Check size={16} className="text-green-400" />
+            <span className="font-bold text-sm">В строю</span>
+          </button>
+          {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+            <button key={key} onClick={() => { onStatusChange(child.id, key); setShowStatus(false) }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl press-scale text-left ${
+                child.status === key
+                  ? dark ? `${cfg.bg} border-2 ${cfg.border}` : `${cfg.bg} border-2 ${cfg.border}`
+                  : dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white/60 border border-white/50'
+              }`}>
+              <cfg.icon size={16} className={cfg.color} />
+              <span className={`font-bold text-sm ${cfg.color}`}>{cfg.label}</span>
+            </button>
+          ))}
+        </div>
+      </Modal>
     </div>
   )
 }
 
 function ParentDash({ auth, data, dark, navigate }) {
   const parentInfo = auth.parent
+  const { updateStudent } = useData()
 
   // Find ALL children for this parent (by matching phone across parent records)
   const allChildren = useMemo(() => {
@@ -986,6 +1012,10 @@ function ParentDash({ auth, data, dark, navigate }) {
     const childTrainerIds = new Set(allChildren.map(c => c.trainerId).filter(Boolean))
     return data.news.filter(n => childGroupIds.has(n.groupId) || (!n.groupId && childTrainerIds.has(n.trainerId)))
   }, [allChildren, data.news])
+
+  const handleStatusChange = (studentId, status) => {
+    updateStudent(studentId, { status })
+  }
 
   return (
     <Layout>
@@ -1016,7 +1046,7 @@ function ParentDash({ auth, data, dark, navigate }) {
                 {idx === 0 ? 'Ваши дети' : ''}
               </div>
             )}
-            <ParentChildCard child={child} data={data} dark={dark} navigate={navigate} />
+            <ParentChildCard child={child} data={data} dark={dark} navigate={navigate} onStatusChange={handleStatusChange} />
           </div>
         ))}
 
