@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Home, Wallet, Users, Trophy, User, Sparkles, Film, Shield } from 'lucide-react'
+import { Home, Wallet, Users, Trophy, User, Sparkles, Film, Shield, Building2, ShoppingBag } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 
@@ -20,16 +20,22 @@ const navConfigs = {
   ],
   club_owner: [
     { path: '/', icon: Home, label: 'Главная' },
-    { path: '/my-club', icon: Shield, label: 'Клуб' },
-    { path: '/team', icon: Users, label: 'Люди' },
-    { path: '/tournaments', icon: Trophy, label: 'Турниры' },
-    { path: '/profile', icon: User, label: 'Профиль' },
+    { path: '/branches', icon: Building2, label: 'Филиалы' },
+    { path: '/club-trainers', icon: Users, label: 'Тренеры' },
+    { path: '/author', icon: Sparkles, label: 'Автор' },
+    { path: '/catalog', icon: ShoppingBag, label: 'Каталог' },
   ],
   club_admin: [
     { path: '/', icon: Home, label: 'Главная' },
-    { path: '/my-club', icon: Shield, label: 'Клуб' },
-    { path: '/team', icon: Users, label: 'Люди' },
+    { path: '/branches', icon: Building2, label: 'Филиалы' },
+    { path: '/club-trainers', icon: Users, label: 'Тренеры' },
+    { path: '/author', icon: Sparkles, label: 'Автор' },
+    { path: '/catalog', icon: ShoppingBag, label: 'Каталог' },
+  ],
+  organizer: [
+    { path: '/', icon: Home, label: 'Главная' },
     { path: '/tournaments', icon: Trophy, label: 'Турниры' },
+    { path: '/author', icon: Sparkles, label: 'Автор' },
     { path: '/profile', icon: User, label: 'Профиль' },
   ],
   student: [

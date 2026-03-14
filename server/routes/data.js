@@ -13,7 +13,7 @@ function mapUser(u, includeSecrets = false) {
   return base
 }
 function mapClub(c) {
-  return { id: c.id, name: c.name, city: c.city || '', sportTypes: c.sport_types || [], headTrainerId: c.head_trainer_id || null, createdAt: c.created_at, phone: c.phone || '', vk: c.vk || '', address: c.address || '' }
+  return { id: c.id, name: c.name, city: c.city || '', sportTypes: c.sport_types || [], headTrainerId: c.head_trainer_id || null, createdAt: c.created_at, phone: c.phone || '', vk: c.vk || '', address: c.address || '', logo: c.logo || null }
 }
 function mapInternalTournament(t) {
   return { id: t.id, trainerId: t.trainer_id, title: t.title, date: t.date, status: t.status, brackets: t.brackets, sportType: t.sport_type || null, coverImage: t.cover_image || null, createdAt: t.created_at }
@@ -45,7 +45,7 @@ function mapTx(t) {
   return { id: t.id, trainerId: t.trainer_id, type: t.type, amount: t.amount, category: t.category, description: t.description, studentId: t.student_id, date: t.date }
 }
 function mapTournament(t) {
-  return { id: t.id, title: t.title, coverImage: t.cover_image, date: t.date, location: t.location, description: t.description, createdBy: t.created_by }
+  return { id: t.id, title: t.title, coverImage: t.cover_image, date: t.date, location: t.location, description: t.description, createdBy: t.created_by, regulations: t.regulations || '', weightCategories: t.weight_categories || [], prizes: t.prizes || '', rules: t.rules || '', sportType: t.sport_type || null, status: t.status || 'upcoming', brackets: t.brackets || {}, matsCount: t.mats_count || 1 }
 }
 function mapNews(n) {
   return { id: n.id, trainerId: n.trainer_id, groupId: n.group_id, title: n.title, content: n.content, date: n.date }
@@ -262,17 +262,36 @@ router.delete('/transactions/:id', authMiddleware, async (req, res) => {
 
 // --- Tournaments ---
 router.post('/tournaments', authMiddleware, async (req, res) => {
-  const { title, date, location, description, coverImage } = req.body
+  const r = req.user.role
+  if (r !== 'superadmin' && r !== 'organizer') return res.status(403).json({ error: 'Нет доступа' })
+  const { title, date, location, description, coverImage, regulations, weightCategories, prizes, rules, sportType, matsCount } = req.body
   const id = genId()
-  await pool.query('INSERT INTO tournaments (id, title, date, location, description, cover_image, created_by) VALUES ($1,$2,$3,$4,$5,$6,$7)',
-    [id, title, date, location || '', description || '', coverImage || null, req.user.userId])
-  res.json({ id, title, date, location, description, coverImage, createdBy: req.user.userId })
+  await pool.query('INSERT INTO tournaments (id, title, date, location, description, cover_image, created_by, regulations, weight_categories, prizes, rules, sport_type, mats_count) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)',
+    [id, title, date, location || '', description || '', coverImage || null, req.user.userId, regulations || '', JSON.stringify(weightCategories || []), prizes || '', rules || '', sportType || null, matsCount || 1])
+  res.json(mapTournament({ id, title, date, location, description, cover_image: coverImage, created_by: req.user.userId, regulations, weight_categories: weightCategories || [], prizes, rules, sport_type: sportType, status: 'upcoming', brackets: {}, mats_count: matsCount || 1, created_at: new Date() }))
 })
 
 router.put('/tournaments/:id', authMiddleware, async (req, res) => {
-  const { title, date, location, description, coverImage } = req.body
-  await pool.query('UPDATE tournaments SET title=COALESCE($1,title), date=COALESCE($2,date), location=COALESCE($3,location), description=COALESCE($4,description), cover_image=COALESCE($5,cover_image) WHERE id=$6',
-    [title, date, location, description, coverImage, req.params.id])
+  const { title, date, location, description, coverImage, regulations, weightCategories, prizes, rules, sportType, status, brackets, matsCount } = req.body
+  const sets = []
+  const vals = []
+  let i = 1
+  if (title !== undefined) { sets.push(`title = $${i++}`); vals.push(title) }
+  if (date !== undefined) { sets.push(`date = $${i++}`); vals.push(date) }
+  if (location !== undefined) { sets.push(`location = $${i++}`); vals.push(location) }
+  if (description !== undefined) { sets.push(`description = $${i++}`); vals.push(description) }
+  if (coverImage !== undefined) { sets.push(`cover_image = $${i++}`); vals.push(coverImage) }
+  if (regulations !== undefined) { sets.push(`regulations = $${i++}`); vals.push(regulations) }
+  if (weightCategories !== undefined) { sets.push(`weight_categories = $${i++}`); vals.push(JSON.stringify(weightCategories)) }
+  if (prizes !== undefined) { sets.push(`prizes = $${i++}`); vals.push(prizes) }
+  if (rules !== undefined) { sets.push(`rules = $${i++}`); vals.push(rules) }
+  if (sportType !== undefined) { sets.push(`sport_type = $${i++}`); vals.push(sportType) }
+  if (status !== undefined) { sets.push(`status = $${i++}`); vals.push(status) }
+  if (brackets !== undefined) { sets.push(`brackets = $${i++}`); vals.push(JSON.stringify(brackets)) }
+  if (matsCount !== undefined) { sets.push(`mats_count = $${i++}`); vals.push(matsCount) }
+  if (sets.length === 0) return res.json({ ok: true })
+  vals.push(req.params.id)
+  await pool.query(`UPDATE tournaments SET ${sets.join(', ')} WHERE id = $${i}`, vals)
   res.json({ ok: true })
 })
 
@@ -574,7 +593,7 @@ router.post('/trainers', authMiddleware, async (req, res) => {
   const sTypes = sportTypes || (sportType ? [sportType] : [])
   const sType = sportType || (sTypes[0] || null)
   // Allow superadmin to create club_owner or club_admin roles
-  const validRoles = ['trainer', 'club_owner', 'club_admin']
+  const validRoles = ['trainer', 'club_owner', 'club_admin', 'organizer']
   const assignRole = validRoles.includes(userRole) ? userRole : 'trainer'
   await pool.query('INSERT INTO users (id, name, phone, password_hash, role, club_name, avatar, sport_type, sport_types, city, plain_password, rank, achievements) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)',
     [id, name, phone, hash, assignRole, clubName || '', avatar || null, sType, JSON.stringify(sTypes), city || null, pw, rank || null, achievements || null])
@@ -703,19 +722,18 @@ router.delete('/materials/:id', authMiddleware, async (req, res) => {
 // --- Clubs ---
 router.post('/clubs', authMiddleware, async (req, res) => {
   if (req.user.role !== 'superadmin') return res.status(403).json({ error: 'Нет доступа' })
-  const { name, city, sportTypes, headTrainerId, phone, vk, address } = req.body
+  const { name, city, sportTypes, headTrainerId, phone, vk, address, logo } = req.body
   const id = genId()
-  await pool.query('INSERT INTO clubs (id, name, city, sport_types, head_trainer_id, phone, vk, address) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
-    [id, name, city || '', JSON.stringify(sportTypes || []), headTrainerId || null, phone || null, vk || null, address || null])
-  // If head trainer, update their club_id and is_head_trainer
+  await pool.query('INSERT INTO clubs (id, name, city, sport_types, head_trainer_id, phone, vk, address, logo) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+    [id, name, city || '', JSON.stringify(sportTypes || []), headTrainerId || null, phone || null, vk || null, address || null, logo || null])
   if (headTrainerId) {
     await pool.query('UPDATE users SET club_id = $1, is_head_trainer = true WHERE id = $2', [id, headTrainerId])
   }
-  res.json({ id, name, city, sportTypes: sportTypes || [], headTrainerId, phone: phone || '', vk: vk || '', address: address || '', createdAt: new Date().toISOString() })
+  res.json({ id, name, city, sportTypes: sportTypes || [], headTrainerId, phone: phone || '', vk: vk || '', address: address || '', logo: logo || null, createdAt: new Date().toISOString() })
 })
 
 router.put('/clubs/:id', authMiddleware, async (req, res) => {
-  const { name, city, sportTypes, headTrainerId, phone, vk, address } = req.body
+  const { name, city, sportTypes, headTrainerId, phone, vk, address, logo } = req.body
   const sets = []
   const vals = []
   let i = 1
@@ -725,6 +743,7 @@ router.put('/clubs/:id', authMiddleware, async (req, res) => {
   if (phone !== undefined) { sets.push(`phone = $${i++}`); vals.push(phone) }
   if (vk !== undefined) { sets.push(`vk = $${i++}`); vals.push(vk) }
   if (address !== undefined) { sets.push(`address = $${i++}`); vals.push(address) }
+  if (logo !== undefined) { sets.push(`logo = $${i++}`); vals.push(logo) }
   if (headTrainerId !== undefined) {
     sets.push(`head_trainer_id = $${i++}`); vals.push(headTrainerId)
     // Update old head trainer

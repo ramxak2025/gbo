@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Calendar, MapPin, Trophy, Swords, Check, Archive, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, Calendar, MapPin, Trophy, Swords, Check, Archive, ChevronDown, ChevronUp, Scale, ScrollText, Medal, Menu, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
+import { getSportLabel } from '../utils/sports'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
@@ -11,6 +12,176 @@ import GlassCard from '../components/GlassCard'
 function formatDate(iso) {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+function TournamentCard({ t, dark, onClick }) {
+  const [openSection, setOpenSection] = useState(null)
+  const isPast = new Date(t.date) < new Date()
+  const sportLabel = t.sportType ? getSportLabel(t.sportType) : null
+  const wc = t.weightCategories || []
+
+  const toggleSection = (section, e) => {
+    e.stopPropagation()
+    setOpenSection(openSection === section ? null : section)
+  }
+
+  return (
+    <div className={`rounded-[24px] overflow-hidden backdrop-blur-xl transition-all ${
+      dark
+        ? 'bg-white/[0.04] border border-white/[0.07]'
+        : 'bg-white/70 border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
+    }`}>
+      {/* Cover / Header */}
+      <div className="cursor-pointer press-scale" onClick={onClick}>
+        {t.coverImage ? (
+          <div className="relative">
+            <img src={t.coverImage} alt={t.title} className="w-full h-44 object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-4">
+              <h3 className="font-black text-lg text-white leading-tight">{t.title}</h3>
+              <div className="flex items-center gap-3 mt-1.5 text-white/70 text-xs">
+                <span className="flex items-center gap-1"><Calendar size={11} />{formatDate(t.date)}</span>
+                {t.location && <span className="flex items-center gap-1"><MapPin size={11} />{t.location}</span>}
+              </div>
+            </div>
+            {isPast && (
+              <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-black/50 backdrop-blur text-[10px] font-bold text-white/70 uppercase">
+                Прошёл
+              </div>
+            )}
+            {sportLabel && (
+              <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-accent/90 backdrop-blur text-[10px] font-bold text-white uppercase">
+                {sportLabel}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="p-5">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {sportLabel && (
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                      dark ? 'bg-accent/20 text-accent-light' : 'bg-red-50 text-red-600'
+                    }`}>{sportLabel}</span>
+                  )}
+                  {isPast && (
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                      dark ? 'bg-white/[0.08] text-white/40' : 'bg-gray-100 text-gray-400'
+                    }`}>Прошёл</span>
+                  )}
+                </div>
+                <h3 className="font-black text-base mt-1.5">{t.title}</h3>
+                <div className={`flex items-center gap-3 mt-1.5 text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>
+                  <span className="flex items-center gap-1"><Calendar size={11} />{formatDate(t.date)}</span>
+                  {t.location && <span className="flex items-center gap-1"><MapPin size={11} />{t.location}</span>}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Quick info pills */}
+      <div className="px-4 pb-3 flex flex-wrap gap-2">
+        {wc.length > 0 && (
+          <button
+            onClick={(e) => toggleSection('weights', e)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold press-scale transition-all ${
+              openSection === 'weights'
+                ? 'bg-accent text-white'
+                : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/80 text-gray-600 border border-white/70 shadow-sm'
+            }`}
+          >
+            <Scale size={12} />
+            Весовые ({wc.length})
+            {openSection === 'weights' ? <X size={10} /> : <Menu size={10} />}
+          </button>
+        )}
+        {t.regulations && (
+          <button
+            onClick={(e) => toggleSection('regulations', e)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold press-scale transition-all ${
+              openSection === 'regulations'
+                ? 'bg-accent text-white'
+                : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/80 text-gray-600 border border-white/70 shadow-sm'
+            }`}
+          >
+            <ScrollText size={12} />
+            Положение
+            {openSection === 'regulations' ? <X size={10} /> : <Menu size={10} />}
+          </button>
+        )}
+        {t.rules && (
+          <button
+            onClick={(e) => toggleSection('rules', e)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold press-scale transition-all ${
+              openSection === 'rules'
+                ? 'bg-accent text-white'
+                : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/80 text-gray-600 border border-white/70 shadow-sm'
+            }`}
+          >
+            <ScrollText size={12} />
+            Правила
+            {openSection === 'rules' ? <X size={10} /> : <Menu size={10} />}
+          </button>
+        )}
+        {t.prizes && (
+          <button
+            onClick={(e) => toggleSection('prizes', e)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold press-scale transition-all ${
+              openSection === 'prizes'
+                ? 'bg-accent text-white'
+                : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/80 text-gray-600 border border-white/70 shadow-sm'
+            }`}
+          >
+            <Medal size={12} />
+            Призы
+            {openSection === 'prizes' ? <X size={10} /> : <Menu size={10} />}
+          </button>
+        )}
+        {t.matsCount > 1 && (
+          <span className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-bold ${
+            dark ? 'bg-white/[0.06] text-white/40' : 'bg-white/80 text-gray-500 border border-white/70'
+          }`}>
+            {t.matsCount} ковр.
+          </span>
+        )}
+      </div>
+
+      {/* Expandable sections */}
+      {openSection === 'weights' && wc.length > 0 && (
+        <div className={`mx-4 mb-4 p-3 rounded-[16px] ${dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white/50 border border-white/50'}`}>
+          <div className={`text-[10px] uppercase font-bold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Весовые категории</div>
+          <div className="flex flex-wrap gap-1.5">
+            {wc.map((w, i) => (
+              <span key={i} className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                dark ? 'bg-purple-500/15 text-purple-300' : 'bg-purple-100 text-purple-600'
+              }`}>{w}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {openSection === 'regulations' && t.regulations && (
+        <div className={`mx-4 mb-4 p-3 rounded-[16px] ${dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white/50 border border-white/50'}`}>
+          <div className={`text-[10px] uppercase font-bold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Положение</div>
+          <p className={`text-xs leading-relaxed whitespace-pre-line ${dark ? 'text-white/60' : 'text-gray-600'}`}>{t.regulations}</p>
+        </div>
+      )}
+      {openSection === 'rules' && t.rules && (
+        <div className={`mx-4 mb-4 p-3 rounded-[16px] ${dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white/50 border border-white/50'}`}>
+          <div className={`text-[10px] uppercase font-bold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Правила</div>
+          <p className={`text-xs leading-relaxed whitespace-pre-line ${dark ? 'text-white/60' : 'text-gray-600'}`}>{t.rules}</p>
+        </div>
+      )}
+      {openSection === 'prizes' && t.prizes && (
+        <div className={`mx-4 mb-4 p-3 rounded-[16px] ${dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white/50 border border-white/50'}`}>
+          <div className={`text-[10px] uppercase font-bold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Призы</div>
+          <p className={`text-xs leading-relaxed whitespace-pre-line ${dark ? 'text-white/60' : 'text-gray-600'}`}>{t.prizes}</p>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function Tournaments() {
@@ -45,7 +216,7 @@ export default function Tournaments() {
     return tournDate >= thirtyDaysAgo
   })
 
-  const renderTournamentCard = (t) => {
+  const renderInternalCard = (t) => {
     const cats = t.brackets?.categories || []
     const isLegacy = !cats.length && t.brackets?.rounds
     const totalParticipants = isLegacy
@@ -82,6 +253,8 @@ export default function Tournaments() {
     )
   }
 
+  const canAdd = auth.role === 'superadmin' || auth.role === 'organizer'
+
   return (
     <Layout>
       <PageHeader title="Турниры">
@@ -91,7 +264,7 @@ export default function Tournaments() {
               <Swords size={20} />
             </button>
           )}
-          {auth.role === 'superadmin' && (
+          {canAdd && (
             <button onClick={() => navigate('/add-tournament')} className="press-scale p-2">
               <Plus size={20} />
             </button>
@@ -107,7 +280,7 @@ export default function Tournaments() {
               <Swords size={14} className="text-accent" /> Клубные турниры
             </h2>
             <div className="space-y-2">
-              {activeInternalTournaments.map(renderTournamentCard)}
+              {activeInternalTournaments.map(renderInternalCard)}
             </div>
           </div>
         )}
@@ -127,7 +300,7 @@ export default function Tournaments() {
             </button>
             {showArchive && (
               <div className="space-y-2 mt-2">
-                {archivedInternalTournaments.map(renderTournamentCard)}
+                {archivedInternalTournaments.map(renderInternalCard)}
               </div>
             )}
           </div>
@@ -141,52 +314,15 @@ export default function Tournaments() {
                 <Trophy size={14} className="text-orange-400" /> Официальные турниры
               </h2>
             )}
-            <div className="space-y-3">
-              {sorted.map(t => {
-                const isPast = new Date(t.date) < new Date()
-                return (
-                  <GlassCard
-                    key={t.id}
-                    onClick={() => navigate(`/tournaments/${t.id}`)}
-                    className="overflow-hidden"
-                  >
-                    {t.coverImage && (
-                      <img
-                        src={t.coverImage}
-                        alt={t.title}
-                        className="w-full h-36 object-cover rounded-[16px] mb-3"
-                      />
-                    )}
-                    {!t.coverImage && (
-                      <div className={`w-full h-28 rounded-[16px] mb-3 flex items-center justify-center ${
-                        dark ? 'bg-white/[0.05]' : 'bg-white/50'
-                      }`}>
-                        <span className="text-4xl font-black italic text-accent opacity-30">BJJ</span>
-                      </div>
-                    )}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <h3 className="font-bold text-base truncate">{t.title}</h3>
-                        <div className={`flex items-center gap-1 mt-1 text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>
-                          <Calendar size={12} />
-                          <span>{formatDate(t.date)}</span>
-                        </div>
-                        <div className={`flex items-center gap-1 mt-0.5 text-xs ${dark ? 'text-white/40' : 'text-gray-500'}`}>
-                          <MapPin size={12} />
-                          <span className="truncate">{t.location}</span>
-                        </div>
-                      </div>
-                      {isPast && (
-                        <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                          dark ? 'bg-white/[0.08] text-white/40' : 'bg-white/60 text-gray-400 border border-white/60'
-                        }`}>
-                          Прошёл
-                        </span>
-                      )}
-                    </div>
-                  </GlassCard>
-                )
-              })}
+            <div className="space-y-4">
+              {sorted.map(t => (
+                <TournamentCard
+                  key={t.id}
+                  t={t}
+                  dark={dark}
+                  onClick={() => navigate(`/tournaments/${t.id}`)}
+                />
+              ))}
             </div>
           </div>
         )}

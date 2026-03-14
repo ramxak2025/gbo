@@ -402,115 +402,131 @@ export default function Materials() {
 
           return (
             <GlassCard key={m.id} className="overflow-hidden">
-              {/* Thumbnail / Player */}
-              <div className={`relative -mx-4 -mt-4 ${isExpanded ? '' : 'mb-3'} aspect-video flex items-center justify-center overflow-hidden ${dark ? 'bg-white/[0.03]' : 'bg-black/[0.02]'}`}>
-                {isExpanded && embed ? (
-                  <iframe
-                    src={embed.src}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                    allowFullScreen
-                    frameBorder="0"
-                  />
-                ) : (
-                  <>
-                    {thumb ? (
-                      <img src={thumb} alt={m.title} className="w-full h-full object-cover cursor-pointer" onClick={() => setExpandedId(m.id)} />
-                    ) : (
-                      <div className={`w-full h-full flex flex-col items-center justify-center cursor-pointer ${
-                        embed?.type === 'vk'
-                          ? 'bg-gradient-to-br from-blue-600/20 via-blue-500/10 to-indigo-600/20'
-                          : 'bg-gradient-to-br from-purple-500/10 via-white/[0.02] to-blue-500/10'
-                      }`} onClick={() => setExpandedId(m.id)}>
-                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-2 ${
-                          embed?.type === 'vk' ? 'bg-blue-500/20' : dark ? 'bg-white/[0.06]' : 'bg-black/[0.04]'
-                        }`}>
-                          <Video size={28} className={embed?.type === 'vk' ? 'text-blue-400' : dark ? 'text-white/20' : 'text-gray-300'} />
-                        </div>
-                        <span className={`text-xs font-medium ${dark ? 'text-white/20' : 'text-gray-400'}`}>{m.title}</span>
-                      </div>
-                    )}
-                    <div className="absolute inset-0 flex items-center justify-center cursor-pointer" onClick={() => setExpandedId(m.id)}>
-                      <div className={`w-12 h-12 rounded-full backdrop-blur-sm flex items-center justify-center ${
-                        thumb ? 'bg-black/50' : dark ? 'bg-black/30' : 'bg-black/20'
-                      }`}>
-                        <Play size={22} className="text-white ml-0.5" fill="white" />
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {embed?.type && !isExpanded && (
-                  <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
-                    embed.type === 'youtube' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'
-                  }`}>{embed.type === 'youtube' ? 'YouTube' : 'VK'}</span>
-                )}
-                {m.category && !isExpanded && (
-                  <span className={`absolute top-2 right-2 px-2 py-0.5 rounded-md text-[10px] font-bold backdrop-blur-sm ${dark ? 'bg-black/40 text-white/80' : 'bg-white/70 text-gray-700'}`}>{m.category}</span>
-                )}
-                {!isExpanded && (
-                  <button onClick={(e) => { e.stopPropagation(); toggleFavorite(m.id) }} className="absolute bottom-2 right-2 press-scale p-1.5 rounded-full bg-black/30 backdrop-blur-sm">
-                    <Heart size={16} className={isFav ? 'text-red-400' : 'text-white/60'} fill={isFav ? 'currentColor' : 'none'} strokeWidth={2} />
-                  </button>
-                )}
-                {!isExpanded && pinnedGroups.length > 0 && (
-                  <span className="absolute bottom-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-green-500/80 text-white backdrop-blur-sm">
-                    <MapPin size={10} /> Отработка
-                  </span>
-                )}
-                {isExpanded && (
+              {/* Expanded: full-width player */}
+              {isExpanded && (
+                <div className="relative -mx-4 -mt-4 aspect-video flex items-center justify-center overflow-hidden">
+                  {embed ? (
+                    <iframe
+                      src={embed.src}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                      allowFullScreen
+                      frameBorder="0"
+                    />
+                  ) : null}
                   <button onClick={() => setExpandedId(null)} className="absolute top-2 right-2 press-scale p-1.5 rounded-full bg-black/50 backdrop-blur-sm z-10">
                     <X size={16} className="text-white" />
                   </button>
-                )}
-              </div>
+                </div>
+              )}
 
-              {/* Info */}
-              <div className={isExpanded ? 'pt-3' : ''}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-bold text-sm truncate">{m.title}</h3>
-                    {m.description && (
-                      <p className={`text-xs mt-0.5 ${isExpanded ? '' : 'line-clamp-2'} ${dark ? 'text-white/40' : 'text-gray-500'}`}>{m.description}</p>
+              {/* Collapsed: horizontal card with thumbnail */}
+              {!isExpanded && (
+                <div className="flex gap-3 -mx-4 -mt-4 -mb-4 cursor-pointer" onClick={() => setExpandedId(m.id)}>
+                  {/* Thumbnail on the left */}
+                  <div className={`relative w-28 h-24 shrink-0 flex items-center justify-center overflow-hidden rounded-l-[20px] ${
+                    thumb ? '' : embed?.type === 'vk'
+                      ? 'bg-gradient-to-br from-blue-600/20 via-blue-500/10 to-indigo-600/20'
+                      : dark ? 'bg-white/[0.04]' : 'bg-black/[0.03]'
+                  }`}>
+                    {thumb ? (
+                      <img src={thumb} alt={m.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <Video size={24} className={embed?.type === 'vk' ? 'text-blue-400' : dark ? 'text-white/15' : 'text-gray-300'} />
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${thumb ? 'bg-black/50' : dark ? 'bg-black/30' : 'bg-black/15'}`}>
+                        <Play size={14} className="text-white ml-0.5" fill="white" />
+                      </div>
+                    </div>
+                    {embed?.type && (
+                      <span className={`absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${
+                        embed.type === 'youtube' ? 'bg-red-600 text-white' : 'bg-blue-600 text-white'
+                      }`}>{embed.type === 'youtube' ? 'YT' : 'VK'}</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    {isExpanded && (
+
+                  {/* Info on the right */}
+                  <div className="flex-1 min-w-0 py-3 pr-3 flex flex-col justify-center">
+                    <div className="flex items-start gap-1">
+                      <h3 className="font-bold text-sm truncate flex-1">{m.title}</h3>
+                      <button onClick={(e) => { e.stopPropagation(); toggleFavorite(m.id) }} className="press-scale p-0.5 shrink-0">
+                        <Heart size={14} className={isFav ? 'text-red-400' : dark ? 'text-white/20' : 'text-gray-300'} fill={isFav ? 'currentColor' : 'none'} strokeWidth={2} />
+                      </button>
+                    </div>
+                    {m.description && (
+                      <p className={`text-[11px] mt-0.5 line-clamp-1 ${dark ? 'text-white/35' : 'text-gray-500'}`}>{m.description}</p>
+                    )}
+                    <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                      {m.category && (
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${dark ? 'bg-white/[0.06] text-white/40' : 'bg-gray-100 text-gray-500'}`}>{m.category}</span>
+                      )}
+                      {pinnedGroups.length > 0 && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400 flex items-center gap-0.5">
+                          <MapPin size={7} /> Отработка
+                        </span>
+                      )}
+                      {isTrainer && (
+                        <div className="ml-auto flex items-center gap-0.5">
+                          <button onClick={(e) => { e.stopPropagation(); startEdit(m) }} className="press-scale p-1">
+                            <Edit3 size={12} className={dark ? 'text-white/30' : 'text-gray-400'} />
+                          </button>
+                          <button onClick={(e) => { e.stopPropagation(); handleDelete(m.id) }} className="press-scale p-1">
+                            <Trash2 size={12} className="text-red-400" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Expanded info */}
+              {isExpanded && (
+                <div className="pt-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-bold text-sm">{m.title}</h3>
+                      {m.description && (
+                        <p className={`text-xs mt-0.5 ${dark ? 'text-white/40' : 'text-gray-500'}`}>{m.description}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-0.5 shrink-0">
                       <button onClick={() => toggleFavorite(m.id)} className="press-scale p-1.5">
                         <Heart size={16} className={isFav ? 'text-red-400' : dark ? 'text-white/30' : 'text-gray-300'} fill={isFav ? 'currentColor' : 'none'} />
                       </button>
+                      {isTrainer && (
+                        <button onClick={() => setShowPinModal(m)} className="press-scale p-1.5">
+                          <MapPin size={14} className={pinnedGroups.length > 0 ? 'text-green-400' : dark ? 'text-white/30' : 'text-gray-300'} />
+                        </button>
+                      )}
+                      {isTrainer && (
+                        <button onClick={(e) => { e.stopPropagation(); startEdit(m) }} className="press-scale p-1.5">
+                          <Edit3 size={14} className={dark ? 'text-white/40' : 'text-gray-400'} />
+                        </button>
+                      )}
+                      {isTrainer && (
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(m.id) }} className="press-scale p-1.5">
+                          <Trash2 size={14} className="text-red-400" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {m.category && (
+                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${dark ? 'bg-white/[0.06] text-white/40' : 'bg-gray-100 text-gray-500'}`}>{m.category}</span>
                     )}
-                    {isTrainer && isExpanded && (
-                      <button onClick={() => setShowPinModal(m)} className="press-scale p-1.5">
-                        <MapPin size={14} className={pinnedGroups.length > 0 ? 'text-green-400' : dark ? 'text-white/30' : 'text-gray-300'} />
-                      </button>
-                    )}
-                    {isTrainer && (
-                      <button onClick={(e) => { e.stopPropagation(); startEdit(m) }} className="press-scale p-1.5">
-                        <Edit3 size={14} className={dark ? 'text-white/40' : 'text-gray-400'} />
-                      </button>
-                    )}
-                    {isTrainer && (
-                      <button onClick={(e) => { e.stopPropagation(); handleDelete(m.id) }} className="press-scale p-1.5">
-                        <Trash2 size={14} className="text-red-400" />
-                      </button>
+                    {groups.map(g => (
+                      <span key={g.id} className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${dark ? 'bg-purple-500/15 text-purple-300' : 'bg-purple-100 text-purple-600'}`}>{g.name}</span>
+                    ))}
+                    {pinnedGroups.length > 0 && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 flex items-center gap-0.5">
+                        <MapPin size={8} /> Закреплено
+                      </span>
                     )}
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-1 mt-1.5">
-                  {m.category && isExpanded && (
-                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${dark ? 'bg-white/[0.06] text-white/40' : 'bg-gray-100 text-gray-500'}`}>{m.category}</span>
-                  )}
-                  {groups.map(g => (
-                    <span key={g.id} className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${dark ? 'bg-purple-500/15 text-purple-300' : 'bg-purple-100 text-purple-600'}`}>{g.name}</span>
-                  ))}
-                  {pinnedGroups.length > 0 && isExpanded && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 flex items-center gap-0.5">
-                      <MapPin size={8} /> Закреплено
-                    </span>
-                  )}
-                </div>
-              </div>
+              )}
             </GlassCard>
           )
         })}

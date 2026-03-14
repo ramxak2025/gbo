@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Shield, Plus, MapPin, Users, TrendingUp, Crown, Check } from 'lucide-react'
+import { Shield, Plus, MapPin, Users, TrendingUp, Crown, Check, Camera } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -9,6 +9,7 @@ import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
 import Modal from '../components/Modal'
 import { SPORT_TYPES, getSportLabel } from '../utils/sports'
+import { api } from '../utils/api'
 
 function isExpired(dateStr) {
   if (!dateStr) return true
@@ -22,7 +23,7 @@ export default function Clubs() {
   const { dark } = useTheme()
 
   const [showAdd, setShowAdd] = useState(false)
-  const [form, setForm] = useState({ name: '', city: '', sportTypes: [], phone: '', vk: '', address: '' })
+  const [form, setForm] = useState({ name: '', city: '', sportTypes: [], phone: '', vk: '', address: '', logo: null })
 
   const clubs = data.clubs || []
 
@@ -45,8 +46,9 @@ export default function Clubs() {
       phone: form.phone.trim(),
       vk: form.vk.trim(),
       address: form.address.trim(),
+      logo: form.logo,
     })
-    setForm({ name: '', city: '', sportTypes: [], phone: '', vk: '', address: '' })
+    setForm({ name: '', city: '', sportTypes: [], phone: '', vk: '', address: '', logo: null })
     setShowAdd(false)
     if (id) navigate(`/club/${id}`)
   }
@@ -86,11 +88,15 @@ export default function Clubs() {
           return (
             <GlassCard key={club.id} onClick={() => navigate(`/club/${club.id}`)} className="cursor-pointer">
               <div className="flex items-center gap-3">
-                <div className={`w-12 h-12 rounded-[16px] flex items-center justify-center shrink-0 ${
-                  dark ? 'bg-gradient-to-br from-blue-500/20 to-purple-500/20' : 'bg-gradient-to-br from-blue-100 to-purple-100'
-                }`}>
-                  <Shield size={22} className={dark ? 'text-blue-400' : 'text-blue-600'} />
-                </div>
+                {club.logo ? (
+                  <img src={club.logo} alt={club.name} className="w-12 h-12 rounded-[16px] object-cover shrink-0" />
+                ) : (
+                  <div className={`w-12 h-12 rounded-[16px] flex items-center justify-center shrink-0 ${
+                    dark ? 'bg-gradient-to-br from-blue-500/20 to-purple-500/20' : 'bg-gradient-to-br from-blue-100 to-purple-100'
+                  }`}>
+                    <Shield size={22} className={dark ? 'text-blue-400' : 'text-blue-600'} />
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   <div className="font-bold truncate">{club.name}</div>
                   <div className={`text-xs flex items-center gap-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
@@ -133,6 +139,24 @@ export default function Clubs() {
       {/* Add Club Modal */}
       <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Новый клуб">
         <form onSubmit={handleAdd} className="space-y-3">
+          {/* Logo upload */}
+          <div className="flex justify-center">
+            <label className="cursor-pointer press-scale">
+              {form.logo ? (
+                <img src={form.logo} alt="Логотип" className="w-20 h-20 rounded-[20px] object-cover" />
+              ) : (
+                <div className={`w-20 h-20 rounded-[20px] flex flex-col items-center justify-center gap-1 ${dark ? 'bg-white/[0.06] border border-white/[0.08]' : 'bg-gray-50 border border-gray-200'}`}>
+                  <Camera size={20} className={dark ? 'text-white/25' : 'text-gray-400'} />
+                  <span className={`text-[9px] font-semibold ${dark ? 'text-white/25' : 'text-gray-400'}`}>Логотип</span>
+                </div>
+              )}
+              <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                try { const url = await api.uploadFile(file); setForm(f => ({ ...f, logo: url })) } catch { alert('Ошибка загрузки') }
+              }} />
+            </label>
+          </div>
           <input
             type="text"
             placeholder="Название клуба *"

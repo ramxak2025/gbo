@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Shield, Users, Trash2, Plus, Crown, UserMinus, ChevronRight, MapPin, Award, Dumbbell, TrendingUp, Edit3, Building2, DollarSign, BarChart3, Activity } from 'lucide-react'
+import { Shield, Users, Trash2, Plus, Crown, UserMinus, ChevronRight, MapPin, Award, Dumbbell, TrendingUp, Edit3, Building2, DollarSign, BarChart3, Activity, Camera, Phone, Globe } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
@@ -9,7 +9,8 @@ import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
 import Modal from '../components/Modal'
 import Avatar from '../components/Avatar'
-import { getSportLabel } from '../utils/sports'
+import { getSportLabel, SPORT_TYPES } from '../utils/sports'
+import { api } from '../utils/api'
 
 function isExpired(dateStr) {
   if (!dateStr) return true
@@ -39,6 +40,8 @@ export default function ClubDetail() {
   const [showHeadPicker, setShowHeadPicker] = useState(false)
   const [showAddBranch, setShowAddBranch] = useState(false)
   const [branchForm, setBranchForm] = useState({ name: '', city: '', address: '' })
+  const [showEdit, setShowEdit] = useState(false)
+  const [editForm, setEditForm] = useState(null)
   const [expandedTrainer, setExpandedTrainer] = useState(null)
 
   const club = (data.clubs || []).find(c => c.id === id)
@@ -47,6 +50,8 @@ export default function ClubDetail() {
   const isAdmin = auth.role === 'club_admin' && auth.user?.clubId === id
   const isHead = auth.role === 'trainer' && auth.user?.isHeadTrainer && auth.user?.clubId === id
   const canManage = isSuperadmin || isOwner || isAdmin || isHead
+  // Owners/admins can view but NOT add/remove trainers or themselves
+  const canManageTrainers = isSuperadmin || isHead
 
   if (!club) {
     return (
@@ -144,9 +149,14 @@ export default function ClubDetail() {
     <Layout>
       <PageHeader title="Клуб" back>
         {isSuperadmin && (
-          <button onClick={handleDelete} className="press-scale p-2 text-red-400">
-            <Trash2 size={18} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button onClick={() => { setEditForm({ name: club.name, city: club.city || '', phone: club.phone || '', vk: club.vk || '', address: club.address || '', logo: club.logo || null }); setShowEdit(true) }} className="press-scale p-2">
+              <Edit3 size={18} />
+            </button>
+            <button onClick={handleDelete} className="press-scale p-2 text-red-400">
+              <Trash2 size={18} />
+            </button>
+          </div>
         )}
       </PageHeader>
 
@@ -160,11 +170,15 @@ export default function ClubDetail() {
           <div className={`absolute -top-12 -right-12 w-32 h-32 rounded-full ${dark ? 'bg-blue-500/5' : 'bg-blue-100/40'}`} />
           <div className="relative">
             <div className="flex items-center gap-4 mb-4">
-              <div className={`w-16 h-16 rounded-[20px] flex items-center justify-center ${
-                dark ? 'bg-gradient-to-br from-blue-500/20 to-purple-500/20' : 'bg-gradient-to-br from-blue-100 to-purple-100'
-              }`}>
-                <Shield size={28} className={dark ? 'text-blue-400' : 'text-blue-600'} />
-              </div>
+              {club.logo ? (
+                <img src={club.logo} alt={club.name} className="w-16 h-16 rounded-[20px] object-cover shrink-0" />
+              ) : (
+                <div className={`w-16 h-16 rounded-[20px] flex items-center justify-center shrink-0 ${
+                  dark ? 'bg-gradient-to-br from-blue-500/20 to-purple-500/20' : 'bg-gradient-to-br from-blue-100 to-purple-100'
+                }`}>
+                  <Shield size={28} className={dark ? 'text-blue-400' : 'text-blue-600'} />
+                </div>
+              )}
               <div>
                 <h2 className="text-xl font-black">{club.name}</h2>
                 {club.city && (
@@ -323,7 +337,7 @@ export default function ClubDetail() {
                         {getRoleLabel(t.role)}
                       </span>
                     </div>
-                    {canManage && (
+                    {isSuperadmin && (
                       <button onClick={() => handleRemoveTrainer(t.id)} className="press-scale p-1.5 shrink-0">
                         <UserMinus size={14} className="text-red-400" />
                       </button>
@@ -377,7 +391,7 @@ export default function ClubDetail() {
             <h3 className={`text-xs uppercase font-bold ${dark ? 'text-white/40' : 'text-gray-500'}`}>
               Тренеры ({clubTrainers.length})
             </h3>
-            {canManage && (
+            {canManageTrainers && (
               <button onClick={() => setShowAddTrainer(true)} className="press-scale p-1">
                 <Plus size={18} className="text-accent" />
               </button>
@@ -406,7 +420,7 @@ export default function ClubDetail() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      {canManage && !t.isHeadTrainer && (
+                      {canManageTrainers && !t.isHeadTrainer && (
                         <button onClick={(e) => { e.stopPropagation(); handleRemoveTrainer(t.id) }} className="press-scale p-1.5">
                           <UserMinus size={14} className="text-red-400" />
                         </button>
@@ -548,32 +562,42 @@ export default function ClubDetail() {
       {/* Add Branch Modal */}
       <Modal open={showAddBranch} onClose={() => setShowAddBranch(false)} title="Новый филиал">
         <form onSubmit={handleAddBranch} className="space-y-3">
-          <input
-            type="text"
-            placeholder="Название филиала *"
-            value={branchForm.name}
-            onChange={e => setBranchForm(f => ({ ...f, name: e.target.value }))}
-            className={inputCls}
-            required
-          />
-          <input
-            type="text"
-            placeholder="Город"
-            value={branchForm.city}
-            onChange={e => setBranchForm(f => ({ ...f, city: e.target.value }))}
-            className={inputCls}
-          />
-          <input
-            type="text"
-            placeholder="Адрес"
-            value={branchForm.address}
-            onChange={e => setBranchForm(f => ({ ...f, address: e.target.value }))}
-            className={inputCls}
-          />
-          <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale">
-            Добавить филиал
-          </button>
+          <input type="text" placeholder="Название филиала *" value={branchForm.name} onChange={e => setBranchForm(f => ({ ...f, name: e.target.value }))} className={inputCls} required />
+          <input type="text" placeholder="Город" value={branchForm.city} onChange={e => setBranchForm(f => ({ ...f, city: e.target.value }))} className={inputCls} />
+          <input type="text" placeholder="Адрес" value={branchForm.address} onChange={e => setBranchForm(f => ({ ...f, address: e.target.value }))} className={inputCls} />
+          <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale">Добавить филиал</button>
         </form>
+      </Modal>
+
+      {/* Edit Club Modal (superadmin) */}
+      <Modal open={showEdit} onClose={() => setShowEdit(false)} title="Редактировать клуб">
+        {editForm && (
+          <form onSubmit={(e) => { e.preventDefault(); updateClub(id, editForm); setShowEdit(false) }} className="space-y-3">
+            <div className="flex justify-center">
+              <label className="cursor-pointer press-scale">
+                {editForm.logo ? (
+                  <img src={editForm.logo} alt="Логотип" className="w-20 h-20 rounded-[20px] object-cover" />
+                ) : (
+                  <div className={`w-20 h-20 rounded-[20px] flex flex-col items-center justify-center gap-1 ${dark ? 'bg-white/[0.06] border border-white/[0.08]' : 'bg-gray-50 border border-gray-200'}`}>
+                    <Camera size={20} className={dark ? 'text-white/25' : 'text-gray-400'} />
+                    <span className={`text-[9px] font-semibold ${dark ? 'text-white/25' : 'text-gray-400'}`}>Логотип</span>
+                  </div>
+                )}
+                <input type="file" accept="image/*" className="hidden" onChange={async (ev) => {
+                  const file = ev.target.files?.[0]
+                  if (!file) return
+                  try { const url = await api.uploadFile(file); setEditForm(f => ({ ...f, logo: url })) } catch { alert('Ошибка загрузки') }
+                }} />
+              </label>
+            </div>
+            <input type="text" placeholder="Название" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} className={inputCls} />
+            <input type="text" placeholder="Город" value={editForm.city} onChange={e => setEditForm(f => ({ ...f, city: e.target.value }))} className={inputCls} />
+            <input type="text" placeholder="Адрес" value={editForm.address} onChange={e => setEditForm(f => ({ ...f, address: e.target.value }))} className={inputCls} />
+            <input type="tel" placeholder="Телефон" value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} className={inputCls} />
+            <input type="url" placeholder="Страница ВКонтакте" value={editForm.vk} onChange={e => setEditForm(f => ({ ...f, vk: e.target.value }))} className={inputCls} />
+            <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale">Сохранить</button>
+          </form>
+        )}
       </Modal>
     </Layout>
   )

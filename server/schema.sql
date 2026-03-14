@@ -351,6 +351,53 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_column THEN NULL;
 END $$;
 
+-- Club logo
+DO $$ BEGIN
+  ALTER TABLE clubs ADD COLUMN logo TEXT;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
+-- Tournament organizer role
+DO $$ BEGIN
+  ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+  ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('superadmin', 'trainer', 'club_owner', 'club_admin', 'organizer'));
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+-- Tournament extended fields
+DO $$ BEGIN
+  ALTER TABLE tournaments ADD COLUMN regulations TEXT;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE tournaments ADD COLUMN weight_categories JSONB DEFAULT '[]';
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE tournaments ADD COLUMN prizes TEXT;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE tournaments ADD COLUMN rules TEXT;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE tournaments ADD COLUMN sport_type VARCHAR(50);
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE tournaments ADD COLUMN status VARCHAR(20) DEFAULT 'upcoming';
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE tournaments ADD COLUMN brackets JSONB DEFAULT '{}';
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE tournaments ADD COLUMN mats_count INTEGER DEFAULT 1;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
+
 -- Trainer achievements/rank
 DO $$ BEGIN
   ALTER TABLE users ADD COLUMN rank VARCHAR(255);

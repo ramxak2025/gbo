@@ -12,6 +12,7 @@ const USER_ROLES = [
   { id: 'trainer', label: 'Тренер' },
   { id: 'club_owner', label: 'Владелец клуба' },
   { id: 'club_admin', label: 'Администратор' },
+  { id: 'organizer', label: 'Организатор' },
 ]
 
 export default function AddTrainer() {
@@ -102,7 +103,7 @@ export default function AddTrainer() {
                     onClick={() => setForm(f => ({ ...f, userRole: r.id }))}
                     className={`px-3.5 py-2 rounded-2xl text-xs font-bold press-scale transition-all ${
                       active
-                        ? r.id === 'club_owner' ? 'bg-yellow-500 text-white' : r.id === 'club_admin' ? 'bg-blue-500 text-white' : 'bg-accent text-white'
+                        ? r.id === 'club_owner' ? 'bg-yellow-500 text-white' : r.id === 'club_admin' ? 'bg-blue-500 text-white' : r.id === 'organizer' ? 'bg-green-500 text-white' : 'bg-accent text-white'
                         : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60'
                     }`}
                   >
@@ -225,7 +226,7 @@ export default function AddTrainer() {
               (!needsSports || form.sportTypes.length > 0) ? 'bg-accent text-white' : 'bg-accent/30 text-white/50 cursor-not-allowed'
             }`}
           >
-            {form.userRole === 'club_owner' ? 'Добавить владельца' : form.userRole === 'club_admin' ? 'Добавить администратора' : 'Добавить тренера'}
+            {form.userRole === 'club_owner' ? 'Добавить владельца' : form.userRole === 'club_admin' ? 'Добавить администратора' : form.userRole === 'organizer' ? 'Добавить организатора' : 'Добавить тренера'}
           </button>
         </form>
       </div>

@@ -76,6 +76,7 @@ export default function Dashboard() {
   if (auth.role === 'superadmin') return <SuperAdminDash data={data} dark={dark} navigate={navigate} />
   if (auth.role === 'trainer') return <TrainerDash auth={auth} data={data} dark={dark} navigate={navigate} />
   if (auth.role === 'club_owner' || auth.role === 'club_admin') return <ClubManagerDash auth={auth} data={data} dark={dark} navigate={navigate} />
+  if (auth.role === 'organizer') return <OrganizerDash auth={auth} data={data} dark={dark} navigate={navigate} />
   if (auth.role === 'parent') return <ParentDash auth={auth} data={data} dark={dark} navigate={navigate} />
   return <StudentDash auth={auth} data={data} dark={dark} navigate={navigate} />
 }
@@ -83,7 +84,8 @@ export default function Dashboard() {
 /* ======================== SUPER ADMIN ======================== */
 function SuperAdminDash({ data, dark, navigate }) {
   const { reload } = useData()
-  const allTrainers = data.users.filter(u => (u.role === 'trainer' || u.role === 'club_owner' || u.role === 'club_admin') && !u.isDemo)
+  const allTrainers = data.users.filter(u => u.role === 'trainer' && !u.isDemo)
+  const organizers = data.users.filter(u => u.role === 'organizer' && !u.isDemo)
   const pendingRegs = data.pendingRegistrations || []
   const [cityFilter, setCityFilter] = useState('')
   const [sportFilter, setSportFilter] = useState('')
@@ -301,6 +303,40 @@ function SuperAdminDash({ data, dark, navigate }) {
             })}
           </div>
         </div>
+
+        {/* Organizers */}
+        {organizers.length > 0 && (
+          <div>
+            <SectionTitle dark={dark}>Организаторы</SectionTitle>
+            <div className="space-y-2">
+              {organizers.map(o => {
+                const tournamentsCount = data.tournaments.filter(t => t.createdBy === o.id).length
+                return (
+                  <GlassCard key={o.id} onClick={() => navigate(`/trainer/${o.id}`)}>
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0">
+                        <div className="font-bold truncate">{o.name}</div>
+                        <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-600'} flex items-center gap-1`}>
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${dark ? 'bg-green-500/15 text-green-400' : 'bg-green-50 text-green-600'}`}>Организатор</span>
+                          {o.city && <><span>•</span><MapPin size={10} />{o.city}</>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 text-sm shrink-0 ml-2"><Trophy size={14} className="text-orange-400" /><span>{tournamentsCount}</span></div>
+                    </div>
+                    {o.plainPassword && (
+                      <div className={`mt-1.5 pt-1.5 text-[10px] flex items-center gap-2 ${dark ? 'border-t border-white/[0.06] text-white/25' : 'border-t border-black/[0.05] text-gray-300'}`}>
+                        <span>Тел: {o.phone}</span>
+                        <span>•</span>
+                        <span>Пароль: {o.plainPassword}</span>
+                      </div>
+                    )}
+                  </GlassCard>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         <div>
           <SectionTitle dark={dark}>Ближайшие турниры</SectionTitle>
           <div className="space-y-2">
@@ -709,6 +745,126 @@ function ClubManagerDash({ auth, data, dark, navigate }) {
             </div>
           </div>
         )}
+      </div>
+    </Layout>
+  )
+}
+
+/* ======================== ORGANIZER ======================== */
+function OrganizerDash({ auth, data, dark, navigate }) {
+  const user = data.users.find(u => u.id === auth.userId) || auth.user
+  const myTournaments = data.tournaments.filter(t => t.createdBy === auth.userId)
+  const upcoming = myTournaments.filter(t => new Date(t.date) >= new Date()).sort((a, b) => new Date(a.date) - new Date(b.date))
+  const past = myTournaments.filter(t => new Date(t.date) < new Date()).sort((a, b) => new Date(b.date) - new Date(a.date))
+
+  return (
+    <Layout>
+      <PageHeader title="Организатор" logo />
+      <div className="px-4 space-y-4 slide-in stagger">
+        {/* Hero */}
+        <div
+          onClick={() => navigate('/profile')}
+          className={`rounded-[24px] p-5 relative overflow-hidden backdrop-blur-xl press-scale cursor-pointer ${
+            dark
+              ? 'bg-gradient-to-br from-green-500/10 via-white/[0.04] to-emerald-500/10 border border-white/[0.07]'
+              : 'bg-gradient-to-br from-green-50/80 via-white/70 to-emerald-50/80 border border-white/60 shadow-[0_4px_24px_rgba(0,0,0,0.06)]'
+          }`}
+        >
+          <div className="flex items-center gap-4">
+            <Avatar name={user?.name || '?'} src={user?.avatar} size={56} />
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-black truncate">{user?.name}</h2>
+              <div className="flex items-center gap-2 mt-1">
+                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                  dark ? 'bg-green-500/20 text-green-300' : 'bg-green-100 text-green-700'
+                }`}>Организатор</span>
+                {user?.city && (
+                  <span className={`text-[10px] font-medium flex items-center gap-0.5 ${dark ? 'text-white/35' : 'text-gray-600'}`}>
+                    <MapPin size={9} />{user.city}
+                  </span>
+                )}
+              </div>
+            </div>
+            <ChevronRight size={18} className={dark ? 'text-white/20' : 'text-gray-300'} />
+          </div>
+        </div>
+
+        {/* Add tournament button */}
+        <button
+          onClick={() => navigate('/add-tournament')}
+          className="w-full py-3.5 rounded-[20px] bg-gradient-to-r from-green-600 to-emerald-500 text-white font-bold press-scale flex items-center justify-center gap-2.5 shadow-lg shadow-green-500/25"
+        >
+          <Plus size={20} />
+          Добавить турнир
+        </button>
+
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-3">
+          <GlassCard>
+            <div className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-600'}`}>Всего турниров</div>
+            <div className="text-3xl font-black mt-1">{myTournaments.length}</div>
+          </GlassCard>
+          <GlassCard>
+            <div className={`text-xs uppercase font-semibold ${dark ? 'text-white/40' : 'text-gray-600'}`}>Предстоящих</div>
+            <div className="text-3xl font-black mt-1 text-green-500">{upcoming.length}</div>
+          </GlassCard>
+        </div>
+
+        {/* Upcoming tournaments */}
+        {upcoming.length > 0 && (
+          <div>
+            <SectionTitle dark={dark} action="Все" onAction={() => navigate('/tournaments')}>Предстоящие</SectionTitle>
+            <div className="space-y-2">
+              {upcoming.slice(0, 5).map(t => (
+                <GlassCard key={t.id} onClick={() => navigate(`/tournaments/${t.id}`)} className="cursor-pointer">
+                  <div className="flex items-center gap-3">
+                    {t.coverImage ? (
+                      <img src={t.coverImage} alt="" className="w-12 h-12 rounded-[14px] object-cover shrink-0" />
+                    ) : (
+                      <div className={`w-12 h-12 rounded-[14px] flex items-center justify-center shrink-0 ${dark ? 'bg-green-500/15' : 'bg-green-100'}`}>
+                        <Trophy size={18} className={dark ? 'text-green-400' : 'text-green-600'} />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold text-sm truncate">{t.title}</div>
+                      <div className={`text-xs ${dark ? 'text-white/40' : 'text-gray-600'} flex items-center gap-1`}>
+                        <Calendar size={10} />{formatDate(t.date)}
+                        {t.location && <><span>•</span><MapPin size={10} />{t.location}</>}
+                      </div>
+                    </div>
+                  </div>
+                </GlassCard>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Past tournaments */}
+        {past.length > 0 && (
+          <div>
+            <SectionTitle dark={dark}>Прошедшие</SectionTitle>
+            <div className="space-y-2">
+              {past.slice(0, 3).map(t => (
+                <GlassCard key={t.id} onClick={() => navigate(`/tournaments/${t.id}`)} className="cursor-pointer">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 ${dark ? 'bg-white/[0.06]' : 'bg-gray-100'}`}>
+                      <Trophy size={16} className={dark ? 'text-white/30' : 'text-gray-400'} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className={`font-bold text-sm truncate ${dark ? 'text-white/60' : 'text-gray-600'}`}>{t.title}</div>
+                      <div className={`text-xs ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+                        {formatDate(t.date)}
+                      </div>
+                    </div>
+                  </div>
+                </GlassCard>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Author */}
+        <AuthorBlock data={data} dark={dark} navigate={navigate} />
       </div>
     </Layout>
   )

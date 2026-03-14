@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Calendar, MapPin, Trash2, Edit3, Flame, X, Users, Camera } from 'lucide-react'
+import { Calendar, MapPin, Trash2, Edit3, Flame, X, Users, Camera, Scale, ScrollText, Medal, ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
 import { api } from '../utils/api'
+import { getSportLabel, SPORT_TYPES } from '../utils/sports'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
@@ -17,6 +18,29 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 }
 
+function CollapsibleSection({ title, icon: Icon, dark, children }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className={`rounded-[20px] overflow-hidden ${dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white/60 border border-white/60 shadow-sm'}`}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3 press-scale"
+      >
+        <div className="flex items-center gap-2">
+          <Icon size={16} className="text-accent" />
+          <span className="text-sm font-bold">{title}</span>
+        </div>
+        {open ? <ChevronUp size={16} className={dark ? 'text-white/30' : 'text-gray-400'} /> : <ChevronDown size={16} className={dark ? 'text-white/30' : 'text-gray-400'} />}
+      </button>
+      {open && (
+        <div className={`px-4 pb-4 ${dark ? 'border-t border-white/[0.06]' : 'border-t border-black/[0.04]'}`}>
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function TournamentDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -25,6 +49,7 @@ export default function TournamentDetail() {
   const { dark } = useTheme()
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState(null)
+  const [wcInput, setWcInput] = useState('')
 
   const tournament = data.tournaments.find(t => t.id === id)
   if (!tournament) {
@@ -41,6 +66,9 @@ export default function TournamentDetail() {
   const regs = (data.tournamentRegistrations || []).filter(r => r.tournamentId === id)
   const isRegistered = auth.role === 'student' && regs.some(r => r.studentId === auth.studentId)
   const isPast = new Date(tournament.date) < new Date()
+  const canEdit = auth.role === 'superadmin' || (auth.role === 'organizer' && tournament.createdBy === auth.userId)
+  const sportLabel = tournament.sportType ? getSportLabel(tournament.sportType) : null
+  const wc = tournament.weightCategories || []
 
   const trainerStudentIds = auth.role === 'trainer'
     ? data.students.filter(s => s.trainerId === auth.userId).map(s => s.id)
@@ -57,8 +85,23 @@ export default function TournamentDetail() {
   }
 
   const startEdit = () => {
-    setForm({ ...tournament })
+    setForm({
+      ...tournament,
+      weightCategories: tournament.weightCategories || [],
+    })
+    setWcInput('')
     setEditing(true)
+  }
+
+  const addEditWeightCategory = () => {
+    const val = wcInput.trim()
+    if (!val || form.weightCategories.includes(val)) return
+    setForm(f => ({ ...f, weightCategories: [...f.weightCategories, val] }))
+    setWcInput('')
+  }
+
+  const removeEditWeightCategory = (cat) => {
+    setForm(f => ({ ...f, weightCategories: f.weightCategories.filter(c => c !== cat) }))
   }
 
   const saveEdit = (e) => {
@@ -69,6 +112,12 @@ export default function TournamentDetail() {
       location: form.location,
       description: form.description,
       coverImage: form.coverImage,
+      regulations: form.regulations || '',
+      weightCategories: form.weightCategories || [],
+      prizes: form.prizes || '',
+      rules: form.rules || '',
+      sportType: form.sportType || null,
+      matsCount: form.matsCount || 1,
     })
     setEditing(false)
   }
@@ -108,7 +157,7 @@ export default function TournamentDetail() {
   return (
     <Layout>
       <PageHeader title="Турнир" back>
-        {auth.role === 'superadmin' && (
+        {canEdit && (
           <>
             <button onClick={startEdit} className="press-scale p-2">
               <Edit3 size={18} />
@@ -121,6 +170,7 @@ export default function TournamentDetail() {
       </PageHeader>
 
       <div className="px-4 space-y-4 slide-in">
+        {/* Cover */}
         {tournament.coverImage ? (
           <img src={tournament.coverImage} alt={tournament.title} className="w-full h-52 object-cover rounded-[24px]" />
         ) : (
@@ -129,20 +179,45 @@ export default function TournamentDetail() {
           </div>
         )}
 
-        <h1 className="text-2xl font-black italic">{tournament.title}</h1>
+        {/* Title + sport badge */}
+        <div>
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            {sportLabel && (
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                dark ? 'bg-accent/20 text-accent-light' : 'bg-red-50 text-red-600'
+              }`}>{sportLabel}</span>
+            )}
+            {isPast && (
+              <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                dark ? 'bg-white/[0.08] text-white/40' : 'bg-gray-100 text-gray-400'
+              }`}>Прошёл</span>
+            )}
+          </div>
+          <h1 className="text-2xl font-black italic">{tournament.title}</h1>
+        </div>
 
+        {/* Date + Location */}
         <div className="flex flex-col gap-2">
           <GlassCard className="flex items-center gap-3">
             <Calendar size={18} className="text-accent shrink-0" />
             <span className="text-sm">{formatDate(tournament.date)}</span>
           </GlassCard>
-          <GlassCard className="flex items-center gap-3">
-            <MapPin size={18} className="text-accent shrink-0" />
-            <span className="text-sm">{tournament.location}</span>
-          </GlassCard>
+          {tournament.location && (
+            <GlassCard className="flex items-center gap-3">
+              <MapPin size={18} className="text-accent shrink-0" />
+              <span className="text-sm">{tournament.location}</span>
+            </GlassCard>
+          )}
         </div>
 
-        {/* Student registration button — right after location */}
+        {/* Mats count */}
+        {tournament.matsCount > 1 && (
+          <div className={`flex items-center gap-2 px-4 py-2.5 rounded-[16px] ${dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white/60 border border-white/60'}`}>
+            <span className={`text-xs font-bold ${dark ? 'text-white/50' : 'text-gray-600'}`}>Ковров: {tournament.matsCount}</span>
+          </div>
+        )}
+
+        {/* Student registration button */}
         {auth.role === 'student' && !isPast && (
           <button
             onClick={toggleRegistration}
@@ -156,7 +231,7 @@ export default function TournamentDetail() {
           </button>
         )}
 
-        {/* Trainer sees registered students — right after location */}
+        {/* Trainer sees registered students */}
         {auth.role === 'trainer' && trainerRegs.length > 0 && (
           <div>
             <h3 className={`text-xs uppercase font-bold mb-2 flex items-center gap-1 ${dark ? 'text-white/40' : 'text-gray-500'}`}>
@@ -189,7 +264,7 @@ export default function TournamentDetail() {
           </GlassCard>
         )}
 
-        {/* Description — below registration */}
+        {/* Description */}
         {tournament.description && (
           <GlassCard>
             <h3 className={`text-xs uppercase font-bold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Описание</h3>
@@ -198,8 +273,51 @@ export default function TournamentDetail() {
             </p>
           </GlassCard>
         )}
+
+        {/* Weight categories */}
+        {wc.length > 0 && (
+          <CollapsibleSection title={`Весовые категории (${wc.length})`} icon={Scale} dark={dark}>
+            <div className="flex flex-wrap gap-1.5 pt-3">
+              {wc.map((w, i) => (
+                <span key={i} className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+                  dark ? 'bg-purple-500/15 text-purple-300' : 'bg-purple-100 text-purple-600'
+                }`}>{w}</span>
+              ))}
+            </div>
+          </CollapsibleSection>
+        )}
+
+        {/* Regulations */}
+        {tournament.regulations && (
+          <CollapsibleSection title="Положение" icon={ScrollText} dark={dark}>
+            <p className={`text-sm leading-relaxed whitespace-pre-line pt-3 ${dark ? 'text-white/60' : 'text-gray-600'}`}>
+              {tournament.regulations}
+            </p>
+          </CollapsibleSection>
+        )}
+
+        {/* Rules */}
+        {tournament.rules && (
+          <CollapsibleSection title="Правила" icon={ScrollText} dark={dark}>
+            <p className={`text-sm leading-relaxed whitespace-pre-line pt-3 ${dark ? 'text-white/60' : 'text-gray-600'}`}>
+              {tournament.rules}
+            </p>
+          </CollapsibleSection>
+        )}
+
+        {/* Prizes */}
+        {tournament.prizes && (
+          <CollapsibleSection title="Призы" icon={Medal} dark={dark}>
+            <p className={`text-sm leading-relaxed whitespace-pre-line pt-3 ${dark ? 'text-white/60' : 'text-gray-600'}`}>
+              {tournament.prizes}
+            </p>
+          </CollapsibleSection>
+        )}
+
+        <div className="h-4" />
       </div>
 
+      {/* Edit modal */}
       <Modal open={editing} onClose={() => setEditing(false)} title="Редактировать турнир">
         {form && (
           <form onSubmit={saveEdit} className="space-y-3">
@@ -212,8 +330,56 @@ export default function TournamentDetail() {
             </label>
             <input type="text" placeholder="Название" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} className={inputCls} />
             <DateButton label="Дата" value={form.date} onChange={v => setForm(f => ({ ...f, date: v }))} />
-            <input type="text" placeholder="Место" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} className={inputCls} />
-            <textarea placeholder="Описание" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className={`${inputCls} min-h-[100px] resize-none`} rows={3} />
+            <input type="text" placeholder="Место" value={form.location || ''} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} className={inputCls} />
+
+            {/* Sport type */}
+            <div>
+              <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Вид спорта</div>
+              <div className="flex flex-wrap gap-2">
+                {SPORT_TYPES.map(s => (
+                  <button key={s.id} type="button" onClick={() => setForm(f => ({ ...f, sportType: f.sportType === s.id ? '' : s.id }))}
+                    className={`px-3 py-2 rounded-2xl text-xs font-bold press-scale ${
+                      form.sportType === s.id ? 'bg-accent text-white' : dark ? 'bg-white/[0.06] text-white/50 border border-white/[0.06]' : 'bg-white/70 text-gray-500 border border-white/60'
+                    }`}
+                  >{s.label}</button>
+                ))}
+              </div>
+            </div>
+
+            <textarea placeholder="Описание" value={form.description || ''} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className={`${inputCls} min-h-[80px] resize-none`} rows={3} />
+
+            {/* Weight categories */}
+            <div>
+              <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Весовые категории</div>
+              {form.weightCategories.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {form.weightCategories.map(wc => (
+                    <span key={wc} className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${dark ? 'bg-purple-500/15 text-purple-300' : 'bg-purple-100 text-purple-600'}`}>
+                      {wc}
+                      <button type="button" onClick={() => removeEditWeightCategory(wc)} className="press-scale"><X size={10} /></button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <input type="text" placeholder="напр. до 60 кг" value={wcInput} onChange={e => setWcInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addEditWeightCategory() } }}
+                  className={`flex-1 ${inputCls}`} />
+                {wcInput.trim() && (
+                  <button type="button" onClick={addEditWeightCategory} className="px-3 rounded-[16px] bg-accent text-white font-bold press-scale shrink-0"><Plus size={16} /></button>
+                )}
+              </div>
+            </div>
+
+            <textarea placeholder="Положение турнира" value={form.regulations || ''} onChange={e => setForm(f => ({ ...f, regulations: e.target.value }))} className={`${inputCls} min-h-[80px] resize-none`} rows={3} />
+            <textarea placeholder="Правила" value={form.rules || ''} onChange={e => setForm(f => ({ ...f, rules: e.target.value }))} className={`${inputCls} min-h-[80px] resize-none`} rows={3} />
+            <textarea placeholder="Призы" value={form.prizes || ''} onChange={e => setForm(f => ({ ...f, prizes: e.target.value }))} className={`${inputCls} min-h-[60px] resize-none`} rows={2} />
+
+            <div>
+              <div className={`text-xs uppercase font-semibold mb-2 ${dark ? 'text-white/40' : 'text-gray-500'}`}>Количество ковров</div>
+              <input type="number" min="1" max="20" value={form.matsCount || 1} onChange={e => setForm(f => ({ ...f, matsCount: parseInt(e.target.value) || 1 }))} className={inputCls} />
+            </div>
+
             <button type="submit" className="w-full py-3.5 rounded-[16px] bg-accent text-white font-bold press-scale">Сохранить</button>
           </form>
         )}
