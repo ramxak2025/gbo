@@ -78,7 +78,7 @@ export default function ClubDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { auth } = useAuth()
-  const { data, updateClub, deleteClub, assignTrainerToClub, removeTrainerFromClub, addBranch, deleteBranch } = useData()
+  const { data, updateClub, deleteClub, assignTrainerToClub, removeTrainerFromClub, addBranch, deleteBranch, updateTrainer } = useData()
   const { dark } = useTheme()
 
   const [activeTab, setActiveTab] = useState('overview')
@@ -91,6 +91,7 @@ export default function ClubDetail() {
   const [expandedTrainer, setExpandedTrainer] = useState(null)
   const [expandedGroup, setExpandedGroup] = useState(null)
   const [expandedBranch, setExpandedBranch] = useState(null)
+  const [showBranchAssign, setShowBranchAssign] = useState(null) // branchId to assign trainer to
 
   const club = (data.clubs || []).find(c => c.id === id)
   const isSuperadmin = auth.role === 'superadmin'
@@ -184,6 +185,8 @@ export default function ClubDetail() {
     setShowAddBranch(false)
   }
   const handleDeleteBranch = (branchId) => { if (confirm('Удалить филиал?')) deleteBranch(branchId) }
+  const handleAssignToBranch = (trainerId, branchId) => { updateTrainer(trainerId, { branchId }); setShowBranchAssign(null) }
+  const handleRemoveFromBranch = (trainerId) => { updateTrainer(trainerId, { branchId: null }) }
 
   const inputCls = `w-full px-4 py-3 rounded-2xl text-base outline-none transition-all ${
     dark
@@ -525,12 +528,31 @@ export default function ClubDetail() {
                     <div className={`px-3 pb-3 space-y-2 animate-in ${dark ? 'border-t border-white/[0.05]' : 'border-t border-black/[0.04]'}`}>
                       {branch.trainers.length > 0 ? (
                         branch.trainers.map(t => (
-                          <div key={t.id} className="pt-2">
+                          <div key={t.id} className="pt-2 relative">
                             {renderTrainerCard(t)}
+                            {canManage && (
+                              <button
+                                onClick={() => handleRemoveFromBranch(t.id)}
+                                className={`absolute top-4 right-12 press-scale p-1 rounded-lg ${dark ? 'bg-red-500/10' : 'bg-red-50'}`}
+                                title="Убрать из филиала"
+                              >
+                                <UserMinus size={12} className="text-red-400" />
+                              </button>
+                            )}
                           </div>
                         ))
                       ) : (
-                        <p className={`text-center py-4 text-[12px] ${dark ? 'text-white/20' : 'text-gray-400'}`}>Нет тренеров</p>
+                        <p className={`text-center py-3 text-[12px] ${dark ? 'text-white/20' : 'text-gray-400'}`}>Нет тренеров</p>
+                      )}
+                      {canManage && (
+                        <button
+                          onClick={() => setShowBranchAssign(branch.id)}
+                          className={`w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-dashed press-scale text-[12px] font-semibold transition-all ${
+                            dark ? 'border-white/[0.08] text-white/30 hover:border-accent/30 hover:text-accent' : 'border-gray-200 text-gray-400 hover:border-accent/40 hover:text-accent'
+                          }`}
+                        >
+                          <Plus size={13} /> Добавить тренера в филиал
+                        </button>
                       )}
                     </div>
                   )}
@@ -727,6 +749,37 @@ export default function ClubDetail() {
           <input type="text" placeholder="Адрес" value={branchForm.address} onChange={e => setBranchForm(f => ({ ...f, address: e.target.value }))} className={inputCls} />
           <button type="submit" className="w-full py-3.5 rounded-2xl bg-accent text-white font-bold press-scale">Добавить филиал</button>
         </form>
+      </Modal>
+
+      <Modal open={!!showBranchAssign} onClose={() => setShowBranchAssign(null)} title="Добавить тренера в филиал">
+        <div className="space-y-2">
+          {(() => {
+            const branchTrainerIds = new Set(
+              clubTrainers.filter(t => t.branchId === showBranchAssign).map(t => t.id)
+            )
+            const available = clubTrainers.filter(t => !branchTrainerIds.has(t.id))
+            if (available.length === 0) return (
+              <p className={`text-center py-6 text-sm ${dark ? 'text-white/30' : 'text-gray-500'}`}>Все тренеры клуба уже в этом филиале</p>
+            )
+            return available.map(t => (
+              <button key={t.id} onClick={() => handleAssignToBranch(t.id, showBranchAssign)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl press-scale text-left ${
+                  dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white/60 border border-white/50'
+                }`}>
+                <Avatar name={t.name} src={t.avatar} size={34} />
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-[13px] truncate">{t.name}</div>
+                  {t.branchId && (
+                    <span className={`text-[10px] ${dark ? 'text-white/25' : 'text-gray-400'}`}>
+                      Сейчас: {(data.branches || []).find(b => b.id === t.branchId)?.name || '—'}
+                    </span>
+                  )}
+                </div>
+                <Plus size={14} className="text-accent shrink-0" />
+              </button>
+            ))
+          })()}
+        </div>
       </Modal>
 
       <Modal open={showEdit} onClose={() => setShowEdit(false)} title="Редактировать клуб">

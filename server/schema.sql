@@ -415,3 +415,7 @@ DO $$ BEGIN
   ALTER TABLE users ADD COLUMN achievements TEXT;
 EXCEPTION WHEN duplicate_column THEN NULL;
 END $$;
+DO $$ BEGIN
+  ALTER TABLE users ADD COLUMN branch_id TEXT;
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;

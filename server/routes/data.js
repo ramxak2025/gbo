@@ -43,7 +43,7 @@ async function verifyTrainerOwnsMaterial(userId, role, mId) {
 // --- Mapping functions ---
 
 function mapUser(u, includeSecrets = false) {
-  const base = { id: u.id, name: u.name, phone: u.phone, role: u.role, avatar: u.avatar, clubName: u.club_name, sportType: u.sport_type, sportTypes: u.sport_types || [], city: u.city, isDemo: !!u.is_demo, materialCategories: u.material_categories || [], clubId: u.club_id || null, isHeadTrainer: !!u.is_head_trainer, rank: u.rank || '', achievements: u.achievements || '' }
+  const base = { id: u.id, name: u.name, phone: u.phone, role: u.role, avatar: u.avatar, clubName: u.club_name, sportType: u.sport_type, sportTypes: u.sport_types || [], city: u.city, isDemo: !!u.is_demo, materialCategories: u.material_categories || [], clubId: u.club_id || null, isHeadTrainer: !!u.is_head_trainer, rank: u.rank || '', achievements: u.achievements || '', branchId: u.branch_id || null }
   if (includeSecrets) base.plainPassword = u.plain_password || ''
   return base
 }
@@ -877,9 +877,17 @@ router.post('/trainers', authMiddleware, async (req, res) => {
 router.put('/trainers/:id', authMiddleware, async (req, res) => {
   try {
     const { userId, role } = req.user
-    // Trainers can edit themselves, superadmin can edit anyone
+    // Trainers can edit themselves, superadmin can edit anyone, club_owner/club_admin can edit club members
     if (role !== 'superadmin' && userId !== req.params.id) {
-      return res.status(403).json({ error: 'Нет доступа' })
+      if (role === 'club_owner' || role === 'club_admin') {
+        const { rows: [caller] } = await pool.query('SELECT club_id FROM users WHERE id = $1', [userId])
+        const { rows: [target] } = await pool.query('SELECT club_id FROM users WHERE id = $1', [req.params.id])
+        if (!caller?.club_id || caller.club_id !== target?.club_id) {
+          return res.status(403).json({ error: 'Нет доступа' })
+        }
+      } else {
+        return res.status(403).json({ error: 'Нет доступа' })
+      }
     }
 
     const { name, phone, clubName, avatar, sportType, sportTypes, city, password, materialCategories } = req.body
@@ -900,6 +908,10 @@ router.put('/trainers/:id', authMiddleware, async (req, res) => {
     if (req.body.achievements !== undefined) {
       sets.push(`achievements = $${vals.length + 1}`)
       vals.push(req.body.achievements)
+    }
+    if (req.body.branchId !== undefined) {
+      sets.push(`branch_id = $${vals.length + 1}`)
+      vals.push(req.body.branchId)
     }
     if (password) {
       sets.push(`password_hash = $${vals.length + 1}`, `plain_password = $${vals.length + 2}`)
