@@ -182,7 +182,7 @@ export default function Team() {
             {filteredOwners.map(person => {
               const club = getClubName(person.clubId)
               return (
-                <GlassCard key={person.id} onClick={() => person.clubId ? navigate(`/club/${person.clubId}`) : null} className="flex items-center gap-3">
+                <GlassCard key={person.id} onClick={() => navigate(`/trainer/${person.id}`)} className="flex items-center gap-3">
                   <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${dark ? 'bg-amber-500/15' : 'bg-amber-50'}`}>
                     <Crown size={20} className={dark ? 'text-amber-400' : 'text-amber-600'} />
                   </div>
@@ -211,7 +211,7 @@ export default function Team() {
             {filteredAdmins.map(person => {
               const club = getClubName(person.clubId)
               return (
-                <GlassCard key={person.id} onClick={() => person.clubId ? navigate(`/club/${person.clubId}`) : null} className="flex items-center gap-3">
+                <GlassCard key={person.id} onClick={() => navigate(`/trainer/${person.id}`)} className="flex items-center gap-3">
                   <div className={`w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${dark ? 'bg-blue-500/15' : 'bg-blue-50'}`}>
                     <Shield size={20} className={dark ? 'text-blue-400' : 'text-blue-600'} />
                   </div>

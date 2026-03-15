@@ -124,16 +124,8 @@ function SuperAdminDash({ data, dark, navigate }) {
   const stats = useMemo(() => {
     const activeStudents = allStudents.filter(s => !isExpired(s.subscriptionExpiresAt)).length
     const expiredStudents = allStudents.filter(s => isExpired(s.subscriptionExpiresAt)).length
-    const allTx = data.transactions || []
-    const totalIncome = allTx.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
-    const totalExpense = allTx.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
 
     const now = new Date()
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    const monthTx = allTx.filter(t => new Date(t.createdAt) >= monthStart)
-    const monthIncome = monthTx.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0)
-    const monthExpense = monthTx.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0)
-
     const citiesSet = new Set(allTrainers.filter(t => t.city).map(t => t.city))
     const sportsSet = new Set(allTrainers.filter(t => t.sportType).map(t => t.sportType))
 
@@ -149,12 +141,10 @@ function SuperAdminDash({ data, dark, navigate }) {
 
     return {
       activeStudents, expiredStudents,
-      totalIncome, totalExpense, balance: totalIncome - totalExpense,
-      monthIncome, monthExpense, monthBalance: monthIncome - monthExpense,
       cities: citiesSet.size, sports: sportsSet.size,
       upcomingTournaments, emptyTrainers, emptyGroups,
     }
-  }, [allTrainers, allStudents, data.transactions, data.tournaments, groups, data.studentGroups])
+  }, [allTrainers, allStudents, data.tournaments, groups, data.studentGroups])
 
   const subLabel = dark ? 'text-white/40' : 'text-gray-500'
   const statNum = 'text-2xl font-black mt-0.5'
@@ -285,48 +275,6 @@ function SuperAdminDash({ data, dark, navigate }) {
               />
             </div>
           )}
-        </GlassCard>
-
-        {/* Financials */}
-        <SectionTitle dark={dark}>Финансы за месяц</SectionTitle>
-        <div className="grid grid-cols-3 gap-2.5">
-          <GlassCard>
-            <div className="flex items-center gap-1.5 mb-1">
-              <TrendingUp size={12} className="text-green-400" />
-              <span className={`text-[10px] uppercase font-semibold ${subLabel}`}>Доход</span>
-            </div>
-            <div className="text-lg font-black text-green-400">{(stats.monthIncome / 1000).toFixed(stats.monthIncome >= 1000 ? 1 : 0)}к</div>
-          </GlassCard>
-          <GlassCard>
-            <div className="flex items-center gap-1.5 mb-1">
-              <TrendingDown size={12} className="text-red-400" />
-              <span className={`text-[10px] uppercase font-semibold ${subLabel}`}>Расход</span>
-            </div>
-            <div className="text-lg font-black text-red-400">{(stats.monthExpense / 1000).toFixed(stats.monthExpense >= 1000 ? 1 : 0)}к</div>
-          </GlassCard>
-          <GlassCard>
-            <div className="flex items-center gap-1.5 mb-1">
-              <BarChart3 size={12} className={stats.monthBalance >= 0 ? 'text-blue-400' : 'text-orange-400'} />
-              <span className={`text-[10px] uppercase font-semibold ${subLabel}`}>Баланс</span>
-            </div>
-            <div className={`text-lg font-black ${stats.monthBalance >= 0 ? 'text-blue-400' : 'text-orange-400'}`}>
-              {stats.monthBalance >= 0 ? '+' : ''}{(stats.monthBalance / 1000).toFixed(Math.abs(stats.monthBalance) >= 1000 ? 1 : 0)}к
-            </div>
-          </GlassCard>
-        </div>
-
-        {/* Overall balance */}
-        <GlassCard>
-          <div className="flex items-center justify-between">
-            <div className={`text-xs font-semibold ${subLabel}`}>Общий баланс (все время)</div>
-            <div className={`text-xl font-black ${stats.balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {stats.balance >= 0 ? '+' : ''}{stats.balance.toLocaleString('ru-RU')} ₽
-            </div>
-          </div>
-          <div className={`flex items-center justify-between mt-1 text-[10px] ${subLabel}`}>
-            <span>Доход: {stats.totalIncome.toLocaleString('ru-RU')} ₽</span>
-            <span>Расход: {stats.totalExpense.toLocaleString('ru-RU')} ₽</span>
-          </div>
         </GlassCard>
 
         {/* Alerts */}

@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { Phone, Users, Trash2, Edit3, Dumbbell, MapPin, Key, Shield, Award, ChevronRight, Crown, Activity, Zap } from 'lucide-react'
+import { Phone, Users, Trash2, Edit3, Dumbbell, MapPin, Key, Shield, Award, ChevronRight, Crown, Activity, Zap, Trophy } from 'lucide-react'
 import { useState, useMemo } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
@@ -17,6 +17,20 @@ function isExpired(dateStr) {
   return new Date(dateStr) < new Date()
 }
 
+function getRoleLabel(role) {
+  if (role === 'club_owner') return 'Владелец клуба'
+  if (role === 'club_admin') return 'Администратор'
+  if (role === 'organizer') return 'Организатор'
+  return 'Тренер'
+}
+
+function getRoleBadge(role, dark) {
+  if (role === 'club_owner') return { label: 'Владелец', cls: dark ? 'bg-amber-500/20 text-amber-300' : 'bg-amber-100 text-amber-700', icon: Crown }
+  if (role === 'club_admin') return { label: 'Администратор', cls: dark ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-600', icon: Shield }
+  if (role === 'organizer') return { label: 'Организатор', cls: dark ? 'bg-green-500/20 text-green-300' : 'bg-green-100 text-green-600', icon: Trophy }
+  return { label: 'Тренер', cls: dark ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-600', icon: Users }
+}
+
 export default function TrainerDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -30,13 +44,16 @@ export default function TrainerDetail() {
   if (!trainer) {
     return (
       <Layout>
-        <PageHeader title="Тренер" back />
+        <PageHeader title="Пользователь" back />
         <div className="px-4 py-12 text-center">
-          <p className={dark ? 'text-white/40' : 'text-gray-500'}>Тренер не найден</p>
+          <p className={dark ? 'text-white/40' : 'text-gray-500'}>Пользователь не найден</p>
         </div>
       </Layout>
     )
   }
+
+  const roleBadge = getRoleBadge(trainer.role, dark)
+  const roleLabel = getRoleLabel(trainer.role)
 
   const students = data.students.filter(s => s.trainerId === id)
   const groups = data.groups.filter(g => g.trainerId === id)
@@ -77,7 +94,7 @@ export default function TrainerDetail() {
   }
 
   const handleDelete = () => {
-    if (confirm(`Удалить тренера ${trainer.name} и все данные его клуба?`)) {
+    if (confirm(`Удалить ${roleLabel.toLowerCase()} ${trainer.name} и все связанные данные?`)) {
       deleteTrainer(id)
       navigate(-1)
     }
@@ -93,7 +110,7 @@ export default function TrainerDetail() {
 
   return (
     <Layout>
-      <PageHeader title="Тренер" back>
+      <PageHeader title={roleLabel} back>
         {auth.role === 'superadmin' && (
           <>
             <button onClick={startEdit} className="press-scale p-2">
@@ -121,8 +138,9 @@ export default function TrainerDetail() {
             <div className="flex items-start gap-4">
               <div className="relative shrink-0">
                 <div className={`p-[3px] rounded-full ${
-                  trainer.isHeadTrainer
-                    ? 'bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500'
+                  trainer.isHeadTrainer ? 'bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500'
+                    : trainer.role === 'club_owner' ? 'bg-gradient-to-br from-amber-400 via-yellow-500 to-orange-400'
+                    : trainer.role === 'organizer' ? 'bg-gradient-to-br from-green-400 via-emerald-500 to-teal-500'
                     : 'bg-gradient-to-br from-blue-400 via-indigo-500 to-purple-500'
                 }`}>
                   <div className={`rounded-full p-[2px] ${dark ? 'bg-[#0a0a12]' : 'bg-white'}`}>
@@ -139,10 +157,8 @@ export default function TrainerDetail() {
               <div className="flex-1 min-w-0 pt-1">
                 <h2 className="text-xl font-black truncate">{trainer.name}</h2>
                 <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                    dark ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-600'
-                  }`}>
-                    Тренер
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${roleBadge.cls}`}>
+                    {roleBadge.label}
                   </span>
                   {trainer.isHeadTrainer && (
                     <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-0.5 ${
