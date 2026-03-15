@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Camera, LogOut, Bell, MapPin, Shield, Award, Users, ChevronRight, Dumbbell, Calendar, Phone, CreditCard, Scale, Crown, UserMinus, TrendingUp, Star, Activity, Zap } from 'lucide-react'
+import { Camera, LogOut, Bell, MapPin, Shield, Award, Users, ChevronRight, Dumbbell, Calendar, Phone, CreditCard, Scale, Crown, UserMinus, TrendingUp, Star, Activity, Zap, Building2, Trophy, UserPlus, Plus, Settings, BarChart3, AlertCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
@@ -64,6 +64,31 @@ export default function Profile() {
   const sportLabel = getSportLabel(auth.role === 'student' ? trainer?.sportType : user?.sportType)
   const rankLabel = getRankLabel(auth.role === 'student' ? trainer?.sportType : user?.sportType)
 
+  // Superadmin platform stats
+  const platformStats = useMemo(() => {
+    if (auth.role !== 'superadmin') return null
+    const allTrainers = data.users.filter(u => u.role === 'trainer' && !u.isDemo)
+    const allStudents = data.students.filter(s => !s.isDemo)
+    const clubs = data.clubs || []
+    const branches = data.branches || []
+    const groups = data.groups || []
+    const organizers = data.users.filter(u => u.role === 'organizer' && !u.isDemo)
+    const owners = data.users.filter(u => u.role === 'club_owner')
+    const admins = data.users.filter(u => u.role === 'club_admin')
+    const activeStudents = allStudents.filter(s => !isExpired(s.subscriptionExpiresAt)).length
+    const expiredStudents = allStudents.filter(s => isExpired(s.subscriptionExpiresAt)).length
+    const upcomingTournaments = data.tournaments.filter(t => new Date(t.date) >= new Date()).length
+    const pendingRegs = (data.pendingRegistrations || []).length
+    return {
+      trainers: allTrainers.length, students: allStudents.length, clubs: clubs.length,
+      branches: branches.length, groups: groups.length, organizers: organizers.length,
+      owners: owners.length, admins: admins.length,
+      activeStudents, expiredStudents, tournaments: data.tournaments.length,
+      upcomingTournaments, pendingRegs,
+      totalUsers: allTrainers.length + allStudents.length + organizers.length + owners.length + admins.length,
+    }
+  }, [auth.role, data])
+
   const handleAvatarUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -86,7 +111,7 @@ export default function Profile() {
 
   return (
     <Layout>
-      <PageHeader title="Профиль" />
+      <PageHeader title="Профиль" back />
       <div className="px-4 space-y-4 slide-in">
 
         {/* === HERO PROFILE CARD === */}
@@ -105,11 +130,17 @@ export default function Profile() {
               {/* Avatar with ring */}
               <div className="relative shrink-0">
                 <div className={`p-[3px] rounded-full ${
-                  isHeadTrainer
-                    ? 'bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500'
-                    : auth.role === 'trainer'
-                      ? 'bg-gradient-to-br from-purple-500 via-blue-500 to-cyan-500'
-                      : 'bg-gradient-to-br from-green-400 via-emerald-500 to-teal-500'
+                  auth.role === 'superadmin'
+                    ? 'bg-gradient-to-br from-purple-500 via-pink-500 to-red-500'
+                    : isHeadTrainer
+                      ? 'bg-gradient-to-br from-yellow-400 via-amber-500 to-orange-500'
+                      : auth.role === 'trainer'
+                        ? 'bg-gradient-to-br from-purple-500 via-blue-500 to-cyan-500'
+                        : auth.role === 'club_owner'
+                          ? 'bg-gradient-to-br from-amber-400 via-yellow-500 to-orange-400'
+                          : auth.role === 'organizer'
+                            ? 'bg-gradient-to-br from-green-400 via-emerald-500 to-teal-500'
+                            : 'bg-gradient-to-br from-green-400 via-emerald-500 to-teal-500'
                 }`}>
                   <div className={`rounded-full p-[2px] ${dark ? 'bg-[#0a0a12]' : 'bg-white'}`}>
                     <Avatar name={displayName} src={avatarSrc} size={76} />
@@ -195,6 +226,133 @@ export default function Profile() {
             </div>
           )}
         </div>
+
+        {/* ========= SUPERADMIN CONTROL PANEL ========= */}
+        {auth.role === 'superadmin' && platformStats && (
+          <>
+            {/* Platform Overview */}
+            <div className={`rounded-[24px] relative overflow-hidden ${
+              dark
+                ? 'bg-gradient-to-br from-purple-600/10 via-white/[0.02] to-indigo-500/10 border border-purple-500/15'
+                : 'bg-gradient-to-br from-purple-50 via-white/80 to-indigo-50 border border-purple-200/40 shadow-sm'
+            }`}>
+              <div className={`absolute -top-12 -right-12 w-32 h-32 rounded-full blur-2xl ${dark ? 'bg-purple-500/8' : 'bg-purple-200/30'}`} />
+              <div className="relative p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <BarChart3 size={14} className="text-purple-400" />
+                  <span className={`text-[10px] uppercase font-bold tracking-widest ${dark ? 'text-purple-400/60' : 'text-purple-500'}`}>
+                    Обзор платформы
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-4 gap-1.5">
+                  {[
+                    { icon: Building2, value: platformStats.clubs, label: 'Клубы', gradient: 'from-blue-500 to-cyan-500' },
+                    { icon: Users, value: platformStats.trainers, label: 'Тренеры', gradient: 'from-indigo-500 to-purple-500' },
+                    { icon: Award, value: platformStats.students, label: 'Спортсм.', gradient: 'from-accent to-rose-500' },
+                    { icon: Trophy, value: platformStats.tournaments, label: 'Турниры', gradient: 'from-orange-500 to-amber-500' },
+                  ].map(({ icon: Icon, value, label, gradient }) => (
+                    <div key={label} className={`rounded-[14px] p-2.5 text-center ${dark ? 'bg-black/25' : 'bg-white/60'}`}>
+                      <div className={`w-7 h-7 rounded-lg mx-auto mb-1 flex items-center justify-center bg-gradient-to-br ${gradient}`}>
+                        <Icon size={13} className="text-white" />
+                      </div>
+                      <div className="text-lg font-black leading-none">{value}</div>
+                      <div className={`text-[7px] uppercase font-bold mt-0.5 ${dark ? 'text-white/20' : 'text-gray-400'}`}>{label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-3 gap-1.5 mt-1.5">
+                  <div className={`rounded-[12px] p-2 text-center ${dark ? 'bg-black/20' : 'bg-white/50'}`}>
+                    <div className="text-sm font-black text-green-400">{platformStats.activeStudents}</div>
+                    <div className={`text-[7px] uppercase font-bold ${dark ? 'text-white/20' : 'text-gray-400'}`}>Актив. подп.</div>
+                  </div>
+                  <div className={`rounded-[12px] p-2 text-center ${dark ? 'bg-black/20' : 'bg-white/50'}`}>
+                    <div className="text-sm font-black text-red-400">{platformStats.expiredStudents}</div>
+                    <div className={`text-[7px] uppercase font-bold ${dark ? 'text-white/20' : 'text-gray-400'}`}>Просрочены</div>
+                  </div>
+                  <div className={`rounded-[12px] p-2 text-center ${dark ? 'bg-black/20' : 'bg-white/50'}`}>
+                    <div className="text-sm font-black">{platformStats.totalUsers}</div>
+                    <div className={`text-[7px] uppercase font-bold ${dark ? 'text-white/20' : 'text-gray-400'}`}>Всего польз.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Pending registrations alert */}
+            {platformStats.pendingRegs > 0 && (
+              <div
+                onClick={() => navigate('/')}
+                className={`rounded-[18px] p-4 flex items-center gap-3 press-scale cursor-pointer ${
+                  dark ? 'bg-orange-500/[0.08] border border-orange-500/20' : 'bg-orange-50/80 border border-orange-200/50'
+                }`}
+              >
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${dark ? 'bg-orange-500/15' : 'bg-orange-100'}`}>
+                  <AlertCircle size={17} className="text-orange-400" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-bold">{platformStats.pendingRegs} заявок ждут одобрения</div>
+                  <div className={`text-[10px] ${dark ? 'text-white/35' : 'text-gray-500'}`}>Нажмите для перехода</div>
+                </div>
+                <ChevronRight size={16} className="text-orange-400" />
+              </div>
+            )}
+
+            {/* Quick Actions */}
+            <div>
+              <h3 className={`text-[10px] uppercase font-bold tracking-wider mb-2.5 px-1 ${dark ? 'text-white/30' : 'text-gray-400'}`}>
+                Быстрые действия
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { icon: UserPlus, label: 'Добавить тренера', path: '/add-trainer', color: 'text-green-500', bg: dark ? 'bg-green-500/15' : 'bg-green-50' },
+                  { icon: Building2, label: 'Управление клубами', path: '/clubs', color: 'text-blue-500', bg: dark ? 'bg-blue-500/15' : 'bg-blue-50' },
+                  { icon: Users, label: 'Все люди', path: '/team', color: 'text-purple-500', bg: dark ? 'bg-purple-500/15' : 'bg-purple-50' },
+                  { icon: Trophy, label: 'Добавить турнир', path: '/add-tournament', color: 'text-orange-500', bg: dark ? 'bg-orange-500/15' : 'bg-orange-50' },
+                ].map(({ icon: Icon, label, path, color, bg }) => (
+                  <button
+                    key={path}
+                    onClick={() => navigate(path)}
+                    className={`flex items-center gap-2.5 px-4 py-3 rounded-[16px] press-scale text-left transition-all ${
+                      dark ? 'bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.07]' : 'bg-white/70 border border-white/60 shadow-sm hover:bg-white/80'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${bg}`}>
+                      <Icon size={15} className={color} />
+                    </div>
+                    <span className="text-[12px] font-bold">{label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Roles breakdown */}
+            <div className={`rounded-[20px] overflow-hidden backdrop-blur-xl ${
+              dark ? 'bg-white/[0.04] border border-white/[0.06]' : 'bg-white/70 border border-white/60 shadow-sm'
+            }`}>
+              {[
+                { icon: Users, label: 'Тренеры', value: platformStats.trainers, color: 'text-blue-500' },
+                { icon: Crown, label: 'Владельцы клубов', value: platformStats.owners, color: 'text-amber-500' },
+                { icon: Shield, label: 'Администраторы', value: platformStats.admins, color: 'text-cyan-500' },
+                { icon: Trophy, label: 'Организаторы', value: platformStats.organizers, color: 'text-orange-500' },
+                { icon: Building2, label: 'Филиалы', value: platformStats.branches, color: 'text-teal-500' },
+                { icon: Dumbbell, label: 'Группы', value: platformStats.groups, color: 'text-purple-500' },
+              ].map(({ icon: Icon, label, value, color }, i) => (
+                <div key={label} className={`flex items-center justify-between px-4 py-3 ${
+                  i > 0 ? dark ? 'border-t border-white/[0.05]' : 'border-t border-black/[0.04]' : ''
+                }`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${dark ? 'bg-white/[0.06]' : 'bg-black/[0.03]'}`}>
+                      <Icon size={13} className={color} />
+                    </div>
+                    <span className={`text-sm ${dark ? 'text-white/50' : 'text-gray-500'}`}>{label}</span>
+                  </div>
+                  <span className="font-bold text-sm">{value}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* ========= HEAD TRAINER CLUB MANAGEMENT ========= */}
         {isHeadTrainer && myClub && (
