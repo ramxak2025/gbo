@@ -25,28 +25,21 @@
   -webkit-touch-callout: none;
 }
 
-html {
+html, body {
   height: 100%;
-  margin: 0;
-  padding: 0;
-  overscroll-behavior: none;
-}
-
-body {
-  height: 100%;
+  height: -webkit-fill-available;
   margin: 0;
   padding: 0;
   overflow: hidden;
   overscroll-behavior: none;
+  background: #050505;
 }
 
 #root {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  height: 100%;
+  height: -webkit-fill-available;
   overflow: hidden;
+  background: #050505;
 }
 
 /* === Safe area CSS custom properties === */
