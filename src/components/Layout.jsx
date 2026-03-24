@@ -5,7 +5,7 @@ export default function Layout({ children }) {
   const { dark } = useTheme()
 
   return (
-    <div className={`fixed inset-0 flex flex-col overflow-hidden ${dark ? 'bg-dark-900 text-white' : 'bg-[#f5f5f7] text-gray-900'}`}>
+    <div className={`h-full flex flex-col relative overflow-hidden ${dark ? 'bg-dark-900 text-white' : 'bg-[#f5f5f7] text-gray-900'}`}>
       {/* Atmospheric gradient blobs */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className={`absolute -top-[30%] -left-[20%] w-[60%] h-[60%] rounded-full blur-[120px] ${
