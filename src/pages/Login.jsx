@@ -89,7 +89,7 @@ export default function Login({ onLogin }) {
   const iconInputCls = (icon) => `${inputCls} pl-11`
 
   return (
-    <div className={`h-full flex flex-col relative overflow-hidden ${dark ? 'bg-dark-900 text-white' : 'bg-[#f5f5f7] text-gray-900'}`} style={{ paddingTop: 'var(--sat)' }}>
+    <div className={`min-h-dvh h-full flex flex-col relative overflow-hidden ${dark ? 'bg-dark-900 text-white' : 'bg-[#f5f5f7] text-gray-900'}`} style={{ paddingTop: 'var(--sat)' }}>
 
       {/* Background decoration */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
