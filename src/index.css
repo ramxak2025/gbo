@@ -25,9 +25,16 @@
   -webkit-touch-callout: none;
 }
 
-html, body {
+html {
   height: 100%;
-  height: -webkit-fill-available;
+  margin: 0;
+  padding: 0;
+  overscroll-behavior: none;
+  background: #050505;
+}
+
+body {
+  height: 100%;
   margin: 0;
   padding: 0;
   overflow: hidden;
@@ -36,8 +43,9 @@ html, body {
 }
 
 #root {
-  height: 100%;
-  height: -webkit-fill-available;
+  height: 100dvh;
+  height: 100vh; /* fallback for older browsers */
+  height: 100dvh;
   overflow: hidden;
   background: #050505;
 }
