@@ -28,18 +28,29 @@
 html {
   overflow: hidden;
   height: 100%;
+  height: 100dvh;
   overscroll-behavior: none;
 }
 
 body {
   height: 100%;
+  height: 100dvh;
   overflow: hidden;
   overscroll-behavior: none;
 }
 
 #root {
   height: 100%;
+  height: 100dvh;
   overflow: hidden;
+}
+
+/* === Safe area CSS custom properties === */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
 }
 
 input, select, textarea {
@@ -244,7 +255,7 @@ input, select, textarea {
 
 /* === Safe area bottom padding === */
 .safe-area-bottom {
-  padding-bottom: max(env(safe-area-inset-bottom, 16px), 16px);
+  padding-bottom: max(var(--sab), 16px);
 }
 
 /* === Drawer slide from right === */

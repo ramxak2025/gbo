@@ -559,7 +559,7 @@ export default function Materials() {
             dark ? 'bg-dark-800/98' : 'bg-[#f5f5f7]/98'
           }`}>
             {/* Header */}
-            <div className="flex items-center justify-between px-5 pt-[calc(env(safe-area-inset-top)+16px)] pb-4">
+            <div className="flex items-center justify-between px-5 pt-[calc(var(--sat)+16px)] pb-4">
               <h2 className="text-lg font-black uppercase italic">Категории</h2>
               <button onClick={() => setShowCategories(false)} className={`press-scale p-2 rounded-xl ${dark ? 'bg-white/[0.06]' : 'bg-black/[0.04]'}`}>
                 <X size={18} />

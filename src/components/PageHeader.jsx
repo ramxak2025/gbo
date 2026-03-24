@@ -41,8 +41,9 @@ export default function PageHeader({ title, back, logo, gradient, children }) {
   return (
     <header
       ref={headerRef}
-      className="flex items-center justify-between px-4 pt-4 pb-3 mb-1 sticky top-0 z-40"
+      className="flex items-center justify-between px-4 pb-3 mb-1 sticky top-0 z-40"
       style={{
+        paddingTop: 'max(16px, var(--sat))',
         backgroundColor: bgColor,
         backdropFilter: `blur(${blurVal}px)`,
         WebkitBackdropFilter: `blur(${blurVal}px)`,
