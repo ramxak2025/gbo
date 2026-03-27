@@ -15,7 +15,7 @@ export default function Modal({ open, onClose, title, children }) {
           rounded-t-[32px] p-5 pt-3 modal-sheet backdrop-blur-2xl
           ${dark ? 'bg-dark-800/95 text-white' : 'bg-[#f5f5f7]/95 text-gray-900'}
         `}
-        style={{ paddingBottom: 'calc(var(--sab) + 100px)' }}
+        style={{ paddingBottom: '132px' }}
       >
         <div className={`w-10 h-1 rounded-full mx-auto mb-3 ${dark ? 'bg-white/20' : 'bg-black/15'}`} />
         <div className="flex items-center justify-between mb-4">

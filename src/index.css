@@ -43,20 +43,13 @@ body {
 }
 
 #root {
-  height: 100dvh;
-  height: 100vh; /* fallback for older browsers */
+  height: 100vh;
   height: 100dvh;
   overflow: hidden;
   background: #050505;
 }
 
-/* === Safe area CSS custom properties === */
-:root {
-  --sat: env(safe-area-inset-top, 0px);
-  --sab: env(safe-area-inset-bottom, 0px);
-  --sal: env(safe-area-inset-left, 0px);
-  --sar: env(safe-area-inset-right, 0px);
-}
+/* Safe area now managed by iOS in default mode — no env() hacks needed */
 
 input, select, textarea {
   font-size: 16px !important;
@@ -260,7 +253,7 @@ input, select, textarea {
 
 /* === Safe area bottom padding === */
 .safe-area-bottom {
-  padding-bottom: max(var(--sab), 16px);
+  padding-bottom: 32px;
 }
 
 /* === Drawer slide from right === */

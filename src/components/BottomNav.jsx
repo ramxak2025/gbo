@@ -65,7 +65,7 @@ export default function BottomNav() {
   const items = navConfigs[auth.role] || navConfigs.student
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pt-2" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 10px)' }}>
+    <div className="fixed bottom-0 left-0 right-0 z-50 px-4 pt-2 pb-8">
       <nav
         className={`
           rounded-[22px] mx-auto max-w-lg
