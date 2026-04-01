@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "iBorcuha",
+    "slug": "iborcuha",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#050505"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.iborcuha.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Нужен доступ к камере для сканирования QR-кодов посещаемости"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#050505"
+      },
+      "package": "com.iborcuha.app",
+      "permissions": ["CAMERA"],
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "apiUrl": "https://iborcuha.ru"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Нужен доступ к камере для сканирования QR-кодов"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Нужен доступ к фото для загрузки аватара"
+        }
+      ]
+    ]
+  }
+}
