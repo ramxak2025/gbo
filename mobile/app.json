@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -25,14 +25,19 @@
         "backgroundColor": "#050505"
       },
       "package": "com.iborcuha.app",
-      "permissions": ["CAMERA"],
+      "permissions": [
+        "android.permission.CAMERA"
+      ],
       "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiUrl": "https://iborcuha.ru"
+      "apiUrl": "https://iborcuha.ru",
+      "eas": {
+        "projectId": "93f016a7-8af0-4dc9-a653-377fa2886f2a"
+      }
     },
     "plugins": [
       "expo-secure-store",
@@ -47,7 +52,9 @@
         {
           "photosPermission": "Нужен доступ к фото для загрузки аватара"
         }
-      ]
-    ]
+      ],
+      "expo-web-browser"
+    ],
+    "owner": "ramxak"
   }
 }
