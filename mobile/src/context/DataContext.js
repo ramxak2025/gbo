@@ -303,6 +303,16 @@ export function DataProvider({ children }) {
     }));
   }, []);
 
+  const approveRegistration = useCallback(async (id) => {
+    await api.approveRegistration(id);
+    setData(d => ({ ...d, pendingRegistrations: (d.pendingRegistrations || []).filter(r => r.id !== id) }));
+  }, []);
+
+  const rejectRegistration = useCallback(async (id) => {
+    await api.rejectRegistration(id);
+    setData(d => ({ ...d, pendingRegistrations: (d.pendingRegistrations || []).filter(r => r.id !== id) }));
+  }, []);
+
   const qrCheckin = useCallback(async (token) => {
     const result = await api.qrCheckin(token);
     if (result.ok) {
@@ -332,6 +342,7 @@ export function DataProvider({ children }) {
       addClub, updateClub, deleteClub, assignTrainerToClub, removeTrainerFromClub,
       addBranch, updateBranch, deleteBranch,
       addParent, updateParent, deleteParent, qrCheckin, updateStudentGroups,
+      approveRegistration, rejectRegistration,
     }}>
       {children}
     </DataContext.Provider>

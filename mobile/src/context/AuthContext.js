@@ -16,8 +16,17 @@ export function AuthProvider({ children }) {
           setAuth(parsed);
           api.me().then(me => {
             if (me) {
-              setAuth(me);
-              AsyncStorage.setItem('iborcuha_auth', JSON.stringify(me));
+              const normalized = {
+                userId: me.userId || me.id,
+                role: me.role,
+                studentId: me.studentId || null,
+                parentId: me.parentId || null,
+                user: me.user || me,
+                student: me.student || null,
+                parent: me.parent || null,
+              };
+              setAuth(normalized);
+              AsyncStorage.setItem('iborcuha_auth', JSON.stringify(normalized));
             } else {
               setAuth(null);
               AsyncStorage.removeItem('iborcuha_auth');

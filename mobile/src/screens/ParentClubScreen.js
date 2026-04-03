@@ -29,14 +29,14 @@ export default function ParentClubScreen() {
 
   const parent = useMemo(() => {
     if (!auth) return null;
-    return (data.parents || []).find(p => p.userId === auth.id) || {
-      name: auth.name, phone: auth.phone,
+    return (data.parents || []).find(p => p.userId === auth.userId) || {
+      name: auth.user?.name, phone: auth.user?.phone,
     };
   }, [data.parents, auth]);
 
   const children = useMemo(() => {
     if (!auth) return [];
-    const parentRecord = (data.parents || []).find(p => p.userId === auth.id);
+    const parentRecord = (data.parents || []).find(p => p.userId === auth.userId);
     if (!parentRecord?.studentIds) return [];
     return parentRecord.studentIds
       .map(sid => (data.students || []).find(s => s.id === sid))
