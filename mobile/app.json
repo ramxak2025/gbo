@@ -54,7 +54,8 @@
         }
       ],
       "expo-web-browser",
-      "expo-font"
+      "expo-font",
+      "expo-splash-screen"
     ],
     "owner": "ramxak"
   }
