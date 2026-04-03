@@ -1,291 +1,83 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet,
-  ActivityIndicator, Alert, Platform,
+  View, Text, ScrollView, StyleSheet, TouchableOpacity,
+  TextInput, Alert, ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
-import { getColors } from '../utils/theme';
-import { getRankOptions, getRankLabel, SPORT_TYPES, isBeltSport } from '../utils/sports';
 import PageHeader from '../components/PageHeader';
+import PhoneInput from '../components/PhoneInput';
+import { SPORTS, getRankOptions, getRankLabel } from '../utils/sports';
 
-function formatPhone(raw) {
-  const digits = raw.replace(/\D/g, '');
-  if (digits.length === 0) return '';
-  let d = digits;
-  if (d.startsWith('7') || d.startsWith('8')) d = d.slice(1);
-  if (d.length === 0) return '8 ';
-  let result = '8 (' + d.slice(0, 3);
-  if (d.length > 3) result += ') ' + d.slice(3, 6);
-  if (d.length > 6) result += '-' + d.slice(6, 8);
-  if (d.length > 8) result += '-' + d.slice(8, 10);
-  return result;
-}
-
-function unformatPhone(formatted) {
-  const digits = formatted.replace(/\D/g, '');
-  if (digits.startsWith('8')) return digits;
-  if (digits.startsWith('7')) return '8' + digits.slice(1);
-  return '8' + digits;
-}
-
-export default function AddStudentScreen() {
-  const { dark } = useTheme();
-  const c = getColors(dark);
-  const navigation = useNavigation();
-  const { auth } = useAuth();
-  const { data, addStudent } = useData();
-
-  const [saving, setSaving] = useState(false);
-  const [showSportPicker, setShowSportPicker] = useState(false);
-  const [showRankPicker, setShowRankPicker] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-
+export default function AddStudentScreen({ navigation }) {
+  const { colors } = useTheme();
+  const { addStudent, groups } = useData();
+  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    name: '',
-    phone: '',
-    weight: '',
-    sportType: auth?.sportType || 'bjj',
-    rank: '',
-    birthDate: '',
-    subscriptionCost: '',
-    subscriptionExpiry: '',
-    discount: '',
-    groupIds: [],
+    name: '', phone: '+7', sportType: SPORTS[0], rank: '',
+    weight: '', birthDate: '', groupId: groups[0]?.id || '',
   });
 
-  const groups = useMemo(() =>
-    (data.groups || []).filter(g => g.trainerId === auth?.id),
-    [data.groups, auth?.id]
-  );
-
-  const rankOptions = useMemo(() => getRankOptions(form.sportType), [form.sportType]);
-  const rankLabel = useMemo(() => getRankLabel(form.sportType), [form.sportType]);
-
-  const handlePhoneChange = useCallback((text) => {
-    const digits = text.replace(/\D/g, '');
-    if (digits.length <= 11) {
-      setForm(f => ({ ...f, phone: formatPhone(text) }));
-    }
-  }, []);
-
-  const toggleGroup = useCallback((groupId) => {
-    setForm(f => {
-      const ids = f.groupIds.includes(groupId)
-        ? f.groupIds.filter(id => id !== groupId)
-        : [...f.groupIds, groupId];
-      return { ...f, groupIds: ids };
-    });
-  }, []);
-
-  const handleSave = useCallback(async () => {
-    if (!form.name.trim()) {
-      Alert.alert('Ошибка', 'Введите имя ученика');
-      return;
-    }
-
-    setSaving(true);
+  const handleSave = async () => {
+    if (!form.name.trim()) { Alert.alert('Ошибка', 'Введите имя'); return; }
+    setLoading(true);
     try {
-      const payload = {
-        name: form.name.trim(),
-        phone: form.phone ? unformatPhone(form.phone) : '',
-        weight: form.weight ? parseFloat(form.weight) : null,
-        sportType: form.sportType,
-        rank: form.rank || null,
-        birthDate: form.birthDate || null,
-        subscriptionCost: form.subscriptionCost ? parseFloat(form.subscriptionCost) : null,
-        subscriptionExpiry: form.subscriptionExpiry || null,
-        discount: form.discount ? parseFloat(form.discount) : null,
-        groupIds: form.groupIds,
-        trainerId: auth?.id,
-      };
-      await addStudent(payload);
+      await addStudent(form);
       navigation.goBack();
     } catch (e) {
-      Alert.alert('Ошибка', e.message || 'Не удалось добавить ученика');
-    } finally {
-      setSaving(false);
-    }
-  }, [form, auth, addStudent, navigation]);
+      Alert.alert('Ошибка', e.message);
+    } finally { setLoading(false); }
+  };
+
+  const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
   return (
-    <View style={[styles.container, { backgroundColor: c.bg }]}>
-      <PageHeader title="Новый ученик" back onBack={() => navigation.goBack()} />
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <PageHeader title="Новый ученик" back />
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>Имя *</Text>
+        <TextInput value={form.name} onChangeText={v => set('name', v)} placeholder="ФИО" placeholderTextColor={colors.textSecondary} style={[styles.input, { color: colors.text, backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]} />
 
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Name */}
-        <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: c.textSecondary }]}>ФИО *</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: c.inputBg, borderColor: c.inputBorder, color: c.text }]}
-            placeholder="Иванов Иван Иванович"
-            placeholderTextColor={c.placeholder}
-            value={form.name}
-            onChangeText={v => setForm(f => ({ ...f, name: v }))}
-            autoCapitalize="words"
-          />
-        </View>
+        <PhoneInput value={form.phone} onChangeText={v => set('phone', v)} label="Телефон" />
 
-        {/* Phone */}
-        <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: c.textSecondary }]}>Телефон</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: c.inputBg, borderColor: c.inputBorder, color: c.text }]}
-            placeholder="8 (900) 123-45-67"
-            placeholderTextColor={c.placeholder}
-            value={form.phone}
-            onChangeText={handlePhoneChange}
-            keyboardType="phone-pad"
-          />
-        </View>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>Вид спорта</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
+          {SPORTS.map(s => (
+            <TouchableOpacity key={s} onPress={() => set('sportType', s)} style={[styles.chip, form.sportType === s && { backgroundColor: colors.accentLight }]}>
+              <Text style={{ color: form.sportType === s ? colors.accent : colors.textSecondary, fontSize: 13 }}>{s}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
-        {/* Weight */}
-        <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: c.textSecondary }]}>Вес (кг)</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: c.inputBg, borderColor: c.inputBorder, color: c.text }]}
-            placeholder="70"
-            placeholderTextColor={c.placeholder}
-            value={form.weight}
-            onChangeText={v => setForm(f => ({ ...f, weight: v.replace(/[^0-9.]/g, '') }))}
-            keyboardType="numeric"
-          />
-        </View>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>{getRankLabel(form.sportType)}</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
+          {getRankOptions(form.sportType).map(r => (
+            <TouchableOpacity key={r} onPress={() => set('rank', r)} style={[styles.chip, form.rank === r && { backgroundColor: colors.accentLight }]}>
+              <Text style={{ color: form.rank === r ? colors.accent : colors.textSecondary, fontSize: 13 }}>{r}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
-        {/* Birth Date */}
-        <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: c.textSecondary }]}>Дата рождения</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: c.inputBg, borderColor: c.inputBorder, color: c.text }]}
-            placeholder="2000-01-15"
-            placeholderTextColor={c.placeholder}
-            value={form.birthDate}
-            onChangeText={v => setForm(f => ({ ...f, birthDate: v }))}
-          />
-        </View>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>Вес (кг)</Text>
+        <TextInput value={form.weight} onChangeText={v => set('weight', v)} keyboardType="numeric" placeholder="0" placeholderTextColor={colors.textSecondary} style={[styles.input, { color: colors.text, backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]} />
 
-        {/* Sport type based Rank */}
-        <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: c.textSecondary }]}>{rankLabel}</Text>
-          <TouchableOpacity
-            style={[styles.input, styles.pickerButton, { backgroundColor: c.inputBg, borderColor: c.inputBorder }]}
-            onPress={() => setShowRankPicker(!showRankPicker)}
-          >
-            <Text style={{ color: form.rank ? c.text : c.placeholder }}>
-              {form.rank || `Выберите ${rankLabel.toLowerCase()}`}
-            </Text>
-            <Ionicons name={showRankPicker ? 'chevron-up' : 'chevron-down'} size={18} color={c.textSecondary} />
-          </TouchableOpacity>
-          {showRankPicker && (
-            <View style={[styles.pickerList, { backgroundColor: c.card, borderColor: c.border }]}>
-              {rankOptions.map(rank => (
-                <TouchableOpacity
-                  key={rank}
-                  style={[styles.pickerItem, form.rank === rank && { backgroundColor: c.purpleBg }]}
-                  onPress={() => { setForm(f => ({ ...f, rank })); setShowRankPicker(false); }}
-                >
-                  <Text style={{ color: form.rank === rank ? c.purple : c.text }}>{rank}</Text>
+        {groups.length > 0 && (
+          <>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>Группа</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chips}>
+              {groups.map(g => (
+                <TouchableOpacity key={g.id} onPress={() => set('groupId', g.id)} style={[styles.chip, form.groupId === g.id && { backgroundColor: colors.accentLight }]}>
+                  <Text style={{ color: form.groupId === g.id ? colors.accent : colors.textSecondary, fontSize: 13 }}>{g.name}</Text>
                 </TouchableOpacity>
               ))}
-            </View>
-          )}
-        </View>
+            </ScrollView>
+          </>
+        )}
 
-        {/* Groups */}
-        <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: c.textSecondary }]}>Группы</Text>
-          {groups.length === 0 ? (
-            <Text style={[styles.hint, { color: c.textTertiary }]}>Нет групп</Text>
-          ) : (
-            <View style={styles.groupList}>
-              {groups.map(group => {
-                const selected = form.groupIds.includes(group.id);
-                return (
-                  <TouchableOpacity
-                    key={group.id}
-                    style={[
-                      styles.groupItem,
-                      { borderColor: selected ? c.purple : c.border, backgroundColor: selected ? c.purpleBg : 'transparent' },
-                    ]}
-                    onPress={() => toggleGroup(group.id)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[
-                      styles.checkbox,
-                      { borderColor: selected ? c.purple : c.inputBorder, backgroundColor: selected ? c.purple : 'transparent' },
-                    ]}>
-                      {selected && <Ionicons name="checkmark" size={14} color="#fff" />}
-                    </View>
-                    <Text style={[styles.groupName, { color: selected ? c.purple : c.text }]}>
-                      {group.name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-        </View>
-
-        {/* Subscription Cost */}
-        <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: c.textSecondary }]}>Стоимость абонемента</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: c.inputBg, borderColor: c.inputBorder, color: c.text }]}
-            placeholder="5000"
-            placeholderTextColor={c.placeholder}
-            value={form.subscriptionCost}
-            onChangeText={v => setForm(f => ({ ...f, subscriptionCost: v.replace(/[^0-9]/g, '') }))}
-            keyboardType="numeric"
-          />
-        </View>
-
-        {/* Subscription Expiry */}
-        <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: c.textSecondary }]}>Дата окончания абонемента</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: c.inputBg, borderColor: c.inputBorder, color: c.text }]}
-            placeholder="2026-05-01"
-            placeholderTextColor={c.placeholder}
-            value={form.subscriptionExpiry}
-            onChangeText={v => setForm(f => ({ ...f, subscriptionExpiry: v }))}
-          />
-        </View>
-
-        {/* Discount */}
-        <View style={styles.formGroup}>
-          <Text style={[styles.label, { color: c.textSecondary }]}>Скидка (%)</Text>
-          <TextInput
-            style={[styles.input, { backgroundColor: c.inputBg, borderColor: c.inputBorder, color: c.text }]}
-            placeholder="0"
-            placeholderTextColor={c.placeholder}
-            value={form.discount}
-            onChangeText={v => setForm(f => ({ ...f, discount: v.replace(/[^0-9]/g, '') }))}
-            keyboardType="numeric"
-          />
-        </View>
-
-        {/* Save */}
-        <TouchableOpacity
-          style={[styles.saveButton, { backgroundColor: c.purple, opacity: saving ? 0.7 : 1 }]}
-          onPress={handleSave}
-          disabled={saving}
-        >
-          {saving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <>
-              <Ionicons name="checkmark-circle-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-              <Text style={styles.saveText}>Сохранить</Text>
-            </>
-          )}
+        <TouchableOpacity onPress={handleSave} disabled={loading} style={[styles.saveBtn, { backgroundColor: colors.accent, opacity: loading ? 0.7 : 1 }]}>
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveText}>Добавить ученика</Text>}
         </TouchableOpacity>
+        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
@@ -293,27 +85,12 @@ export default function AddStudentScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40 },
-  formGroup: { marginBottom: 16 },
-  label: { fontSize: 13, fontWeight: '600', marginBottom: 6, marginLeft: 2 },
-  input: { borderWidth: 1, borderRadius: 14, height: 50, paddingHorizontal: 14, fontSize: 15 },
-  pickerButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  pickerList: { borderWidth: 1, borderRadius: 12, marginTop: 4, overflow: 'hidden' },
-  pickerItem: { paddingHorizontal: 14, paddingVertical: 12 },
-  hint: { fontSize: 14, marginLeft: 2 },
-  groupList: { gap: 6 },
-  groupItem: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    padding: 12, borderRadius: 12, borderWidth: 1,
-  },
-  checkbox: {
-    width: 22, height: 22, borderRadius: 6, borderWidth: 2,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  groupName: { fontSize: 15, fontWeight: '500' },
-  saveButton: {
-    flexDirection: 'row', height: 52, borderRadius: 14,
-    alignItems: 'center', justifyContent: 'center', marginTop: 8,
-  },
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 16 },
+  label: { fontSize: 13, marginBottom: 6, marginTop: 8, fontWeight: '500' },
+  input: { height: 48, borderRadius: 14, borderWidth: 1, paddingHorizontal: 16, fontSize: 16, marginBottom: 4 },
+  chips: { marginBottom: 4, maxHeight: 40 },
+  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, marginRight: 8 },
+  saveBtn: { height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
   saveText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

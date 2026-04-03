@@ -1,49 +1,39 @@
 import React from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
-import { getColors } from '../utils/theme';
+import { RADIUS } from '../utils/constants';
 
-export default function GlassCard({ children, style, dark: darkProp }) {
-  const theme = useTheme();
-  const dark = darkProp !== undefined ? darkProp : theme?.dark ?? true;
-  const c = getColors(dark);
+export default function GlassCard({ children, style, onPress }) {
+  const { colors } = useTheme();
+  const cardStyle = [
+    styles.card,
+    {
+      backgroundColor: colors.card,
+      borderColor: colors.cardBorder,
+    },
+    style,
+  ];
 
-  return (
-    <View
-      style={[
-        styles.card,
-        dark ? styles.cardDark : styles.cardLight,
-        { borderColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.6)' },
-        style,
-      ]}
-    >
-      {children}
-    </View>
-  );
+  if (onPress) {
+    return (
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={onPress}
+        style={cardStyle}
+      >
+        {children}
+      </TouchableOpacity>
+    );
+  }
+
+  return <View style={cardStyle}>{children}</View>;
 }
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 24,
-    borderWidth: 1,
+    borderRadius: RADIUS.lg,
     padding: 16,
-    overflow: 'hidden',
-  },
-  cardDark: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
-  cardLight: {
-    backgroundColor: 'rgba(255,255,255,0.8)',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.08,
-        shadowRadius: 16,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    borderWidth: 1,
+    marginBottom: 12,
   },
 });

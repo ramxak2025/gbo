@@ -1,47 +1,55 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
 
-const BASE_URL = 'https://iborcuha.ru';
-
-export default function Avatar({ name, photo, size = 44 }) {
-  const letter = (name || '?').charAt(0).toUpperCase();
-  const fontSize = Math.round(size * 0.42);
-
-  const containerStyle = {
-    width: size,
-    height: size,
-    borderRadius: size / 2,
-  };
+export default function Avatar({ name, photo, size = 40 }) {
+  const { dark, colors } = useTheme();
 
   if (photo) {
-    const uri = photo.startsWith('http') ? photo : `${BASE_URL}${photo}`;
+    const uri = photo.startsWith('http') ? photo : `https://iborcuha.ru${photo}`;
     return (
       <Image
         source={{ uri }}
-        style={[styles.image, containerStyle]}
-        resizeMode="cover"
+        style={[styles.image, { width: size, height: size, borderRadius: size / 2 }]}
       />
     );
   }
 
+  const initials = (name || '?')
+    .split(' ')
+    .map(w => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
+
   return (
-    <View style={[styles.fallback, containerStyle]}>
-      <Text style={[styles.letter, { fontSize }]}>{letter}</Text>
+    <View
+      style={[
+        styles.placeholder,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: colors.accentLight,
+        },
+      ]}
+    >
+      <Text style={[styles.initials, { color: colors.accent, fontSize: size * 0.38 }]}>
+        {initials}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   image: {
-    backgroundColor: 'rgba(139,92,246,0.15)',
+    resizeMode: 'cover',
   },
-  fallback: {
-    backgroundColor: '#7c3aed',
+  placeholder: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  letter: {
-    color: '#ffffff',
+  initials: {
     fontWeight: '700',
   },
 });

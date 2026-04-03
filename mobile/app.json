@@ -2,61 +2,43 @@
   "expo": {
     "name": "iBorcuha",
     "slug": "iborcuha",
-    "version": "1.0.0",
+    "owner": "ramxak",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
+    "scheme": "iborcuha",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#050505"
     },
-    "ios": {
-      "supportsTablet": false,
-      "bundleIdentifier": "com.iborcuha.app",
-      "infoPlist": {
-        "NSCameraUsageDescription": "Нужен доступ к камере для сканирования QR-кодов посещаемости"
-      }
-    },
     "android": {
+      "package": "com.iborcuha.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#050505"
       },
-      "package": "com.iborcuha.app",
-      "permissions": [
-        "android.permission.CAMERA"
-      ],
-      "edgeToEdgeEnabled": true
+      "versionCode": 5
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
+    "ios": {
+      "bundleIdentifier": "com.iborcuha.app",
+      "supportsTablet": true
     },
     "extra": {
-      "apiUrl": "https://iborcuha.ru",
       "eas": {
         "projectId": "93f016a7-8af0-4dc9-a653-377fa2886f2a"
       }
     },
+    "updates": {
+      "url": "https://u.expo.dev/93f016a7-8af0-4dc9-a653-377fa2886f2a"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "plugins": [
-      "expo-secure-store",
-      [
-        "expo-camera",
-        {
-          "cameraPermission": "Нужен доступ к камере для сканирования QR-кодов"
-        }
-      ],
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Нужен доступ к фото для загрузки аватара"
-        }
-      ],
-      "expo-web-browser",
-      "expo-font",
-      "expo-splash-screen"
-    ],
-    "owner": "ramxak"
+      "expo-secure-store"
+    ]
   }
 }

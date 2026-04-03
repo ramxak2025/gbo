@@ -1,118 +1,97 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform, StatusBar } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
-import { getColors } from '../utils/theme';
+import { ChevronLeftIcon, SunIcon, MoonIcon } from '../icons';
 
-const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : (StatusBar.currentHeight || 0);
+export default function PageHeader({ title, back, logo, gradient, children }) {
+  const { dark, toggle, colors } = useTheme();
+  const navigation = useNavigation();
 
-export default function PageHeader({ title, back, onBack, rightAction, gradient }) {
-  const { dark, toggle } = useTheme();
-  const c = getColors(dark);
+  const renderTitle = () => {
+    if (gradient && title === 'iBorcuha') {
+      return (
+        <Text style={[styles.title, { color: colors.accent }]}>
+          <Text style={{ color: dark ? 'rgba(255,255,255,0.6)' : '#6b7280' }}>i</Text>
+          Borcuha
+        </Text>
+      );
+    }
+    return <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>{title}</Text>;
+  };
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: STATUS_BAR_HEIGHT + 8,
-          backgroundColor: dark
-            ? 'rgba(5,5,5,0.85)'
-            : 'rgba(245,245,247,0.85)',
-          borderBottomColor: c.border,
-        },
-      ]}
-    >
-      <View style={styles.row}>
-        {/* Left side */}
-        <View style={styles.left}>
-          {back && (
-            <TouchableOpacity
-              onPress={onBack}
-              style={styles.backButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              activeOpacity={0.6}
-            >
-              <Ionicons name="chevron-back" size={26} color={c.text} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Title */}
-        <View style={styles.center}>
-          {gradient ? (
-            <Text style={[styles.titleGradient, { color: c.purple }]} numberOfLines={1}>
-              {title}
-            </Text>
-          ) : (
-            <Text style={[styles.title, { color: c.text }]} numberOfLines={1}>
-              {title}
-            </Text>
-          )}
-        </View>
-
-        {/* Right side */}
-        <View style={styles.right}>
-          {rightAction || (
-            <TouchableOpacity
-              onPress={toggle}
-              style={styles.themeButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              activeOpacity={0.6}
-            >
-              <Ionicons
-                name={dark ? 'sunny-outline' : 'moon-outline'}
-                size={22}
-                color={c.textSecondary}
-              />
-            </TouchableOpacity>
-          )}
-        </View>
+    <View style={[styles.header, { backgroundColor: colors.bg }]}>
+      <View style={styles.left}>
+        {back && (
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backBtn}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <ChevronLeftIcon size={24} color={colors.text} />
+          </TouchableOpacity>
+        )}
+        {logo && (
+          <Image
+            source={require('../../assets/icon.png')}
+            style={styles.logo}
+          />
+        )}
+        {renderTitle()}
+      </View>
+      <View style={styles.right}>
+        {children}
+        <TouchableOpacity
+          onPress={toggle}
+          style={[styles.themeBtn, {
+            backgroundColor: dark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.6)',
+          }]}
+        >
+          {dark ? <SunIcon size={18} color={colors.text} /> : <MoonIcon size={18} color={colors.text} />}
+        </TouchableOpacity>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    paddingBottom: 12,
-    paddingHorizontal: 16,
-  },
-  row: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 44,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
   left: {
-    width: 44,
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-  },
-  center: {
-    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 8,
+    flex: 1,
   },
   right: {
-    width: 44,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  backButton: {
+  backBtn: {
     padding: 4,
+    marginLeft: -4,
   },
-  themeButton: {
-    padding: 4,
+  logo: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
   },
   title: {
-    fontSize: 17,
-    fontWeight: '600',
-    letterSpacing: -0.3,
+    fontSize: 18,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    fontStyle: 'italic',
   },
-  titleGradient: {
-    fontSize: 17,
-    fontWeight: '800',
-    letterSpacing: -0.3,
+  themeBtn: {
+    padding: 10,
+    borderRadius: 12,
   },
 });

@@ -1,81 +1,69 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  View, Text, Switch, StyleSheet,
+  View, Text, ScrollView, StyleSheet, Switch, Alert,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
-import { getColors } from '../utils/theme';
-import GlassCard from '../components/GlassCard';
+import { api } from '../api/client';
 import PageHeader from '../components/PageHeader';
-
-const NOTIFICATION_OPTIONS = [
-  { key: 'news', label: 'Новости', description: 'Уведомления о новостях клуба', icon: 'newspaper-outline' },
-  { key: 'tournaments', label: 'Турниры', description: 'Информация о предстоящих турнирах', icon: 'trophy-outline' },
-  { key: 'payments', label: 'Оплата', description: 'Напоминания об оплате абонемента', icon: 'card-outline' },
-  { key: 'schedule', label: 'Расписание', description: 'Изменения в расписании тренировок', icon: 'calendar-outline' },
-];
+import GlassCard from '../components/GlassCard';
 
 export default function NotificationSettingsScreen() {
-  const { dark } = useTheme();
-  const c = getColors(dark);
-  const navigation = useNavigation();
+  const { colors } = useTheme();
+  const [settings, setSettings] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  const [settings, setSettings] = useState({
-    news: true,
-    tournaments: true,
-    payments: true,
-    schedule: true,
-  });
-
-  const handleToggle = useCallback((key) => {
-    setSettings(prev => ({ ...prev, [key]: !prev[key] }));
+  useEffect(() => {
+    api.getNotificationSettings()
+      .then(s => { setSettings(s || {}); setLoading(false); })
+      .catch(() => setLoading(false));
   }, []);
 
+  const toggle = async (key) => {
+    const updated = { ...settings, [key]: !settings[key] };
+    setSettings(updated);
+    try {
+      await api.updateNotificationSettings(updated);
+    } catch (e) {
+      setSettings(settings);
+      Alert.alert('Ошибка', e.message);
+    }
+  };
+
+  const options = [
+    { key: 'newStudent', label: 'Новый ученик' },
+    { key: 'payment', label: 'Платежи' },
+    { key: 'tournament', label: 'Турниры' },
+    { key: 'attendance', label: 'Посещаемость' },
+    { key: 'news', label: 'Новости' },
+  ];
+
   return (
-    <View style={[styles.container, { backgroundColor: c.bg }]}>
-      <PageHeader title="Уведомления" back onBack={() => navigation.goBack()} />
-
-      <View style={styles.content}>
-        <Text style={[styles.subtitle, { color: c.textSecondary }]}>
-          Настройте, какие уведомления вы хотите получать
-        </Text>
-
-        {NOTIFICATION_OPTIONS.map((option, index) => (
-          <GlassCard key={option.key} style={styles.optionCard}>
-            <View style={styles.optionRow}>
-              <View style={[styles.optionIcon, { backgroundColor: c.purpleBg }]}>
-                <Ionicons name={option.icon} size={20} color={c.purple} />
-              </View>
-              <View style={styles.optionInfo}>
-                <Text style={[styles.optionLabel, { color: c.text }]}>{option.label}</Text>
-                <Text style={[styles.optionDesc, { color: c.textSecondary }]}>{option.description}</Text>
-              </View>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <PageHeader title="Уведомления" back />
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <GlassCard>
+          {options.map((opt, i) => (
+            <View key={opt.key} style={[styles.row, i < options.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.cardBorder }]}>
+              <Text style={[styles.label, { color: colors.text }]}>{opt.label}</Text>
               <Switch
-                value={settings[option.key]}
-                onValueChange={() => handleToggle(option.key)}
-                trackColor={{ false: c.inputBorder, true: c.purple }}
+                value={!!settings[opt.key]}
+                onValueChange={() => toggle(opt.key)}
+                trackColor={{ false: colors.inputBg, true: colors.accent }}
                 thumbColor="#fff"
-                ios_backgroundColor={c.inputBorder}
               />
             </View>
-          </GlassCard>
-        ))}
-      </View>
+          ))}
+        </GlassCard>
+        <View style={{ height: 40 }} />
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16 },
-  subtitle: { fontSize: 14, marginBottom: 20 },
-  optionCard: { marginBottom: 10 },
-  optionRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  optionIcon: {
-    width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
-  },
-  optionInfo: { flex: 1 },
-  optionLabel: { fontSize: 15, fontWeight: '600' },
-  optionDesc: { fontSize: 13, marginTop: 2 },
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 16 },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 },
+  label: { fontSize: 15, fontWeight: '500' },
 });

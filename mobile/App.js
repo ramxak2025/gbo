@@ -1,72 +1,91 @@
-import React, { useEffect, useCallback } from 'react';
-import { View, Text } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
-import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import * as SplashScreen from 'expo-splash-screen';
-import { useFonts } from 'expo-font';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
-import { AuthProvider } from './src/context/AuthContext';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { DataProvider } from './src/context/DataContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import ErrorBoundary from './src/components/ErrorBoundary';
+import LoginScreen from './src/screens/LoginScreen';
 
-SplashScreen.preventAutoHideAsync().catch(() => {});
+// Simple error boundary without any icon fonts
+class ErrorBoundary extends React.Component {
+  state = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#050505', padding: 20 }}>
+          <Text style={{ color: '#ef4444', fontSize: 18, fontWeight: 'bold', marginBottom: 8 }}>
+            Произошла ошибка
+          </Text>
+          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center' }}>
+            {this.state.error?.message || 'Перезагрузите приложение'}
+          </Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function AppContent() {
-  const { dark } = useTheme();
+  const { auth } = useAuth();
+  const { colors } = useTheme();
+  const { reload } = require('./src/context/DataContext').useData();
+
+  // Loading state
+  if (auth === undefined) {
+    return (
+      <View style={[styles.loading, { backgroundColor: colors.bg }]}>
+        <Text style={[styles.loadingText, { color: colors.accent }]}>iBorcuha</Text>
+      </View>
+    );
+  }
+
+  // Not authenticated
+  if (!auth) {
+    return <LoginScreen />;
+  }
+
+  // Authenticated
   return (
-    <>
-      <StatusBar style={dark ? 'light' : 'dark'} />
-      <NavigationContainer
-        theme={{
-          dark,
-          colors: {
-            primary: '#8b5cf6',
-            background: dark ? '#050505' : '#f5f5f7',
-            card: dark ? '#050505' : '#f5f5f7',
-            text: dark ? '#ffffff' : '#111827',
-            border: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
-            notification: '#dc2626',
-          },
-        }}
-      >
-        <AppNavigator />
-      </NavigationContainer>
-    </>
+    <NavigationContainer>
+      <AppNavigator />
+    </NavigationContainer>
   );
 }
 
 export default function App() {
-  const [fontsLoaded, fontError] = useFonts({
-    ...Ionicons.font,
-    ...MaterialCommunityIcons.font,
-  });
-
-  const onLayoutRootView = useCallback(async () => {
-    if (fontsLoaded || fontError) {
-      await SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError]);
-
-  if (!fontsLoaded && !fontError) {
-    return null;
-  }
-
   return (
-    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+    <ErrorBoundary>
       <SafeAreaProvider>
-        <ErrorBoundary>
-          <ThemeProvider>
-            <AuthProvider>
-              <DataProvider>
-                <AppContent />
-              </DataProvider>
-            </AuthProvider>
-          </ThemeProvider>
-        </ErrorBoundary>
+        <ThemeProvider>
+          <AuthProvider>
+            <DataProvider>
+              <AppContent />
+            </DataProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </SafeAreaProvider>
-    </View>
+    </ErrorBoundary>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    fontStyle: 'italic',
+  },
+});

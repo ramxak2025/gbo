@@ -1,148 +1,134 @@
-import React, { useCallback } from 'react';
+import React, { useState } from 'react';
 import {
-  View, Text, TouchableOpacity, ScrollView, StyleSheet, Linking,
+  View, Text, ScrollView, StyleSheet, TouchableOpacity,
+  TextInput, Alert, Linking,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
-import { getColors } from '../utils/theme';
-import GlassCard from '../components/GlassCard';
 import PageHeader from '../components/PageHeader';
-
-const APP_VERSION = '1.0.0';
-
-const SOCIAL_LINKS = [
-  {
-    key: 'instagram',
-    label: 'Instagram',
-    icon: 'logo-instagram',
-    color: '#E4405F',
-    bgColor: 'rgba(228,64,95,0.12)',
-    urlPrefix: 'https://instagram.com/',
-  },
-  {
-    key: 'telegram',
-    label: 'Telegram',
-    icon: 'paper-plane-outline',
-    color: '#0088CC',
-    bgColor: 'rgba(0,136,204,0.12)',
-    urlPrefix: 'https://t.me/',
-  },
-  {
-    key: 'whatsapp',
-    label: 'WhatsApp',
-    icon: 'logo-whatsapp',
-    color: '#25D366',
-    bgColor: 'rgba(37,211,102,0.12)',
-    urlPrefix: 'https://wa.me/',
-  },
-];
+import GlassCard from '../components/GlassCard';
+import { EditIcon, LinkIcon, PhoneIcon } from '../icons';
 
 export default function AuthorScreen() {
-  const { dark } = useTheme();
-  const c = getColors(dark);
-  const navigation = useNavigation();
-  const { data } = useData();
+  const { colors } = useTheme();
+  const { auth } = useAuth();
+  const { authorInfo, updateAuthor } = useData();
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({});
 
-  const authorInfo = data.authorInfo || {};
+  const canEdit = ['club_owner', 'club_admin', 'organizer'].includes(auth?.role);
 
-  const handleOpenLink = useCallback(async (url) => {
-    if (!url) return;
+  const startEdit = () => {
+    setForm({
+      name: authorInfo?.name || '',
+      description: authorInfo?.description || '',
+      phone: authorInfo?.phone || '',
+      website: authorInfo?.website || '',
+      instagram: authorInfo?.instagram || '',
+      telegram: authorInfo?.telegram || '',
+    });
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
     try {
-      const fullUrl = url.startsWith('http') ? url : `https://${url}`;
-      await Linking.openURL(fullUrl);
-    } catch {}
-  }, []);
+      await updateAuthor(form);
+      setEditing(false);
+    } catch (e) { Alert.alert('Ошибка', e.message); }
+  };
+
+  const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
+
+  if (editing) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.bg }]}>
+        <PageHeader title="Редактировать" back />
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          {['name', 'description', 'phone', 'website', 'instagram', 'telegram'].map(key => (
+            <View key={key}>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>
+                {key === 'name' ? 'Название' : key === 'description' ? 'Описание' : key === 'phone' ? 'Телефон' : key === 'website' ? 'Сайт' : key === 'instagram' ? 'Instagram' : 'Telegram'}
+              </Text>
+              <TextInput
+                value={form[key]}
+                onChangeText={v => set(key, v)}
+                placeholder={key}
+                placeholderTextColor={colors.textSecondary}
+                multiline={key === 'description'}
+                style={[
+                  styles.input,
+                  key === 'description' && styles.textArea,
+                  { color: colors.text, backgroundColor: colors.inputBg, borderColor: colors.inputBorder },
+                ]}
+              />
+            </View>
+          ))}
+          <TouchableOpacity onPress={handleSave} style={[styles.saveBtn, { backgroundColor: colors.accent }]}>
+            <Text style={styles.saveText}>Сохранить</Text>
+          </TouchableOpacity>
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
-    <View style={[styles.container, { backgroundColor: c.bg }]}>
-      <PageHeader title="О разработчике" back onBack={() => navigation.goBack()} />
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      <PageHeader title="Автор">
+        {canEdit && (
+          <TouchableOpacity onPress={startEdit}>
+            <EditIcon size={20} color={colors.accent} />
+          </TouchableOpacity>
+        )}
+      </PageHeader>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Developer Card */}
-        <GlassCard style={styles.devCard}>
-          <View style={[styles.devIcon, { backgroundColor: c.purpleBg }]}>
-            <Ionicons name="code-slash-outline" size={32} color={c.purple} />
-          </View>
-          <Text style={[styles.devName, { color: c.text }]}>
-            {authorInfo.name || 'iBorcuha'}
-          </Text>
-          <Text style={[styles.devDesc, { color: c.textSecondary }]}>
-            {authorInfo.description || 'Разработка мобильных и веб-приложений для управления клубами единоборств'}
-          </Text>
-
-          {authorInfo.email && (
-            <TouchableOpacity
-              style={styles.emailRow}
-              onPress={() => handleOpenLink(`mailto:${authorInfo.email}`)}
-            >
-              <Ionicons name="mail-outline" size={16} color={c.purple} />
-              <Text style={[styles.emailText, { color: c.purple }]}>{authorInfo.email}</Text>
-            </TouchableOpacity>
-          )}
-
-          {authorInfo.phone && (
-            <TouchableOpacity
-              style={styles.emailRow}
-              onPress={() => handleOpenLink(`tel:${authorInfo.phone}`)}
-            >
-              <Ionicons name="call-outline" size={16} color={c.purple} />
-              <Text style={[styles.emailText, { color: c.purple }]}>{authorInfo.phone}</Text>
-            </TouchableOpacity>
-          )}
-        </GlassCard>
-
-        {/* Social Links */}
-        <Text style={[styles.sectionTitle, { color: c.text }]}>Связаться</Text>
-
-        {SOCIAL_LINKS.map(social => {
-          const handle = authorInfo[social.key];
-          return (
-            <TouchableOpacity
-              key={social.key}
-              activeOpacity={0.7}
-              onPress={() => {
-                if (handle) handleOpenLink(`${social.urlPrefix}${handle.replace('@', '')}`);
-              }}
-              disabled={!handle}
-            >
-              <GlassCard style={[styles.socialCard, !handle && { opacity: 0.5 }]}>
-                <View style={styles.socialRow}>
-                  <View style={[styles.socialIcon, { backgroundColor: social.bgColor }]}>
-                    <Ionicons name={social.icon} size={22} color={social.color} />
-                  </View>
-                  <View style={styles.socialInfo}>
-                    <Text style={[styles.socialLabel, { color: c.text }]}>{social.label}</Text>
-                    <Text style={[styles.socialHandle, { color: c.textSecondary }]}>
-                      {handle ? `@${handle.replace('@', '')}` : 'Не указан'}
-                    </Text>
-                  </View>
-                  {handle && (
-                    <Ionicons name="open-outline" size={18} color={c.textTertiary} />
-                  )}
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {authorInfo ? (
+          <>
+            <Text style={[styles.title, { color: colors.text }]}>{authorInfo.name || 'Автор'}</Text>
+            {authorInfo.description && (
+              <GlassCard style={{ marginTop: 12 }}>
+                <Text style={[styles.desc, { color: colors.text }]}>{authorInfo.description}</Text>
+              </GlassCard>
+            )}
+            {authorInfo.phone && (
+              <GlassCard onPress={() => Linking.openURL(`tel:${authorInfo.phone}`)}>
+                <View style={styles.row}>
+                  <PhoneIcon size={18} color={colors.accent} />
+                  <Text style={[styles.linkText, { color: colors.text }]}>{authorInfo.phone}</Text>
                 </View>
               </GlassCard>
-            </TouchableOpacity>
-          );
-        })}
-
-        {/* App Version */}
-        <GlassCard style={styles.versionCard}>
-          <View style={styles.versionRow}>
-            <View style={[styles.versionIcon, { backgroundColor: c.blueBg }]}>
-              <Ionicons name="information-circle-outline" size={22} color={c.blue} />
-            </View>
-            <View style={styles.versionInfo}>
-              <Text style={[styles.versionLabel, { color: c.text }]}>Версия приложения</Text>
-              <Text style={[styles.versionValue, { color: c.textSecondary }]}>{APP_VERSION}</Text>
-            </View>
-          </View>
-        </GlassCard>
-
-        <Text style={[styles.footer, { color: c.textTertiary }]}>
-          iBorcuha - управление клубом единоборств
-        </Text>
+            )}
+            {authorInfo.website && (
+              <GlassCard onPress={() => Linking.openURL(authorInfo.website)}>
+                <View style={styles.row}>
+                  <LinkIcon size={18} color={colors.accent} />
+                  <Text style={[styles.linkText, { color: colors.text }]}>{authorInfo.website}</Text>
+                </View>
+              </GlassCard>
+            )}
+            {authorInfo.telegram && (
+              <GlassCard onPress={() => Linking.openURL(`https://t.me/${authorInfo.telegram.replace('@', '')}`)}>
+                <View style={styles.row}>
+                  <LinkIcon size={18} color={colors.accent} />
+                  <Text style={[styles.linkText, { color: colors.text }]}>Telegram: {authorInfo.telegram}</Text>
+                </View>
+              </GlassCard>
+            )}
+            {authorInfo.instagram && (
+              <GlassCard onPress={() => Linking.openURL(`https://instagram.com/${authorInfo.instagram.replace('@', '')}`)}>
+                <View style={styles.row}>
+                  <LinkIcon size={18} color={colors.accent} />
+                  <Text style={[styles.linkText, { color: colors.text }]}>Instagram: {authorInfo.instagram}</Text>
+                </View>
+              </GlassCard>
+            )}
+          </>
+        ) : (
+          <Text style={[styles.empty, { color: colors.textSecondary }]}>Информация об авторе не заполнена</Text>
+        )}
+        <View style={{ height: 100 }} />
       </ScrollView>
     </View>
   );
@@ -150,33 +136,16 @@ export default function AuthorScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40 },
-  devCard: { alignItems: 'center', paddingVertical: 28, marginBottom: 24 },
-  devIcon: {
-    width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 16,
-  },
-  devName: { fontSize: 22, fontWeight: '700', marginBottom: 8 },
-  devDesc: { fontSize: 14, textAlign: 'center', lineHeight: 20, paddingHorizontal: 8 },
-  emailRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12,
-  },
-  emailText: { fontSize: 14, fontWeight: '500' },
-  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
-  socialCard: { marginBottom: 10 },
-  socialRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  socialIcon: {
-    width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
-  },
-  socialInfo: { flex: 1 },
-  socialLabel: { fontSize: 15, fontWeight: '600' },
-  socialHandle: { fontSize: 13, marginTop: 2 },
-  versionCard: { marginTop: 14 },
-  versionRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  versionIcon: {
-    width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
-  },
-  versionInfo: { flex: 1 },
-  versionLabel: { fontSize: 15, fontWeight: '600' },
-  versionValue: { fontSize: 13, marginTop: 2 },
-  footer: { fontSize: 12, textAlign: 'center', marginTop: 32 },
+  scroll: { flex: 1 },
+  scrollContent: { paddingHorizontal: 16 },
+  title: { fontSize: 24, fontWeight: '800' },
+  desc: { fontSize: 15, lineHeight: 22 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  linkText: { fontSize: 15, fontWeight: '500' },
+  empty: { textAlign: 'center', marginTop: 40, fontSize: 14 },
+  label: { fontSize: 13, marginBottom: 6, marginTop: 8, fontWeight: '500' },
+  input: { height: 48, borderRadius: 14, borderWidth: 1, paddingHorizontal: 16, fontSize: 16, marginBottom: 4 },
+  textArea: { height: 100, paddingTop: 12, textAlignVertical: 'top' },
+  saveBtn: { height: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 20 },
+  saveText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
