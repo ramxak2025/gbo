@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, ActivityIndicator, Text, LogBox } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -10,6 +10,8 @@ import { AuthProvider } from './src/context/AuthContext';
 import { DataProvider } from './src/context/DataContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
+
+LogBox.ignoreLogs(['new NativeEventEmitter']);
 
 function AppContent() {
   const { dark } = useTheme();
@@ -36,24 +38,25 @@ function AppContent() {
 }
 
 export default function App() {
-  const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState(null);
 
   useEffect(() => {
-    async function loadFonts() {
+    async function init() {
       try {
         await Font.loadAsync({
           ...Ionicons.font,
           ...MaterialCommunityIcons.font,
         });
       } catch (e) {
-        // Fonts failed to load, continue anyway
+        setLoadError(e.message);
       }
-      setFontsLoaded(true);
+      setReady(true);
     }
-    loadFonts();
+    init();
   }, []);
 
-  if (!fontsLoaded) {
+  if (!ready) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#050505' }}>
         <ActivityIndicator size="large" color="#8b5cf6" />
@@ -61,9 +64,18 @@ export default function App() {
     );
   }
 
+  if (loadError) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#050505', padding: 32 }}>
+        <Text style={{ color: '#ef4444', fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Ошибка загрузки</Text>
+        <Text style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>{loadError}</Text>
+      </View>
+    );
+  }
+
   return (
-    <ErrorBoundary>
-      <SafeAreaProvider>
+    <SafeAreaProvider>
+      <ErrorBoundary>
         <ThemeProvider>
           <AuthProvider>
             <DataProvider>
@@ -71,7 +83,7 @@ export default function App() {
             </DataProvider>
           </AuthProvider>
         </ThemeProvider>
-      </SafeAreaProvider>
-    </ErrorBoundary>
+      </ErrorBoundary>
+    </SafeAreaProvider>
   );
 }
