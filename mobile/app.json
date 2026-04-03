@@ -53,7 +53,8 @@
           "photosPermission": "Нужен доступ к фото для загрузки аватара"
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-font"
     ],
     "owner": "ramxak"
   }
