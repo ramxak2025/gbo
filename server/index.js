@@ -7,28 +7,61 @@ import { fileURLToPath } from 'url'
 import { initDB } from './db.js'
 import { seedDatabase } from './seed.js'
 import { checkDemoReset } from './demo.js'
+import { securityHeaders, authLimiter, apiLimiter, uploadLimiter, sanitizeInput } from './middleware/security.js'
+import { errorHandler } from './middleware/errorHandler.js'
+import { auditMiddleware } from './middleware/audit.js'
 import authRoutes from './routes/auth.js'
 import dataRoutes from './routes/data.js'
 import uploadRoutes from './routes/upload.js'
 import pushRoutes from './routes/push.js'
+import healthRoutes from './routes/health.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
 const PORT = process.env.PORT || 3000
 
-app.use(cors({ origin: process.env.CORS_ORIGIN || true, credentials: true }))
+// Security headers (helmet)
+app.use(securityHeaders)
+
+// CORS configuration
+const corsOrigin = process.env.CORS_ORIGIN
+app.use(cors({
+  origin: corsOrigin || true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}))
+
 app.use(express.json({ limit: '10mb' }))
 app.use(cookieParser())
+
+// Input sanitization — strip XSS from all incoming bodies
+app.use(sanitizeInput)
+
+// API rate limiting
+app.use('/api/auth/login', authLimiter)
+app.use('/api/auth/register', authLimiter)
+app.use('/api/upload', uploadLimiter)
+app.use('/api', apiLimiter)
+
+// Audit logging for modifying requests
+app.use('/api', auditMiddleware)
 
 // Serve uploaded files
 const uploadsPath = path.join(__dirname, 'uploads')
 app.use('/uploads', express.static(uploadsPath))
+
+// Health check (no auth required)
+app.use('/api/health', healthRoutes)
 
 // API routes
 app.use('/api/auth', authRoutes)
 app.use('/api/data', dataRoutes)
 app.use('/api/upload', uploadRoutes)
 app.use('/api/push', pushRoutes)
+
+// Global error handler
+app.use('/api', errorHandler)
 
 // Serve React build
 const distPath = path.join(__dirname, '..', 'dist')
@@ -63,7 +96,11 @@ async function start() {
   setInterval(() => checkDemoReset(), 3600000)
   app.listen(PORT, () => {
     console.log(`iBorcuha server running on port ${PORT}`)
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)
+    console.log(`Health check: http://localhost:${PORT}/api/health`)
   })
 }
 
 start().catch(console.error)
+
+export default app

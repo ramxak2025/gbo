@@ -2,6 +2,10 @@ import { Router } from 'express'
 import bcrypt from 'bcryptjs'
 import pool from '../db.js'
 import { signToken } from '../auth.js'
+import { asyncHandler } from '../middleware/errorHandler.js'
+import { validatePhone, validatePassword, validateName } from '../middleware/validate.js'
+import { encrypt } from '../middleware/crypto.js'
+import { logAudit } from '../middleware/audit.js'
 
 const router = Router()
 
@@ -12,9 +16,10 @@ function phonesMatch(a, b) {
   return da.slice(-10) === db.slice(-10)
 }
 
-router.post('/login', async (req, res) => {
+router.post('/login', asyncHandler(async (req, res) => {
   const { phone, password } = req.body
   if (!phone || !password) return res.status(400).json({ error: 'Введите номер и пароль' })
+  if (!validatePhone(phone)) return res.status(400).json({ error: 'Некорректный номер телефона' })
 
   const digits = phone.replace(/\D/g, '').slice(-10)
 
@@ -24,6 +29,9 @@ router.post('/login', async (req, res) => {
   if (user && bcrypt.compareSync(password, user.password_hash)) {
     const token = signToken({ userId: user.id, role: user.role })
     res.cookie('token', token, { httpOnly: true, maxAge: 30 * 86400000, sameSite: 'lax' })
+
+    await logAudit('login', user.id, { ip: req.ip, role: user.role })
+
     return res.json({
       token,
       userId: user.id,
@@ -40,6 +48,9 @@ router.post('/login', async (req, res) => {
     if (!trainer) return res.status(400).json({ error: 'Тренер не найден', errorType: 'student' })
     const token = signToken({ userId: trainer.id, role: 'student', studentId: student.id })
     res.cookie('token', token, { httpOnly: true, maxAge: 30 * 86400000, sameSite: 'lax' })
+
+    await logAudit('login', trainer.id, { ip: req.ip, role: 'student', studentId: student.id })
+
     return res.json({
       token,
       userId: trainer.id,
@@ -55,17 +66,24 @@ router.post('/login', async (req, res) => {
     })
   }
 
+  // Log failed attempt
+  await logAudit('login_failed', null, { ip: req.ip, phone: digits })
+
   // Error type
   if (user) return res.status(401).json({ error: 'Неверный пароль', errorType: 'trainer' })
   if (student) return res.status(401).json({ error: 'Неверный пароль', errorType: 'student' })
   return res.status(401).json({ error: 'Пользователь не найден', errorType: 'student' })
-})
+}))
 
 // --- Public registration for trainers ---
-router.post('/register', async (req, res) => {
+router.post('/register', asyncHandler(async (req, res) => {
   const { name, phone, password, clubName, sportType, city, consent } = req.body
   if (!name || !phone || !password) return res.status(400).json({ error: 'Заполните все обязательные поля' })
   if (!consent) return res.status(400).json({ error: 'Необходимо согласие на обработку персональных данных' })
+
+  if (!validateName(name)) return res.status(400).json({ error: 'Некорректное имя' })
+  if (!validatePhone(phone)) return res.status(400).json({ error: 'Введите корректный номер телефона' })
+  if (!validatePassword(password)) return res.status(400).json({ error: 'Пароль должен быть от 6 до 128 символов' })
 
   const digits = phone.replace(/\D/g, '').slice(-10)
   if (digits.length < 10) return res.status(400).json({ error: 'Введите корректный номер телефона' })
@@ -80,22 +98,25 @@ router.post('/register', async (req, res) => {
 
   const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
   const hash = bcrypt.hashSync(password, 10)
+  const encryptedPassword = encrypt(password)
 
   await pool.query(
     `INSERT INTO pending_registrations (id, name, phone, password_hash, plain_password, club_name, sport_type, city, consent)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-    [id, name.trim(), phone, hash, password, clubName?.trim() || '', sportType || null, city?.trim() || null, true]
+    [id, name.trim(), phone, hash, encryptedPassword, clubName?.trim() || '', sportType || null, city?.trim() || null, true]
   )
 
+  await logAudit('register', null, { ip: req.ip, phone: digits })
+
   res.json({ ok: true, message: 'Заявка отправлена! Ожидайте одобрения администратора.' })
-})
+}))
 
 router.post('/logout', (req, res) => {
   res.clearCookie('token')
   res.json({ ok: true })
 })
 
-router.get('/me', async (req, res) => {
+router.get('/me', asyncHandler(async (req, res) => {
   const token = req.cookies?.token || req.headers.authorization?.replace('Bearer ', '')
   if (!token) return res.json(null)
   try {
@@ -126,6 +147,6 @@ router.get('/me', async (req, res) => {
   } catch {
     res.json(null)
   }
-})
+}))
 
 export default router
