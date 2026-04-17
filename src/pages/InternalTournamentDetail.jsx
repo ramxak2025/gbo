@@ -27,9 +27,20 @@ export default function InternalTournamentDetail() {
 
   const tournament = (data.internalTournaments || []).find(t => t.id === id)
   const [activeCatIdx, setActiveCatIdx] = useState(0)
-  const [pendingWinner, setPendingWinner] = useState(null) // { roundIdx, matchIdx, winnerId }
-  const [showCelebration, setShowCelebration] = useState(null) // { name, avatar, weightClass }
+  const [pendingWinner, setPendingWinner] = useState(null)
+  const [showCelebration, setShowCelebration] = useState(null)
   const coverInputRef = useRef(null)
+
+  const isAllMatchesCompleted = useCallback((rounds) => {
+    if (!rounds?.length) return false
+    for (const round of rounds) {
+      for (const match of round) {
+        if (!match.s1 && !match.s2) continue
+        if (!match.winner) return false
+      }
+    }
+    return true
+  }, [])
 
   if (!tournament) {
     return (
@@ -47,30 +58,16 @@ export default function InternalTournamentDetail() {
   const isTrainer = auth.role === 'trainer' && auth.userId === tournament.trainerId
   const allStudents = data.students
 
-  // Legacy support: single bracket (no categories)
   const isLegacy = !categories.length && brackets.rounds
   const activeCat = isLegacy
     ? { weightClass: brackets.weightClass || 'Абсолютка', rounds: brackets.rounds, participants: brackets.participants }
     : categories[activeCatIdx]
 
-  // Find champion for active category
   const getChampion = (cat) => {
     if (!cat?.rounds?.length) return null
     const lastRound = cat.rounds[cat.rounds.length - 1]
     return lastRound?.[0]?.winner || null
   }
-
-  // Check if ALL real matches (non-bye) in a category are completed
-  const isAllMatchesCompleted = useCallback((rounds) => {
-    if (!rounds?.length) return false
-    for (const round of rounds) {
-      for (const match of round) {
-        if (!match.s1 && !match.s2) continue // empty bye slot
-        if (!match.winner) return false
-      }
-    }
-    return true
-  }, [])
 
   const sportType = tournament?.sportType || null
   const victoryTypes = getVictoryTypes(sportType)
@@ -424,13 +421,16 @@ export default function InternalTournamentDetail() {
           </div>
 
           {/* Sparkle dots */}
-          {[...Array(6)].map((_, i) => (
+          {[
+            { top: '25%', left: '15%' }, { top: '40%', left: '75%' }, { top: '65%', left: '25%' },
+            { top: '30%', left: '85%' }, { top: '70%', left: '50%' }, { top: '50%', left: '10%' },
+          ].map((pos, i) => (
             <div
               key={i}
               className="absolute champion-sparkle"
               style={{
-                top: `${20 + Math.random() * 60}%`,
-                left: `${10 + Math.random() * 80}%`,
+                top: pos.top,
+                left: pos.left,
                 animationDelay: `${i * 0.3}s`,
               }}
             >

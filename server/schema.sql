@@ -253,7 +253,7 @@ CREATE TABLE IF NOT EXISTS pending_registrations (
   name VARCHAR(255) NOT NULL,
   phone VARCHAR(50) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
-  plain_password VARCHAR(255),
+  plain_password VARCHAR(512),
   club_name VARCHAR(255),
   sport_type VARCHAR(50),
   city VARCHAR(255),
@@ -261,3 +261,33 @@ CREATE TABLE IF NOT EXISTS pending_registrations (
   status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Enlarge plain_password columns (encrypted payload is longer than plain text)
+DO $$ BEGIN
+  ALTER TABLE users ALTER COLUMN plain_password TYPE VARCHAR(512);
+EXCEPTION WHEN others THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE students ALTER COLUMN plain_password TYPE VARCHAR(512);
+EXCEPTION WHEN others THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE pending_registrations ALTER COLUMN plain_password TYPE VARCHAR(512);
+EXCEPTION WHEN others THEN NULL;
+END $$;
+
+-- Audit log for security monitoring
+CREATE TABLE IF NOT EXISTS audit_log (
+  id SERIAL PRIMARY KEY,
+  action VARCHAR(255) NOT NULL,
+  user_id TEXT,
+  details JSONB,
+  ip_address VARCHAR(64),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action);

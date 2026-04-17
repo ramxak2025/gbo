@@ -27,6 +27,16 @@ export default function TrainerDetail() {
   const [form, setForm] = useState(null)
 
   const trainer = data.users.find(u => u.id === id)
+  const students = data.students.filter(s => s.trainerId === id)
+  const groups = data.groups.filter(g => g.trainerId === id)
+  const clubs = data.clubs || []
+
+  const stats = useMemo(() => {
+    if (!trainer) return { total: 0, active: 0, groups: 0 }
+    const active = students.filter(s => !isExpired(s.subscriptionExpiresAt)).length
+    return { total: students.length, active, groups: groups.length }
+  }, [trainer, students, groups])
+
   if (!trainer) {
     return (
       <Layout>
@@ -38,15 +48,7 @@ export default function TrainerDetail() {
     )
   }
 
-  const students = data.students.filter(s => s.trainerId === id)
-  const groups = data.groups.filter(g => g.trainerId === id)
-  const clubs = data.clubs || []
   const club = trainer.clubId ? clubs.find(c => c.id === trainer.clubId) : null
-
-  const stats = useMemo(() => {
-    const active = students.filter(s => !isExpired(s.subscriptionExpiresAt)).length
-    return { total: students.length, active, groups: groups.length }
-  }, [students, groups])
 
   const startEdit = () => {
     setForm({ ...trainer, phone: formatPhone(trainer.phone || ''), selectedClubId: trainer.clubId || '' })

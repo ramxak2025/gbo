@@ -16,7 +16,6 @@ import { getRankOptions, getRankLabel } from '../utils/sports'
 
 function AttendanceStats({ studentId, groupId, data, dark }) {
   const group = data.groups.find(g => g.id === groupId)
-  if (!group?.attendanceEnabled) return null
 
   const now = new Date()
   const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -25,6 +24,8 @@ function AttendanceStats({ studentId, groupId, data, dark }) {
     data.attendance.filter(a => a.studentId === studentId && a.groupId === groupId && a.date.startsWith(monthPrefix)),
     [data.attendance, studentId, groupId, monthPrefix]
   )
+
+  if (!group?.attendanceEnabled) return null
 
   const present = monthRecords.filter(a => a.present).length
   const total = monthRecords.length
