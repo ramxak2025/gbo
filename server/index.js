@@ -20,6 +20,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const app = express()
 const PORT = process.env.PORT || 3000
 
+// Trust reverse proxy (nginx/Vercel) so req.ip returns real client IP
+// instead of 127.0.0.1 — required for rate limiting and audit logging
+if (process.env.NODE_ENV === 'production' || process.env.TRUST_PROXY) {
+  app.set('trust proxy', 1)
+}
+
 // Security headers (helmet)
 app.use(securityHeaders)
 
