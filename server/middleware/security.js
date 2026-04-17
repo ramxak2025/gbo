@@ -1,5 +1,5 @@
 import helmet from 'helmet'
-import rateLimit from 'express-rate-limit'
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 
 // Helmet — HTTP security headers
 export const securityHeaders = helmet({
@@ -14,9 +14,7 @@ export const authLimiter = rateLimit({
   message: { error: 'Слишком много попыток. Попробуйте через 15 минут.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    return req.ip || req.headers['x-forwarded-for'] || 'unknown'
-  },
+  keyGenerator: (req) => ipKeyGenerator(req.ip) || 'unknown',
 })
 
 // General API rate limiter
