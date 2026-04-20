@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Bell, BellOff, Newspaper, Trophy, Wallet, Calendar } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
-import { useAuth } from '../context/AuthContext'
 import { api } from '../utils/api'
 import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
@@ -18,9 +17,8 @@ function urlBase64ToUint8Array(base64String) {
 
 export default function NotificationSettings() {
   const { dark } = useTheme()
-  const { auth } = useAuth()
   const [pushEnabled, setPushEnabled] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [, setLoading] = useState(true)
   const [settings, setSettings] = useState({
     news: true,
     tournaments: true,

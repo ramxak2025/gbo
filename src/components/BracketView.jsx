@@ -2,46 +2,47 @@ import { useTheme } from '../context/ThemeContext'
 import { getVictoryLabel } from '../utils/sports'
 import Avatar from './Avatar'
 
+function PlayerSlot({ student, studentId, isWinner, isTop, active, onSelectWinner, dark }) {
+  return (
+    <button
+      onClick={() => active && onSelectWinner(studentId)}
+      disabled={!active}
+      className={`
+        flex items-center gap-2 px-3 py-2.5 w-full text-left transition-all
+        ${isTop ? 'rounded-t-xl' : 'rounded-b-xl'}
+        ${isWinner ? 'bg-accent/20 border-accent' : ''}
+        ${active ? 'press-scale cursor-pointer' : ''}
+        ${dark ? 'hover:bg-white/[0.06]' : 'hover:bg-black/[0.04]'}
+      `}
+    >
+      {student ? (
+        <>
+          <Avatar name={student.name} size={28} src={student.avatar} />
+          <span className={`text-xs font-semibold truncate flex-1 ${isWinner ? 'text-accent' : ''}`}>
+            {student.name}
+          </span>
+          {student.weight && (
+            <span className={`text-[10px] ${dark ? 'text-white/30' : 'text-gray-500'}`}>{student.weight}кг</span>
+          )}
+        </>
+      ) : (
+        <span className={`text-xs italic ${dark ? 'text-white/20' : 'text-gray-500'}`}>Ожидание...</span>
+      )}
+    </button>
+  )
+}
+
 function MatchCard({ match, students, canEdit, onSelectWinner, dark, sportType }) {
   const s1 = students.find(s => s.id === match.s1)
   const s2 = students.find(s => s.id === match.s2)
   const isBye = !match.s1 || !match.s2
 
-  if (isBye && match.winner) return null // Don't render bye matches
-  if (!match.s1 && !match.s2) return null // Don't render empty/dead matches
+  if (isBye && match.winner) return null
+  if (!match.s1 && !match.s2) return null
 
   const victoryLabel = match.victoryType ? getVictoryLabel(sportType, match.victoryType) : null
+  const active = canEdit && match.s1 && match.s2 && !match.winner
 
-  const PlayerSlot = ({ student, studentId, isWinner, isTop }) => {
-    const active = canEdit && match.s1 && match.s2 && !match.winner
-    return (
-      <button
-        onClick={() => active && onSelectWinner(studentId)}
-        disabled={!active}
-        className={`
-          flex items-center gap-2 px-3 py-2.5 w-full text-left transition-all
-          ${isTop ? 'rounded-t-xl' : 'rounded-b-xl'}
-          ${isWinner ? 'bg-accent/20 border-accent' : ''}
-          ${active ? 'press-scale cursor-pointer' : ''}
-          ${dark ? 'hover:bg-white/[0.06]' : 'hover:bg-black/[0.04]'}
-        `}
-      >
-        {student ? (
-          <>
-            <Avatar name={student.name} size={28} src={student.avatar} />
-            <span className={`text-xs font-semibold truncate flex-1 ${isWinner ? 'text-accent' : ''}`}>
-              {student.name}
-            </span>
-            {student.weight && (
-              <span className={`text-[10px] ${dark ? 'text-white/30' : 'text-gray-500'}`}>{student.weight}кг</span>
-            )}
-          </>
-        ) : (
-          <span className={`text-xs italic ${dark ? 'text-white/20' : 'text-gray-500'}`}>Ожидание...</span>
-        )}
-      </button>
-    )
-  }
 
   return (
     <div className={`
@@ -49,9 +50,9 @@ function MatchCard({ match, students, canEdit, onSelectWinner, dark, sportType }
       ${dark ? 'bg-white/[0.04] border-white/[0.08] backdrop-blur-xl' : 'bg-white/70 border-white/60 shadow-sm'}
       ${match.winner ? 'opacity-90' : ''}
     `}>
-      <PlayerSlot student={s1} studentId={match.s1} isWinner={match.winner === match.s1} isTop />
+      <PlayerSlot student={s1} studentId={match.s1} isWinner={match.winner === match.s1} isTop active={active} onSelectWinner={onSelectWinner} dark={dark} />
       <div className={`h-px ${dark ? 'bg-white/[0.08]' : 'bg-black/[0.06]'}`} />
-      <PlayerSlot student={s2} studentId={match.s2} isWinner={match.winner === match.s2} isTop={false} />
+      <PlayerSlot student={s2} studentId={match.s2} isWinner={match.winner === match.s2} isTop={false} active={active} onSelectWinner={onSelectWinner} dark={dark} />
       {victoryLabel && (
         <div className={`text-center py-1 text-[9px] font-bold uppercase ${dark ? 'bg-accent/10 text-accent-light' : 'bg-red-50 text-red-500'}`}>
           {victoryLabel}

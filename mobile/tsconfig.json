@@ -1,0 +1,21 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "checkJs": false,
+    "jsx": "react-native",
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "target": "ES2022",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@shared/*": ["../shared/*"]
+    }
+  },
+  "include": ["src/**/*", "App.tsx", "App.js", "shared/**/*"],
+  "exclude": ["node_modules", "android", "ios", ".expo"]
+}

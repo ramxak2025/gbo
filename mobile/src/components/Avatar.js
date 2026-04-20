@@ -1,12 +1,17 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 
+// Cached avatar using expo-image (memory + disk cache by default)
 export default function Avatar({ name, src, size = 44 }) {
   if (src) {
     return (
-      <Image
+      <ExpoImage
         source={{ uri: src }}
         style={[styles.image, { width: size, height: size, borderRadius: size / 2 }]}
+        cachePolicy="memory-disk"
+        contentFit="cover"
+        transition={200}
       />
     );
   }
@@ -40,7 +45,7 @@ export default function Avatar({ name, src, size = 44 }) {
 }
 
 const styles = StyleSheet.create({
-  image: { resizeMode: 'cover' },
+  image: { backgroundColor: 'rgba(255,255,255,0.06)' },
   container: { alignItems: 'center', justifyContent: 'center' },
   text: { color: '#fff', fontWeight: '700' },
 });

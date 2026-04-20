@@ -1,7 +1,4 @@
-import { useTheme } from '../context/ThemeContext'
-
 export default function Avatar({ src, name, size = 40, className = '' }) {
-  const { dark } = useTheme()
   const initials = (name || '?')
     .split(' ')
     .map(w => w[0])

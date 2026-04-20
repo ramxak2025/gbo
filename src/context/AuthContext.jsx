@@ -48,7 +48,7 @@ export function AuthProvider({ children, onAuth }) {
   }, [onAuth])
 
   const logout = useCallback(async () => {
-    try { await api.logout() } catch {}
+    try { await api.logout() } catch { /* ignore network errors on logout */ }
     localStorage.removeItem('iborcuha_auth')
     localStorage.removeItem('iborcuha_token')
     setAuth(null)

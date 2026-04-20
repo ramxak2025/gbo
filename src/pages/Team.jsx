@@ -65,7 +65,7 @@ export default function Team() {
   const [search, setSearch] = useState('')
   const [tab, setTab] = useState('students')
 
-  if (auth.role === 'student') return <StudentTeam auth={auth} data={data} dark={dark} navigate={navigate} search={search} setSearch={setSearch} />
+  if (auth.role === 'student') return <StudentTeam auth={auth} data={data} dark={dark} search={search} setSearch={setSearch} />
 
   const isAdmin = auth.role === 'superadmin'
   const trainers = data.users.filter(u => u.role === 'trainer')
@@ -179,7 +179,7 @@ export default function Team() {
   )
 }
 
-function StudentTeam({ auth, data, dark, navigate, search, setSearch }) {
+function StudentTeam({ auth, data, dark, search, setSearch }) {
   const student = data.students.find(s => s.id === auth.studentId)
   const teammates = data.students.filter(s => s.groupId === student?.groupId && s.id !== auth.studentId)
   const group = data.groups.find(g => g.id === student?.groupId)

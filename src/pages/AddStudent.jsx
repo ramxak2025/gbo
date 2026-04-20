@@ -7,7 +7,7 @@ import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import PhoneInput, { cleanPhone } from '../components/PhoneInput'
 import DateButton from '../components/DateButton'
-import { getRankOptions, getRankLabel } from '../utils/sports'
+import { getRankOptions } from '../utils/sports'
 
 export default function AddStudent() {
   const navigate = useNavigate()
@@ -18,7 +18,6 @@ export default function AddStudent() {
   const myGroups = data.groups.filter(g => g.trainerId === auth.userId)
   const trainer = data.users.find(u => u.id === auth.userId)
   const rankOptions = getRankOptions(trainer?.sportType)
-  const rankLabel = getRankLabel(trainer?.sportType)
 
   const [form, setForm] = useState({
     name: '',

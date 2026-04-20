@@ -11,17 +11,46 @@ async function getToken() {
   }
 }
 
-async function request(url, options = {}) {
+// Single-flight refresh (shared with TanStack Query client in ../lib/apiClient.ts)
+let refreshPromise = null;
+async function tryRefresh() {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = (async () => {
+    const current = await getToken();
+    if (!current) return null;
+    try {
+      const res = await fetch(`${BASE}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${current}` },
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (data?.token) {
+        await SecureStore.setItemAsync('iborcuha_token', data.token);
+        return data.token;
+      }
+      return null;
+    } catch { return null; }
+    finally { setTimeout(() => { refreshPromise = null; }, 0); }
+  })();
+  return refreshPromise;
+}
+
+async function request(url, options = {}, retry = true) {
   const token = await getToken();
   const headers = { 'Content-Type': 'application/json', ...options.headers };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${BASE}${url}`, { ...options, headers });
-  if (res.status === 401) {
+
+  if (res.status === 401 && retry) {
+    const newToken = await tryRefresh();
+    if (newToken) return request(url, options, false);
     await SecureStore.deleteItemAsync('iborcuha_token');
     await SecureStore.deleteItemAsync('iborcuha_auth');
     throw new Error('Unauthorized');
   }
+
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Ошибка сервера');
   return data;
@@ -88,6 +117,10 @@ export const api = {
   updateInternalTournament: (id, d) => request(`/data/internal-tournaments/${id}`, { method: 'PUT', body: JSON.stringify(d) }),
   deleteInternalTournament: (id) => request(`/data/internal-tournaments/${id}`, { method: 'DELETE' }),
   saveAttendanceBulk: (d) => request('/data/attendance/bulk', { method: 'POST', body: JSON.stringify(d) }),
+  saveAttendance: (d) => request('/data/attendance', { method: 'POST', body: JSON.stringify(d) }),
+  deleteAttendance: (d) => request('/data/attendance', { method: 'DELETE', body: JSON.stringify(d) }),
+  registerPushToken: (token, platform) => request('/push/register-token', { method: 'POST', body: JSON.stringify({ token, platform }) }),
+  unregisterPushToken: (token) => request('/push/unregister-token', { method: 'POST', body: JSON.stringify({ token }) }),
   addMaterial: (d) => request('/data/materials', { method: 'POST', body: JSON.stringify(d) }),
   updateMaterial: (id, d) => request(`/data/materials/${id}`, { method: 'PUT', body: JSON.stringify(d) }),
   deleteMaterial: (id) => request(`/data/materials/${id}`, { method: 'DELETE' }),
