@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "iBorcuha",
-    "slug": "iborcuha",
+    "slug": "gbo",
     "version": "1.2.0",
     "orientation": "portrait",
     "scheme": "iborcuha",
@@ -39,7 +39,22 @@
         "expo-notifications",
         { "color": "#ffffff" }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-system-ui",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "newArchEnabled": true,
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 34,
+            "minSdkVersion": 24
+          },
+          "ios": {
+            "newArchEnabled": true
+          }
+        }
+      ]
     ],
     "extra": {
       "apiBaseUrl": "https://iborcuha.ru"
