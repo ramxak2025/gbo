@@ -2,20 +2,47 @@
   "expo": {
     "name": "iBorcuha",
     "slug": "iborcuha",
-    "version": "1.0.0",
+    "version": "1.2.0",
     "orientation": "portrait",
+    "scheme": "iborcuha",
     "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
     "splash": {
       "backgroundColor": "#1a1a2e"
     },
+    "ios": {
+      "bundleIdentifier": "com.iborcuha.app",
+      "supportsTablet": true,
+      "associatedDomains": ["applinks:iborcuha.ru"]
+    },
     "android": {
+      "package": "com.iborcuha.app",
       "adaptiveIcon": {
         "backgroundColor": "#1a1a2e"
       },
-      "package": "com.iborcuha.app"
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [{ "scheme": "https", "host": "iborcuha.ru" }],
+          "category": ["BROWSABLE", "DEFAULT"]
+        },
+        {
+          "action": "VIEW",
+          "data": [{ "scheme": "iborcuha" }],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "plugins": [
+      [
+        "expo-notifications",
+        { "color": "#ffffff" }
+      ],
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "apiBaseUrl": "https://iborcuha.ru"
+    }
   }
 }
