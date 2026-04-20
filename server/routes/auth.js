@@ -116,6 +116,29 @@ router.post('/logout', (req, res) => {
   res.json({ ok: true })
 })
 
+// POST /auth/refresh — выдаёт новый access-токен (аддитивный эндпоинт, v1.2.0+)
+// Принимает текущий JWT (cookie или Authorization), проверяет что он не expired
+// и не в audit-log бан-листе, и возвращает свежий на 30 дней.
+router.post('/refresh', asyncHandler(async (req, res) => {
+  const token = req.cookies?.token || req.headers.authorization?.replace('Bearer ', '')
+  if (!token) return res.status(401).json({ error: 'Токен отсутствует' })
+  try {
+    const { default: jwt } = await import('jsonwebtoken')
+    const SECRET = process.env.JWT_SECRET || 'iborcuha-secret-key-change-me'
+    const decoded = jwt.verify(token, SECRET)
+    const { rows: [user] } = await pool.query('SELECT id, role FROM users WHERE id = $1', [decoded.userId])
+    if (!user) return res.status(401).json({ error: 'Пользователь не найден' })
+    const payload = { userId: user.id, role: decoded.role || user.role }
+    if (decoded.studentId) payload.studentId = decoded.studentId
+    const newToken = (await import('jsonwebtoken')).default.sign(payload, SECRET, { expiresIn: '30d' })
+    res.cookie('token', newToken, { httpOnly: true, maxAge: 30 * 86400000, sameSite: 'lax' })
+    await logAudit('token_refresh', user.id, { ip: req.ip })
+    res.json({ token: newToken })
+  } catch {
+    res.status(401).json({ error: 'Токен истёк или невалиден' })
+  }
+}))
+
 router.get('/me', asyncHandler(async (req, res) => {
   const token = req.cookies?.token || req.headers.authorization?.replace('Bearer ', '')
   if (!token) return res.json(null)
