@@ -57,7 +57,7 @@ function mapAuthor(a) {
 
 // GET all data (role-aware)
 router.get('/', authMiddleware, asyncHandler(async (req, res) => {
-  const { userId, role, studentId } = req.user
+  const { role } = req.user
   const queries = [
     pool.query('SELECT * FROM users'),
     pool.query('SELECT * FROM groups'),

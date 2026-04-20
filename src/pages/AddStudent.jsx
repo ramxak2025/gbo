@@ -18,7 +18,6 @@ export default function AddStudent() {
   const myGroups = data.groups.filter(g => g.trainerId === auth.userId)
   const trainer = data.users.find(u => u.id === auth.userId)
   const rankOptions = getRankOptions(trainer?.sportType)
-  const rankLabel = getRankLabel(trainer?.sportType)
 
   const [form, setForm] = useState({
     name: '',

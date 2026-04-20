@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Plus, ArrowDownCircle, ArrowUpCircle, Trash2, Edit3, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, BarChart3, Wallet, PieChart, CheckCircle2, Sparkles } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
@@ -245,7 +245,6 @@ export default function Cash() {
     if (selectedMonth === 11) { setSelectedMonth(0); setSelectedYear(y => y + 1) }
     else setSelectedMonth(m => m + 1)
   }
-  const isCurrentMonth = selectedMonth === now.getMonth() && selectedYear === now.getFullYear()
 
   const maxChartVal = Math.max(...monthlyData.income, ...monthlyData.expense, 1)
 

@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Check, X, BarChart3, Users, Thermometer, HeartCrack, Zap } from 'lucide-react'
-import { useAuth } from '../context/AuthContext'
 import { useData } from '../context/DataContext'
 import { useTheme } from '../context/ThemeContext'
 import Layout from '../components/Layout'
@@ -33,7 +32,6 @@ function getDaysInMonth(year, month) {
 
 export default function Attendance() {
   const { groupId } = useParams()
-  const { auth } = useAuth()
   const { data, saveAttendanceBulk } = useData()
   const { dark } = useTheme()
 
@@ -100,7 +98,6 @@ export default function Attendance() {
   const statsDate = new Date(selectedDate + 'T00:00:00')
   const statsYear = statsDate.getFullYear()
   const statsMonth = statsDate.getMonth()
-  const daysInMonth = getDaysInMonth(statsYear, statsMonth)
 
   const monthAttendance = useMemo(() => {
     const monthPrefix = `${statsYear}-${String(statsMonth + 1).padStart(2, '0')}`
