@@ -30,6 +30,19 @@ export default function ClubDetail() {
   const isSuperadmin = auth.role === 'superadmin'
   const isHead = auth.role === 'trainer' && auth.user?.isHeadTrainer && auth.user?.clubId === id
 
+  const clubTrainers = data.users.filter(u => u.role === 'trainer' && u.clubId === id)
+  const headTrainer = clubTrainers.find(t => t.isHeadTrainer)
+  const availableTrainers = data.users.filter(u => u.role === 'trainer' && !u.clubId)
+
+  // Stats — useMemo must run unconditionally on every render
+  const stats = useMemo(() => {
+    const trainerIds = new Set(clubTrainers.map(t => t.id))
+    const allStudents = data.students.filter(s => trainerIds.has(s.trainerId))
+    const active = allStudents.filter(s => !isExpired(s.subscriptionExpiresAt)).length
+    const allGroups = data.groups.filter(g => trainerIds.has(g.trainerId))
+    return { trainers: clubTrainers.length, students: allStudents.length, active, groups: allGroups.length }
+  }, [clubTrainers, data.students, data.groups])
+
   if (!club) {
     return (
       <Layout>
@@ -40,19 +53,6 @@ export default function ClubDetail() {
       </Layout>
     )
   }
-
-  const clubTrainers = data.users.filter(u => u.role === 'trainer' && u.clubId === id)
-  const headTrainer = clubTrainers.find(t => t.isHeadTrainer)
-  const availableTrainers = data.users.filter(u => u.role === 'trainer' && !u.clubId)
-
-  // Stats
-  const stats = useMemo(() => {
-    const trainerIds = new Set(clubTrainers.map(t => t.id))
-    const allStudents = data.students.filter(s => trainerIds.has(s.trainerId))
-    const active = allStudents.filter(s => !isExpired(s.subscriptionExpiresAt)).length
-    const allGroups = data.groups.filter(g => trainerIds.has(g.trainerId))
-    return { trainers: clubTrainers.length, students: allStudents.length, active, groups: allGroups.length }
-  }, [clubTrainers, data.students, data.groups])
 
   const handleDelete = () => {
     if (confirm('Удалить клуб? Все тренеры будут откреплены.')) {

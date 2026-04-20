@@ -39,6 +39,8 @@ export default defineConfig([
       'react-hooks/purity': 'warn',
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/preserve-manual-memoization': 'warn',
+      // Fast Refresh is a dev-time concern, doesn't affect production
+      'react-refresh/only-export-components': 'warn',
     },
   },
   {

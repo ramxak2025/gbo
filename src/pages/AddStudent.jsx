@@ -7,7 +7,7 @@ import Layout from '../components/Layout'
 import PageHeader from '../components/PageHeader'
 import PhoneInput, { cleanPhone } from '../components/PhoneInput'
 import DateButton from '../components/DateButton'
-import { getRankOptions, getRankLabel } from '../utils/sports'
+import { getRankOptions } from '../utils/sports'
 
 export default function AddStudent() {
   const navigate = useNavigate()

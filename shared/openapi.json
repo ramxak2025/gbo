@@ -1,0 +1,328 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "iBorcuha API",
+    "version": "1.1.0",
+    "description": "REST API для платформы iBorcuha (тренеры единоборств)."
+  },
+  "servers": [
+    { "url": "https://iborcuha.ru/api", "description": "Production" },
+    { "url": "http://localhost:3000/api", "description": "Local" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": { "type": "apiKey", "in": "cookie", "name": "token" },
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "phone": { "type": "string" },
+          "role": { "type": "string", "enum": ["superadmin", "trainer", "student"] },
+          "avatar": { "type": "string", "nullable": true },
+          "clubName": { "type": "string", "nullable": true },
+          "clubId": { "type": "string", "nullable": true },
+          "isHeadTrainer": { "type": "boolean" },
+          "sportType": { "type": "string", "nullable": true },
+          "sportTypes": { "type": "array", "items": { "type": "string" } },
+          "city": { "type": "string", "nullable": true }
+        }
+      },
+      "Student": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "trainerId": { "type": "string" },
+          "groupId": { "type": "string", "nullable": true },
+          "name": { "type": "string" },
+          "phone": { "type": "string" },
+          "weight": { "type": "number", "nullable": true },
+          "belt": { "type": "string", "nullable": true },
+          "birthDate": { "type": "string", "format": "date", "nullable": true },
+          "avatar": { "type": "string", "nullable": true },
+          "subscriptionExpiresAt": { "type": "string", "format": "date-time", "nullable": true },
+          "status": { "type": "string", "enum": ["sick", "injury", "skip", null], "nullable": true },
+          "trainingStartDate": { "type": "string", "format": "date", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Group": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "trainerId": { "type": "string" },
+          "name": { "type": "string" },
+          "schedule": { "type": "string" },
+          "subscriptionCost": { "type": "integer" },
+          "attendanceEnabled": { "type": "boolean" },
+          "sportType": { "type": "string", "nullable": true },
+          "pinnedMaterialId": { "type": "string", "nullable": true }
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "trainerId": { "type": "string" },
+          "type": { "type": "string", "enum": ["income", "expense"] },
+          "amount": { "type": "integer" },
+          "category": { "type": "string" },
+          "description": { "type": "string" },
+          "studentId": { "type": "string", "nullable": true },
+          "date": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Tournament": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "coverImage": { "type": "string", "nullable": true },
+          "date": { "type": "string", "format": "date" },
+          "location": { "type": "string" },
+          "description": { "type": "string" },
+          "createdBy": { "type": "string" }
+        }
+      },
+      "Attendance": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "groupId": { "type": "string" },
+          "studentId": { "type": "string" },
+          "date": { "type": "string", "format": "date" },
+          "present": { "type": "boolean" }
+        }
+      },
+      "Club": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "city": { "type": "string" },
+          "sportTypes": { "type": "array", "items": { "type": "string" } },
+          "headTrainerId": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Material": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "trainerId": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "videoUrl": { "type": "string" },
+          "groupIds": { "type": "array", "items": { "type": "string" } },
+          "category": { "type": "string" },
+          "customThumb": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "InternalTournament": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "trainerId": { "type": "string" },
+          "title": { "type": "string" },
+          "date": { "type": "string", "format": "date", "nullable": true },
+          "status": { "type": "string" },
+          "brackets": { "type": "object" },
+          "sportType": { "type": "string", "nullable": true },
+          "coverImage": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "News": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "trainerId": { "type": "string" },
+          "groupId": { "type": "string", "nullable": true },
+          "title": { "type": "string" },
+          "content": { "type": "string" },
+          "date": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" },
+          "errorType": { "type": "string" }
+        },
+        "required": ["error"]
+      },
+      "OkResponse": {
+        "type": "object",
+        "properties": { "ok": { "type": "boolean" } }
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": {
+              "type": "object",
+              "properties": {
+                "status": { "type": "string" },
+                "uptime": { "type": "integer" },
+                "database": { "type": "object" },
+                "memory": { "type": "object" }
+              }
+            } } }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Вход",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": {
+          "type": "object", "required": ["phone", "password"],
+          "properties": {
+            "phone": { "type": "string" },
+            "password": { "type": "string" }
+          }
+        } } } },
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": {
+            "type": "object",
+            "properties": {
+              "token": { "type": "string" },
+              "userId": { "type": "string" },
+              "role": { "type": "string" },
+              "user": { "$ref": "#/components/schemas/User" }
+            }
+          } } } },
+          "401": { "description": "Неверные учётные данные", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } },
+          "429": { "description": "Rate limit (20 попыток за 15 мин)" }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "summary": "Заявка на регистрацию тренера",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": {
+          "type": "object", "required": ["name", "phone", "password", "consent"],
+          "properties": {
+            "name": { "type": "string" },
+            "phone": { "type": "string" },
+            "password": { "type": "string" },
+            "clubName": { "type": "string" },
+            "sportType": { "type": "string" },
+            "city": { "type": "string" },
+            "consent": { "type": "boolean" }
+          }
+        } } } },
+        "responses": {
+          "200": { "description": "Заявка создана", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OkResponse" } } } },
+          "400": { "description": "Валидация", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": { "summary": "Выход", "responses": { "200": { "description": "OK" } } }
+    },
+    "/auth/me": {
+      "get": {
+        "summary": "Текущий пользователь",
+        "security": [{ "cookieAuth": [] }, { "bearerAuth": [] }],
+        "responses": { "200": { "description": "User or null" } }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "summary": "Обновление access-токена (v1.2.0+)",
+        "security": [{ "cookieAuth": [] }, { "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Новый токен", "content": { "application/json": { "schema": { "type": "object", "properties": { "token": { "type": "string" } } } } } },
+          "401": { "description": "Refresh невалиден" }
+        }
+      }
+    },
+    "/data": {
+      "get": {
+        "summary": "Снапшот всех данных (роле-зависимо)",
+        "security": [{ "cookieAuth": [] }, { "bearerAuth": [] }],
+        "responses": { "200": { "description": "Bundle of all lists" } }
+      }
+    },
+    "/data/students": {
+      "post": {
+        "summary": "Создать спортсмена",
+        "security": [{ "cookieAuth": [] }, { "bearerAuth": [] }],
+        "responses": { "200": { "description": "Student", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Student" } } } } }
+      }
+    },
+    "/data/groups": {
+      "post": {
+        "summary": "Создать группу",
+        "security": [{ "cookieAuth": [] }, { "bearerAuth": [] }],
+        "responses": { "200": { "description": "Group", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Group" } } } } }
+      }
+    },
+    "/data/transactions": {
+      "post": {
+        "summary": "Создать транзакцию",
+        "security": [{ "cookieAuth": [] }, { "bearerAuth": [] }],
+        "responses": { "200": { "description": "Transaction", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Transaction" } } } } }
+      }
+    },
+    "/data/attendance": {
+      "post": {
+        "summary": "Отметить посещение",
+        "security": [{ "cookieAuth": [] }, { "bearerAuth": [] }],
+        "responses": { "200": { "description": "Attendance", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Attendance" } } } } }
+      }
+    },
+    "/data/attendance/bulk": {
+      "post": {
+        "summary": "Отметить посещаемость пачкой",
+        "security": [{ "cookieAuth": [] }, { "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/upload": {
+      "post": {
+        "summary": "Загрузка изображения (multipart/form-data field=file)",
+        "security": [{ "cookieAuth": [] }, { "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "URL", "content": { "application/json": { "schema": { "type": "object", "properties": { "url": { "type": "string" } } } } } }
+        }
+      }
+    },
+    "/push/vapid-key": { "get": { "summary": "VAPID public key", "responses": { "200": { "description": "OK" } } } },
+    "/push/subscribe": {
+      "post": {
+        "summary": "Регистрация Web Push подписки",
+        "security": [{ "cookieAuth": [] }, { "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/push/register-token": {
+      "post": {
+        "summary": "Регистрация Expo push token (v1.2.0+, мобилка)",
+        "security": [{ "cookieAuth": [] }, { "bearerAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": {
+          "type": "object", "required": ["token"],
+          "properties": {
+            "token": { "type": "string" },
+            "platform": { "type": "string", "enum": ["ios", "android"] }
+          }
+        } } } },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/push/settings": {
+      "get": { "summary": "Настройки уведомлений", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK" } } },
+      "put": { "summary": "Обновить настройки", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK" } } }
+    }
+  }
+}

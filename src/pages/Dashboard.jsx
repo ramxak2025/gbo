@@ -10,7 +10,7 @@ import PageHeader from '../components/PageHeader'
 import GlassCard from '../components/GlassCard'
 import Avatar from '../components/Avatar'
 import Modal from '../components/Modal'
-import { getRankLabel, getSportLabel, SPORT_TYPES } from '../utils/sports'
+import { getSportLabel, SPORT_TYPES } from '../utils/sports'
 
 const STATUS_CONFIG = {
   sick: { label: 'Болеет', icon: Thermometer, color: 'text-yellow-400', bg: 'bg-yellow-500/15', border: 'border-yellow-500/30' },
@@ -495,7 +495,7 @@ function TrainerDash({ auth, data, dark, navigate }) {
         )}
 
         {/* Author / About project */}
-        <AuthorBlock data={data} dark={dark} navigate={navigate} />
+        <AuthorBlock data={data} dark={dark} />
       </div>
 
       {/* News creation modal */}
@@ -533,7 +533,7 @@ function TrainerDash({ auth, data, dark, navigate }) {
 }
 
 /* ======================== AUTHOR BLOCK (for trainer dash) ======================== */
-function AuthorBlock({ data, dark, navigate }) {
+function AuthorBlock({ data, dark }) {
   const info = data.authorInfo || {}
   if (!info.name) return null
 
@@ -673,7 +673,6 @@ function StudentDash({ auth, data, dark, navigate }) {
 
   const statusCfg = student?.status ? STATUS_CONFIG[student.status] : null
   const sportLabel = getSportLabel(trainer?.sportType)
-  const rankLabel = getRankLabel(trainer?.sportType)
 
   const setStatus = (status) => {
     updateStudent(auth.studentId, { status })

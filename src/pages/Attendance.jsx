@@ -26,10 +26,6 @@ function formatMonthYear(d) {
   return d.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
 }
 
-function getDaysInMonth(year, month) {
-  return new Date(year, month + 1, 0).getDate()
-}
-
 export default function Attendance() {
   const { groupId } = useParams()
   const { data, saveAttendanceBulk } = useData()
