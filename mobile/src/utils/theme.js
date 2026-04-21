@@ -1,3 +1,7 @@
+export function getColors(dark) {
+  return dark ? colors.dark : colors.light;
+}
+
 export const colors = {
   dark: {
     bg: '#0a0a1a',
@@ -6,10 +10,17 @@ export const colors = {
     text: '#ffffff',
     textSecondary: 'rgba(255,255,255,0.5)',
     textMuted: 'rgba(255,255,255,0.3)',
+    textTertiary: 'rgba(255,255,255,0.2)',
     input: 'rgba(255,255,255,0.07)',
+    inputBg: 'rgba(255,255,255,0.07)',
     inputBorder: 'rgba(255,255,255,0.08)',
     accent: '#8b5cf6',
+    purple: '#a855f7',
+    purpleBg: 'rgba(168,85,247,0.15)',
+    blue: '#3b82f6',
+    blueBg: 'rgba(59,130,246,0.15)',
     green: '#22c55e',
+    greenBg: 'rgba(34,197,94,0.15)',
     red: '#ef4444',
     yellow: '#eab308',
     navBg: 'rgba(255,255,255,0.08)',
@@ -23,10 +34,17 @@ export const colors = {
     text: '#111827',
     textSecondary: '#6b7280',
     textMuted: '#9ca3af',
+    textTertiary: '#d1d5db',
     input: 'rgba(255,255,255,0.7)',
+    inputBg: 'rgba(255,255,255,0.7)',
     inputBorder: 'rgba(255,255,255,0.6)',
     accent: '#7c3aed',
+    purple: '#a855f7',
+    purpleBg: 'rgba(168,85,247,0.1)',
+    blue: '#3b82f6',
+    blueBg: 'rgba(59,130,246,0.1)',
     green: '#22c55e',
+    greenBg: 'rgba(34,197,94,0.1)',
     red: '#ef4444',
     yellow: '#eab308',
     navBg: 'rgba(255,255,255,0.5)',

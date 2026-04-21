@@ -19,33 +19,31 @@ export const linkingPrefixes: string[] = [
   'https://www.iborcuha.ru',
 ]
 
-export const linkingConfig: LinkingOptions<Record<string, object | undefined>> = {
+export const linkingConfig: LinkingOptions<any> = {
   prefixes: linkingPrefixes,
   config: {
     screens: {
-      // Tab roots
-      Dashboard: '',
-      Cash: 'cash',
-      Team: 'team',
-      Tournaments: 'tournaments',
-      Materials: 'materials',
-      Profile: 'profile',
-      Clubs: 'clubs',
-
-      // Stack detail screens
+      Tabs: {
+        screens: {
+          Dashboard: '',
+          Cash: 'cash',
+          Team: 'team',
+          Tournaments: 'tournaments',
+          Materials: 'materials',
+          Profile: 'profile',
+          Clubs: 'clubs',
+        },
+      },
       StudentDetail: 'student/:id',
       TournamentDetail: 'tournaments/:id',
       TrainerDetail: 'trainer/:id',
-      ClubDetail: 'club/:id',
-      InternalTournamentDetail: 'internal-tournament/:id',
+      ClubsStack: 'club/:id',
+      InternalTournaments: 'internal-tournament/:id',
       Attendance: 'attendance/:groupId',
       AddStudent: 'add-student',
-      AddTrainer: 'add-trainer',
       Groups: 'groups',
       NotificationSettings: 'notifications',
-
-      // Fallback
-      NotFound: '*',
+      ProfilePage: 'profile-page',
     },
   },
 }

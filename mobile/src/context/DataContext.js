@@ -93,6 +93,11 @@ export function DataProvider({ children }) {
     return t.id;
   }, []);
 
+  const updateTournament = useCallback(async (id, changes) => {
+    await api.updateTournament(id, changes);
+    setData(d => ({ ...d, tournaments: d.tournaments.map(t => t.id === id ? { ...t, ...changes } : t) }));
+  }, []);
+
   const deleteTournament = useCallback(async (id) => {
     await api.deleteTournament(id);
     setData(d => ({ ...d, tournaments: d.tournaments.filter(t => t.id !== id) }));
@@ -129,16 +134,98 @@ export function DataProvider({ children }) {
     setData(d => ({ ...d, materials: d.materials.filter(m => m.id !== id) }));
   }, []);
 
+  const updateMaterial = useCallback(async (id, changes) => {
+    await api.updateMaterial(id, changes);
+    setData(d => ({ ...d, materials: d.materials.map(m => m.id === id ? { ...m, ...changes } : m) }));
+  }, []);
+
+  const addClub = useCallback(async (club) => {
+    const c = await api.addClub(club);
+    setData(d => ({ ...d, clubs: [...(d.clubs || []), c] }));
+    return c.id;
+  }, []);
+
+  const updateClub = useCallback(async (id, changes) => {
+    await api.updateClub(id, changes);
+    setData(d => ({ ...d, clubs: (d.clubs || []).map(c => c.id === id ? { ...c, ...changes } : c) }));
+  }, []);
+
+  const deleteClub = useCallback(async (id) => {
+    await api.deleteClub(id);
+    setData(d => ({ ...d, clubs: (d.clubs || []).filter(c => c.id !== id) }));
+  }, []);
+
+  const addInternalTournament = useCallback(async (tournament) => {
+    const t = await api.addInternalTournament(tournament);
+    setData(d => ({ ...d, internalTournaments: [...(d.internalTournaments || []), t] }));
+    return t.id;
+  }, []);
+
+  const updateInternalTournament = useCallback(async (id, changes) => {
+    await api.updateInternalTournament(id, changes);
+    setData(d => ({ ...d, internalTournaments: (d.internalTournaments || []).map(t => t.id === id ? { ...t, ...changes } : t) }));
+  }, []);
+
+  const deleteInternalTournament = useCallback(async (id) => {
+    await api.deleteInternalTournament(id);
+    setData(d => ({ ...d, internalTournaments: (d.internalTournaments || []).filter(t => t.id !== id) }));
+  }, []);
+
+  const registerTournament = useCallback(async (tournamentId, studentId) => {
+    await api.registerTournament(tournamentId, studentId);
+    setData(d => ({ ...d, tournamentRegistrations: [...(d.tournamentRegistrations || []), { tournamentId, studentId }] }));
+  }, []);
+
+  const unregisterTournament = useCallback(async (tournamentId, studentId) => {
+    await api.unregisterTournament(tournamentId, studentId);
+    setData(d => ({ ...d, tournamentRegistrations: (d.tournamentRegistrations || []).filter(r => !(r.tournamentId === tournamentId && r.studentId === studentId)) }));
+  }, []);
+
+  const updateTrainer = useCallback(async (id, changes) => {
+    await api.updateTrainer(id, changes);
+    await reload();
+  }, [reload]);
+
+  const approveRegistration = useCallback(async (id) => {
+    await api.approveRegistration(id);
+    await reload();
+  }, [reload]);
+
+  const rejectRegistration = useCallback(async (id) => {
+    await api.rejectRegistration(id);
+    await reload();
+  }, [reload]);
+
+  const updateAuthor = useCallback(async (changes) => {
+    await api.updateAuthor(changes);
+    setData(d => ({ ...d, authorInfo: { ...d.authorInfo, ...changes } }));
+  }, []);
+
+  const deleteAttendance = useCallback(async (groupId, studentId, date) => {
+    await api.deleteAttendance({ groupId, studentId, date });
+    setData(d => ({ ...d, attendance: d.attendance.filter(a => !(a.groupId === groupId && a.studentId === studentId && a.date === date)) }));
+  }, []);
+
+  // Legacy update helper for direct state manipulation
+  const update = useCallback(async (updater) => {
+    setData(d => updater(d));
+  }, []);
+
   return (
     <DataContext.Provider value={{
-      data, loading, reload,
+      data, loading, reload, update,
       addStudent, updateStudent, deleteStudent,
       addGroup, updateGroup, deleteGroup,
       addTransaction, updateTransaction, deleteTransaction,
-      addTournament, deleteTournament,
+      addTournament, updateTournament, deleteTournament,
+      registerTournament, unregisterTournament,
       addNews, deleteNews,
-      saveAttendanceBulk,
-      addMaterial, deleteMaterial,
+      saveAttendanceBulk, deleteAttendance,
+      addMaterial, updateMaterial, deleteMaterial,
+      addClub, updateClub, deleteClub,
+      addInternalTournament, updateInternalTournament, deleteInternalTournament,
+      updateTrainer, approveRegistration, rejectRegistration,
+      updateAuthor,
     }}>
       {children}
     </DataContext.Provider>

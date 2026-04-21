@@ -74,6 +74,10 @@ async function uploadFile(uri) {
   return data.url;
 }
 
+export function getFullUrl(path) {
+  return 'https://iborcuha.ru' + (path?.startsWith('/') ? path : '/' + path);
+}
+
 export const api = {
   uploadFile,
   login: async (phone, password) => {
@@ -129,5 +133,7 @@ export const api = {
   deleteClub: (id) => request(`/data/clubs/${id}`, { method: 'DELETE' }),
   assignTrainerToClub: (cId, tId) => request(`/data/clubs/${cId}/trainers`, { method: 'POST', body: JSON.stringify({ trainerId: tId }) }),
   removeTrainerFromClub: (cId, tId) => request(`/data/clubs/${cId}/trainers/${tId}`, { method: 'DELETE' }),
+  approveRegistration: (id) => request(`/data/registrations/${id}/approve`, { method: 'POST' }),
+  rejectRegistration: (id) => request(`/data/registrations/${id}/reject`, { method: 'POST' }),
   register: (d) => fetch(`${BASE}/auth/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }).then(async r => { const data = await r.json(); if (!r.ok) throw new Error(data.error || 'Ошибка'); return data; }),
 };
