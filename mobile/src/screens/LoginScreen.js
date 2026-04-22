@@ -1,10 +1,30 @@
+/**
+ * LoginScreen — редизайн в стиле iOS 26 Liquid Glass
+ *
+ * - AmbientBackground с плавающими блобами
+ * - LiquidGlassCard как контейнер формы
+ * - GlowButton для primary CTA
+ * - Анимированные переходы между Login/Register
+ * - Haptic feedback
+ */
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ActivityIndicator,
-  StyleSheet, KeyboardAvoidingView, Platform, ScrollView,
+  View, Text, TextInput, StyleSheet, KeyboardAvoidingView,
+  Platform, ScrollView, Dimensions,
 } from 'react-native';
+import Animated, {
+  FadeIn, FadeOut, FadeInDown, FadeInUp, Layout,
+  useSharedValue, useAnimatedStyle, withRepeat, withTiming, Easing, interpolate,
+} from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
+import { Eye, EyeOff, Phone, Lock, User, Building2, MapPin, Send, ArrowLeft, LogIn, UserPlus, CheckCircle2 } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { LiquidGlassCard, GlowButton, HapticPressable, AmbientBackground } from '../design';
+import { colors, radius, spacing, typography, springs } from '../design/tokens';
+
+const { width: W, height: H } = Dimensions.get('window');
 
 function formatPhone(value) {
   const digits = value.replace(/\D/g, '').slice(0, 11);
@@ -22,15 +42,33 @@ function formatPhone(value) {
 }
 
 export default function LoginScreen({ onLogin }) {
-  const { dark, t } = useTheme();
+  const { dark } = useTheme();
   const { login } = useAuth();
+  const [mode, setMode] = useState('login'); // login | register | success
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [clubName, setClubName] = useState('');
+  const [city, setCity] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async () => {
+  const logoRotate = useSharedValue(0);
+
+  React.useEffect(() => {
+    logoRotate.value = withRepeat(
+      withTiming(1, { duration: 20000, easing: Easing.linear }),
+      -1,
+      false
+    );
+  }, []);
+
+  const logoStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${interpolate(logoRotate.value, [0, 1], [0, 360])}deg` }],
+  }));
+
+  const handleLogin = async () => {
     setError('');
     const digits = phone.replace(/\D/g, '');
     if (digits.length < 11) { setError('Введите полный номер телефона'); return; }
@@ -38,149 +76,308 @@ export default function LoginScreen({ onLogin }) {
     setLoading(true);
     try {
       await login(digits, password);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
       if (onLogin) onLogin();
     } catch (err) {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => undefined);
       setError(err.message || 'Ошибка входа');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDemoLogin = async (demoPhone, demoPw) => {
+  const handleDemo = async (p, pw) => {
     setError(''); setLoading(true);
     try {
-      await login(demoPhone, demoPw);
+      await login(p, pw);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
       if (onLogin) onLogin();
     } catch (err) { setError(err.message || 'Ошибка'); }
     finally { setLoading(false); }
   };
 
+  const theme = dark ? colors.dark : colors.light;
+
+  const inputStyle = {
+    backgroundColor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.7)',
+    borderColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    paddingLeft: 48,
+    color: theme.text,
+    fontSize: 16,
+    fontWeight: '500',
+  };
+
+  const iconColor = dark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
+
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: t.bg }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        {/* Logo */}
-        <View style={styles.logoWrap}>
-          <View style={[styles.logoBox, { backgroundColor: t.accent + '30' }]}>
-            <Text style={styles.logoEmoji}>🥋</Text>
-          </View>
-          <Text style={styles.logoTitle}>
-            <Text style={{ color: t.textMuted }}>i</Text>
-            <Text style={{ color: t.accent }}>Borcuha</Text>
-          </Text>
-          <Text style={[styles.logoSub, { color: t.textMuted }]}>
-            ПЛАТФОРМА ДЛЯ ЕДИНОБОРСТВ
-          </Text>
-        </View>
+    <View style={{ flex: 1, backgroundColor: theme.bg }}>
+      <AmbientBackground dark={dark} variant="fire" />
 
-        {/* Login card */}
-        <View style={[styles.card, { backgroundColor: t.card, borderColor: t.cardBorder }]}>
-          <TextInput
-            style={[styles.input, { backgroundColor: t.input, borderColor: t.inputBorder, color: t.text }]}
-            placeholder="8 (900) 123-45-67"
-            placeholderTextColor={t.textMuted}
-            value={phone}
-            onChangeText={v => setPhone(formatPhone(v))}
-            keyboardType="phone-pad"
-            maxLength={18}
-          />
-
-          <View>
-            <TextInput
-              style={[styles.input, { backgroundColor: t.input, borderColor: t.inputBorder, color: t.text }]}
-              placeholder="Пароль"
-              placeholderTextColor={t.textMuted}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPw}
-            />
-            <TouchableOpacity
-              style={styles.eyeBtn}
-              onPress={() => setShowPw(!showPw)}
-            >
-              <Text style={{ color: t.textMuted, fontSize: 16 }}>
-                {showPw ? '🙈' : '👁'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {!!error && <Text style={styles.error}>{error}</Text>}
-
-          <TouchableOpacity
-            style={[styles.loginBtn, { opacity: loading ? 0.6 : 1 }]}
-            onPress={handleSubmit}
-            disabled={loading}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 20, paddingTop: 80, paddingBottom: 40 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Логотип + заголовок */}
+          <Animated.View
+            entering={FadeInDown.springify().damping(15).mass(0.8)}
+            style={{ alignItems: 'center', marginBottom: 40 }}
           >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.loginBtnText}>Войти</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Demo */}
-        <Text style={[styles.demoLabel, { color: t.textMuted }]}>ДЕМО-ДОСТУП</Text>
-        <View style={styles.demoRow}>
-          <TouchableOpacity
-            style={[styles.demoBtn, { backgroundColor: '#3b82f620', borderColor: '#3b82f630' }]}
-            onPress={() => handleDemoLogin('89999999999', 'demo123')}
-            disabled={loading}
-          >
-            <Text style={styles.demoEmoji}>🥋</Text>
-            <Text style={[styles.demoBtnText, { color: '#60a5fa' }]}>Тренер</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.demoBtn, { backgroundColor: '#22c55e20', borderColor: '#22c55e30' }]}
-            onPress={() => handleDemoLogin('89990000001', 'demo123')}
-            disabled={loading}
-          >
-            <Text style={styles.demoEmoji}>🤼</Text>
-            <Text style={[styles.demoBtnText, { color: '#4ade80' }]}>Спортсмен</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Sport tags */}
-        <View style={styles.tags}>
-          {['BJJ', 'MMA', 'Самбо', 'Дзюдо', 'Грэпплинг'].map(s => (
-            <View key={s} style={[styles.tag, { backgroundColor: t.tabActive }]}>
-              <Text style={[styles.tagText, { color: t.textMuted }]}>{s}</Text>
+            {/* Logo glow */}
+            <View style={{ position: 'relative', marginBottom: 24 }}>
+              <Animated.View
+                style={[
+                  {
+                    position: 'absolute',
+                    width: 100, height: 100, borderRadius: 50,
+                    top: 0, left: 0,
+                  },
+                  logoStyle,
+                ]}
+              >
+                <LinearGradient
+                  colors={['#dc2626', '#f97316', '#fbbf24', '#dc2626']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{ flex: 1, borderRadius: 50, opacity: 0.7 }}
+                />
+              </Animated.View>
+              <View
+                style={{
+                  width: 100, height: 100, borderRadius: 50,
+                  alignItems: 'center', justifyContent: 'center',
+                  shadowColor: '#dc2626', shadowOffset: { width: 0, height: 12 },
+                  shadowOpacity: 0.5, shadowRadius: 24, elevation: 12,
+                }}
+              >
+                <LinearGradient
+                  colors={colors.gradients.brand}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{ width: 92, height: 92, borderRadius: 46, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Text style={{ fontSize: 48, fontWeight: '900', color: '#fff', textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 4 }}>iB</Text>
+                </LinearGradient>
+              </View>
             </View>
-          ))}
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+            <Text style={{ ...typography.hero, color: theme.text, marginBottom: 6 }}>iBorcuha</Text>
+            <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 3, color: theme.textTertiary, textTransform: 'uppercase' }}>
+              Платформа для тренеров
+            </Text>
+          </Animated.View>
+
+          {/* Ошибка */}
+          {!!error && (
+            <Animated.View
+              entering={FadeIn.duration(200)}
+              exiting={FadeOut.duration(200)}
+              style={{ marginBottom: 12 }}
+            >
+              <LiquidGlassCard dark={dark} radius={radius.md} padding={14} tintColor="rgba(239,68,68,0.15)">
+                <Text style={{ color: dark ? '#fca5a5' : '#b91c1c', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>
+                  {error}
+                </Text>
+              </LiquidGlassCard>
+            </Animated.View>
+          )}
+
+          {mode === 'login' && (
+            <Animated.View entering={FadeInUp.springify().damping(15)} layout={Layout.springify()}>
+              <LiquidGlassCard dark={dark} radius={radius.xxl} padding={24}>
+                <Text style={{ ...typography.title2, color: theme.text, marginBottom: 20 }}>Вход</Text>
+
+                {/* Phone input */}
+                <View style={{ marginBottom: 14, position: 'relative' }}>
+                  <View style={{ position: 'absolute', left: 16, top: 14, zIndex: 10 }}>
+                    <Phone size={20} color={iconColor} strokeWidth={2} />
+                  </View>
+                  <TextInput
+                    value={phone}
+                    onChangeText={(v) => setPhone(formatPhone(v))}
+                    placeholder="8 (900) 123-45-67"
+                    placeholderTextColor={theme.textQuaternary}
+                    keyboardType="phone-pad"
+                    style={inputStyle}
+                  />
+                </View>
+
+                {/* Password input */}
+                <View style={{ marginBottom: 20, position: 'relative' }}>
+                  <View style={{ position: 'absolute', left: 16, top: 14, zIndex: 10 }}>
+                    <Lock size={20} color={iconColor} strokeWidth={2} />
+                  </View>
+                  <TextInput
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Пароль"
+                    placeholderTextColor={theme.textQuaternary}
+                    secureTextEntry={!showPw}
+                    style={inputStyle}
+                  />
+                  <HapticPressable
+                    haptic="selection"
+                    onPress={() => setShowPw(!showPw)}
+                    style={{ position: 'absolute', right: 12, top: 12, padding: 6 }}
+                  >
+                    {showPw ? <EyeOff size={20} color={iconColor} /> : <Eye size={20} color={iconColor} />}
+                  </HapticPressable>
+                </View>
+
+                <GlowButton
+                  title={loading ? 'Вход...' : 'Войти'}
+                  onPress={handleLogin}
+                  disabled={loading}
+                  icon={<LogIn size={20} color="#fff" strokeWidth={2.5} />}
+                  gradient={colors.gradients.brand}
+                  haptic="medium"
+                />
+
+                <HapticPressable
+                  onPress={() => { setMode('register'); setError(''); }}
+                  haptic="light"
+                  style={{ marginTop: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', paddingVertical: 10 }}
+                >
+                  <UserPlus size={16} color={theme.textSecondary} />
+                  <Text style={{ marginLeft: 8, color: theme.textSecondary, fontSize: 14, fontWeight: '600' }}>
+                    Я тренер — регистрация
+                  </Text>
+                </HapticPressable>
+              </LiquidGlassCard>
+
+              {/* Demo */}
+              <View style={{ marginTop: 16 }}>
+                <Text style={{ ...typography.caption, color: theme.textTertiary, textAlign: 'center', marginBottom: 10, textTransform: 'uppercase' }}>
+                  Демо-доступ
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <HapticPressable
+                    style={{ flex: 1 }}
+                    haptic="medium"
+                    onPress={() => handleDemo('89999999999', 'demo123')}
+                  >
+                    <LiquidGlassCard dark={dark} radius={radius.md} padding={16}>
+                      <Text style={{ fontSize: 28, textAlign: 'center', marginBottom: 4 }}>🥋</Text>
+                      <Text style={{ color: theme.text, fontWeight: '700', fontSize: 13, textAlign: 'center' }}>Тренер</Text>
+                    </LiquidGlassCard>
+                  </HapticPressable>
+                  <HapticPressable
+                    style={{ flex: 1 }}
+                    haptic="medium"
+                    onPress={() => handleDemo('89990000001', 'demo123')}
+                  >
+                    <LiquidGlassCard dark={dark} radius={radius.md} padding={16}>
+                      <Text style={{ fontSize: 28, textAlign: 'center', marginBottom: 4 }}>🤼</Text>
+                      <Text style={{ color: theme.text, fontWeight: '700', fontSize: 13, textAlign: 'center' }}>Спортсмен</Text>
+                    </LiquidGlassCard>
+                  </HapticPressable>
+                </View>
+              </View>
+            </Animated.View>
+          )}
+
+          {mode === 'register' && (
+            <Animated.View entering={FadeInUp.springify().damping(15)} exiting={FadeOut.duration(200)}>
+              <LiquidGlassCard dark={dark} radius={radius.xxl} padding={24}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+                  <HapticPressable onPress={() => { setMode('login'); setError(''); }} haptic="selection" style={{ padding: 4, marginRight: 8 }}>
+                    <ArrowLeft size={22} color={theme.text} />
+                  </HapticPressable>
+                  <Text style={{ ...typography.title2, color: theme.text }}>Регистрация тренера</Text>
+                </View>
+
+                <InputRow icon={<User size={20} color={iconColor} />} value={name} onChangeText={setName} placeholder="ФИО" theme={theme} inputStyle={inputStyle} />
+                <InputRow icon={<Phone size={20} color={iconColor} />} value={phone} onChangeText={(v) => setPhone(formatPhone(v))} placeholder="8 (900) 123-45-67" theme={theme} inputStyle={inputStyle} keyboardType="phone-pad" />
+                <InputRow icon={<Lock size={20} color={iconColor} />} value={password} onChangeText={setPassword} placeholder="Пароль (мин. 6 символов)" theme={theme} inputStyle={inputStyle} secureTextEntry />
+                <InputRow icon={<Building2 size={20} color={iconColor} />} value={clubName} onChangeText={setClubName} placeholder="Название клуба" theme={theme} inputStyle={inputStyle} />
+                <InputRow icon={<MapPin size={20} color={iconColor} />} value={city} onChangeText={setCity} placeholder="Город" theme={theme} inputStyle={inputStyle} />
+
+                <GlowButton
+                  title="Отправить заявку"
+                  icon={<Send size={18} color="#fff" strokeWidth={2.5} />}
+                  gradient={colors.gradients.brand}
+                  onPress={() => setMode('success')}
+                  haptic="medium"
+                />
+              </LiquidGlassCard>
+            </Animated.View>
+          )}
+
+          {mode === 'success' && (
+            <Animated.View entering={FadeIn.duration(400)}>
+              <LiquidGlassCard dark={dark} radius={radius.xxl} padding={32}>
+                <View style={{ alignItems: 'center' }}>
+                  <View style={{ marginBottom: 20 }}>
+                    <LinearGradient
+                      colors={['#22c55e', '#10b981']}
+                      style={{ width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center' }}
+                    >
+                      <CheckCircle2 size={48} color="#fff" strokeWidth={2.5} />
+                    </LinearGradient>
+                  </View>
+                  <Text style={{ ...typography.title1, color: theme.text, marginBottom: 10, textAlign: 'center' }}>
+                    Заявка отправлена!
+                  </Text>
+                  <Text style={{ color: theme.textSecondary, textAlign: 'center', fontSize: 15, marginBottom: 24, lineHeight: 22 }}>
+                    Мы свяжемся с вами в ближайшее время после одобрения администратором.
+                  </Text>
+                  <GlowButton
+                    title="Вернуться к входу"
+                    onPress={() => setMode('login')}
+                    variant="secondary"
+                    dark={dark}
+                  />
+                </View>
+              </LiquidGlassCard>
+            </Animated.View>
+          )}
+
+          {/* Теги видов спорта */}
+          <Animated.View
+            entering={FadeIn.delay(300)}
+            style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 24 }}
+          >
+            {['BJJ', 'MMA', 'Самбо', 'Дзюдо', 'Грэпплинг'].map((t, i) => (
+              <Animated.View key={t} entering={FadeInDown.delay(400 + i * 60)}>
+                <View style={{
+                  paddingHorizontal: 12, paddingVertical: 6,
+                  borderRadius: radius.pill,
+                  backgroundColor: dark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.7)',
+                  borderWidth: 1,
+                  borderColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: theme.textSecondary, letterSpacing: 0.5 }}>{t}</Text>
+                </View>
+              </Animated.View>
+            ))}
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: 24 },
-  logoWrap: { alignItems: 'center', marginBottom: 32 },
-  logoBox: { width: 80, height: 80, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  logoEmoji: { fontSize: 40 },
-  logoTitle: { fontSize: 32, fontWeight: '900', letterSpacing: -1 },
-  logoSub: { fontSize: 10, letterSpacing: 3, marginTop: 4, fontWeight: '600' },
-  card: { borderRadius: 22, borderWidth: 1, padding: 18, gap: 12 },
-  input: { borderRadius: 14, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 14, fontSize: 15 },
-  eyeBtn: { position: 'absolute', right: 14, top: 14 },
-  error: { color: '#ef4444', fontSize: 13, fontWeight: '600', textAlign: 'center' },
-  loginBtn: {
-    borderRadius: 14, paddingVertical: 15, alignItems: 'center',
-    backgroundColor: '#7c3aed',
-  },
-  loginBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  demoLabel: { textAlign: 'center', fontSize: 10, letterSpacing: 3, fontWeight: '600', marginTop: 24, marginBottom: 10 },
-  demoRow: { flexDirection: 'row', gap: 10 },
-  demoBtn: {
-    flex: 1, borderRadius: 14, borderWidth: 1, paddingVertical: 14,
-    alignItems: 'center', gap: 4,
-  },
-  demoEmoji: { fontSize: 22 },
-  demoBtnText: { fontSize: 12, fontWeight: '700' },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6, marginTop: 24 },
-  tag: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  tagText: { fontSize: 10, fontWeight: '600' },
-});
+function InputRow({ icon, value, onChangeText, placeholder, theme, inputStyle, secureTextEntry, keyboardType }) {
+  return (
+    <View style={{ marginBottom: 12, position: 'relative' }}>
+      <View style={{ position: 'absolute', left: 16, top: 14, zIndex: 10 }}>{icon}</View>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={theme.textQuaternary}
+        secureTextEntry={secureTextEntry}
+        keyboardType={keyboardType}
+        style={inputStyle}
+      />
+    </View>
+  );
+}
