@@ -18,7 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { useTheme } from '../context/ThemeContext';
 import Avatar from '../components/Avatar';
-import { LiquidGlassCard, HapticPressable, AmbientBackground } from '../design';
+import { LiquidGlassCard, HapticPressable, AmbientBackground, TiltParallax } from '../design';
 import { colors, radius, spacing, typography } from '../design/tokens';
 import { getSportLabel } from '../utils/sports';
 
@@ -76,6 +76,7 @@ export default function DashboardScreen({ navigation }) {
       >
         {/* Hero Card */}
         <Animated.View entering={FadeInDown.springify().damping(15).mass(0.8)}>
+          <TiltParallax intensity={6}>
           <HapticPressable onPress={() => navigation.navigate('ProfilePage')} haptic="light">
             <LiquidGlassCard dark={dark} radius={radius.xxl} padding={0} intensity="strong">
               <LinearGradient
@@ -130,6 +131,7 @@ export default function DashboardScreen({ navigation }) {
               </LinearGradient>
             </LiquidGlassCard>
           </HapticPressable>
+          </TiltParallax>
         </Animated.View>
 
         {/* Stats grid (тренер/админ) */}

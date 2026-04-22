@@ -21,7 +21,7 @@ import * as Haptics from 'expo-haptics';
 import { Eye, EyeOff, Phone, Lock, User, Building2, MapPin, Send, ArrowLeft, LogIn, UserPlus, CheckCircle2 } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { LiquidGlassCard, GlowButton, HapticPressable, AmbientBackground } from '../design';
+import { LiquidGlassCard, GlowButton, HapticPressable, AmbientBackground, TiltParallax } from '../design';
 import { colors, radius, spacing, typography, springs } from '../design/tokens';
 
 const { width: W, height: H } = Dimensions.get('window');
@@ -131,8 +131,9 @@ export default function LoginScreen({ onLogin }) {
             entering={FadeInDown.springify().damping(15).mass(0.8)}
             style={{ alignItems: 'center', marginBottom: 40 }}
           >
-            {/* Logo glow */}
-            <View style={{ position: 'relative', marginBottom: 24 }}>
+            {/* Logo glow with 3D tilt */}
+            <TiltParallax intensity={12} style={{ marginBottom: 24 }}>
+            <View style={{ position: 'relative' }}>
               <Animated.View
                 style={[
                   {
@@ -168,6 +169,7 @@ export default function LoginScreen({ onLogin }) {
                 </LinearGradient>
               </View>
             </View>
+            </TiltParallax>
 
             <Text style={{ ...typography.hero, color: theme.text, marginBottom: 6 }}>iBorcuha</Text>
             <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 3, color: theme.textTertiary, textTransform: 'uppercase' }}>

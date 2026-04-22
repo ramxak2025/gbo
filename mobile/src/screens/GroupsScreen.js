@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Modal, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, ScrollView, TextInput, Modal, StyleSheet } from 'react-native';
+import { LiquidGlassCard, HapticPressable, AmbientBackground, GlowButton } from '../design';
+import { colors, radius, spacing, typography } from '../design/tokens';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
+import { Dumbbell, Users, Trash2, PlusCircle, X, Clock, Wallet } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { useTheme } from '../context/ThemeContext';
-import GlassCard from '../components/GlassCard';
-import PageHeader from '../components/PageHeader';
 
 export default function GroupsScreen() {
   const { auth } = useAuth();
   const { data, addGroup, updateGroup, deleteGroup } = useData();
-  const { t } = useTheme();
+  const { t, dark } = useTheme();
+  const theme = dark ? colors.dark : colors.light;
+
   const [showAdd, setShowAdd] = useState(false);
   const [newGroup, setNewGroup] = useState({ name: '', schedule: '', subscriptionCost: '' });
   const [saving, setSaving] = useState(false);
@@ -37,104 +41,256 @@ export default function GroupsScreen() {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: t.bg }]} contentContainerStyle={styles.content}>
-      <PageHeader title="Группы">
-        <TouchableOpacity onPress={() => setShowAdd(true)}>
-          <Ionicons name="add-circle" size={26} color={t.accent} />
-        </TouchableOpacity>
-      </PageHeader>
+    <View style={[styles.root, { backgroundColor: dark ? colors.dark.bg : colors.light.bg }]}>
+      <AmbientBackground dark={dark} variant="warm" />
 
-      {myGroups.map(g => {
-        const students = data.students.filter(s => s.groupId === g.id);
-        return (
-          <GlassCard key={g.id}>
-            <View style={styles.groupRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.groupName, { color: t.text }]}>{g.name}</Text>
-                <Text style={[styles.groupSchedule, { color: t.textMuted }]}>{g.schedule || 'Без расписания'}</Text>
-                {g.subscriptionCost > 0 && (
-                  <Text style={[styles.groupCost, { color: t.accent }]}>
-                    {Number(g.subscriptionCost).toLocaleString('ru-RU')} р./мес
-                  </Text>
-                )}
-              </View>
-              <View style={styles.groupRight}>
-                <View style={styles.countBadge}>
-                  <Ionicons name="people-outline" size={14} color={t.textSecondary} />
-                  <Text style={[styles.countText, { color: t.textSecondary }]}>{students.length}</Text>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
+          <View style={styles.headerLeft}>
+            <LinearGradient
+              colors={colors.gradients.brand}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.headerIcon}
+            >
+              <Dumbbell size={22} color="#fff" strokeWidth={2.5} />
+            </LinearGradient>
+            <Text style={[typography.title1, { color: theme.text }]}>Группы</Text>
+          </View>
+          <HapticPressable onPress={() => setShowAdd(true)} haptic="medium">
+            <PlusCircle size={28} color={colors.accent[500]} />
+          </HapticPressable>
+        </Animated.View>
+
+        {/* Group cards */}
+        {myGroups.map((g, index) => {
+          const students = data.students.filter(s => s.groupId === g.id);
+          return (
+            <Animated.View
+              key={g.id}
+              entering={FadeInDown.delay(index * 80).springify()}
+            >
+              <LiquidGlassCard
+                dark={dark}
+                intensity="regular"
+                radius={radius.xl}
+                padding={spacing.lg}
+                style={styles.groupCard}
+              >
+                <View style={styles.groupRow}>
+                  <LinearGradient
+                    colors={colors.gradients.brand}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.groupIcon}
+                  >
+                    <Dumbbell size={18} color="#fff" strokeWidth={2.5} />
+                  </LinearGradient>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[typography.bodyBold, { color: theme.text }]}>{g.name}</Text>
+                    <View style={styles.groupMeta}>
+                      <Clock size={12} color={theme.textTertiary} />
+                      <Text style={[typography.caption, { color: theme.textSecondary }]}>
+                        {g.schedule || 'Без расписания'}
+                      </Text>
+                    </View>
+                    {g.subscriptionCost > 0 && (
+                      <View style={[styles.groupMeta, { marginTop: spacing.xs }]}>
+                        <Wallet size={12} color={colors.accent[500]} />
+                        <Text style={[typography.caption, { color: colors.accent[500] }]}>
+                          {Number(g.subscriptionCost).toLocaleString('ru-RU')} р./мес
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.groupRight}>
+                    <View style={styles.countBadge}>
+                      <Users size={14} color={theme.textSecondary} />
+                      <Text style={[typography.callout, { color: theme.textSecondary }]}>
+                        {students.length}
+                      </Text>
+                    </View>
+                    <HapticPressable
+                      onPress={() => handleDelete(g.id)}
+                      haptic="medium"
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Trash2 size={16} color={theme.textTertiary} />
+                    </HapticPressable>
+                  </View>
                 </View>
-                <TouchableOpacity onPress={() => handleDelete(g.id)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                  <Ionicons name="trash-outline" size={16} color={t.textMuted} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          </GlassCard>
-        );
-      })}
+              </LiquidGlassCard>
+            </Animated.View>
+          );
+        })}
 
-      {myGroups.length === 0 && (
-        <Text style={[styles.empty, { color: t.textMuted }]}>Нет групп. Создайте первую!</Text>
-      )}
+        {myGroups.length === 0 && (
+          <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.emptyWrap}>
+            <LinearGradient
+              colors={colors.gradients.brand}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.emptyIcon}
+            >
+              <Dumbbell size={28} color="#fff" strokeWidth={2} />
+            </LinearGradient>
+            <Text style={[typography.body, { color: theme.textTertiary, marginTop: spacing.md }]}>
+              Нет групп. Создайте первую!
+            </Text>
+          </Animated.View>
+        )}
+
+        <View style={{ height: 140 }} />
+      </ScrollView>
 
       {/* Add group modal */}
       <Modal visible={showAdd} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: t.bg }]}>
-            <Text style={[styles.modalTitle, { color: t.text }]}>Новая группа</Text>
-            <TextInput
-              style={[styles.modalInput, { backgroundColor: t.input, borderColor: t.inputBorder, color: t.text }]}
-              placeholder="Название группы *"
-              placeholderTextColor={t.textMuted}
-              value={newGroup.name}
-              onChangeText={v => setNewGroup(g => ({ ...g, name: v }))}
-            />
-            <TextInput
-              style={[styles.modalInput, { backgroundColor: t.input, borderColor: t.inputBorder, color: t.text }]}
-              placeholder="Расписание (Пн, Ср, Пт 18:00)"
-              placeholderTextColor={t.textMuted}
-              value={newGroup.schedule}
-              onChangeText={v => setNewGroup(g => ({ ...g, schedule: v }))}
-            />
-            <TextInput
-              style={[styles.modalInput, { backgroundColor: t.input, borderColor: t.inputBorder, color: t.text }]}
-              placeholder="Стоимость абонемента (руб)"
-              placeholderTextColor={t.textMuted}
-              keyboardType="numeric"
-              value={newGroup.subscriptionCost}
-              onChangeText={v => setNewGroup(g => ({ ...g, subscriptionCost: v }))}
-            />
+          <View style={[styles.modalContent, { backgroundColor: dark ? colors.dark.bgElevated : colors.light.bgElevated }]}>
+            {/* Modal header */}
+            <View style={styles.modalHeader}>
+              <Text style={[typography.title3, { color: theme.text, flex: 1, textAlign: 'center' }]}>
+                Новая группа
+              </Text>
+              <HapticPressable
+                onPress={() => setShowAdd(false)}
+                haptic="light"
+                style={styles.modalClose}
+              >
+                <X size={20} color={theme.textSecondary} />
+              </HapticPressable>
+            </View>
+
+            {/* Input fields */}
+            <View style={[styles.modalInput, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
+              <TextInput
+                style={[styles.inputText, { color: theme.text }]}
+                placeholder="Название группы *"
+                placeholderTextColor={theme.textTertiary}
+                value={newGroup.name}
+                onChangeText={v => setNewGroup(g => ({ ...g, name: v }))}
+              />
+            </View>
+            <View style={[styles.modalInput, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
+              <TextInput
+                style={[styles.inputText, { color: theme.text }]}
+                placeholder="Расписание (Пн, Ср, Пт 18:00)"
+                placeholderTextColor={theme.textTertiary}
+                value={newGroup.schedule}
+                onChangeText={v => setNewGroup(g => ({ ...g, schedule: v }))}
+              />
+            </View>
+            <View style={[styles.modalInput, { backgroundColor: theme.bgCard, borderColor: theme.border }]}>
+              <TextInput
+                style={[styles.inputText, { color: theme.text }]}
+                placeholder="Стоимость абонемента (руб)"
+                placeholderTextColor={theme.textTertiary}
+                keyboardType="numeric"
+                value={newGroup.subscriptionCost}
+                onChangeText={v => setNewGroup(g => ({ ...g, subscriptionCost: v }))}
+              />
+            </View>
+
+            {/* Action buttons */}
             <View style={styles.modalBtns}>
-              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: t.card }]} onPress={() => setShowAdd(false)}>
-                <Text style={{ color: t.text, fontWeight: '600' }}>Отмена</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalBtn, { backgroundColor: t.accent }]} onPress={handleAdd} disabled={saving}>
-                <Text style={{ color: '#fff', fontWeight: '700' }}>Создать</Text>
-              </TouchableOpacity>
+              <GlowButton
+                title="Отмена"
+                onPress={() => setShowAdd(false)}
+                variant="secondary"
+                dark={dark}
+                size="md"
+                style={{ flex: 1 }}
+              />
+              <GlowButton
+                title="Создать"
+                onPress={handleAdd}
+                disabled={saving}
+                gradient={colors.gradients.brand}
+                dark={dark}
+                size="md"
+                haptic="success"
+                style={{ flex: 1 }}
+              />
             </View>
           </View>
         </View>
       </Modal>
-
-      <View style={{ height: 100 }} />
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1 },
   container: { flex: 1 },
-  content: { paddingHorizontal: 16 },
-  groupRow: { flexDirection: 'row', alignItems: 'center' },
-  groupName: { fontSize: 16, fontWeight: '700' },
-  groupSchedule: { fontSize: 12, marginTop: 2 },
-  groupCost: { fontSize: 13, fontWeight: '600', marginTop: 4 },
-  groupRight: { alignItems: 'center', gap: 8 },
-  countBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  countText: { fontSize: 14, fontWeight: '600' },
-  empty: { textAlign: 'center', paddingVertical: 40, fontSize: 14 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-  modalContent: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, gap: 12 },
-  modalTitle: { fontSize: 18, fontWeight: '800', textAlign: 'center' },
-  modalInput: { borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14 },
-  modalBtns: { flexDirection: 'row', gap: 10, marginTop: 4 },
-  modalBtn: { flex: 1, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  content: { paddingHorizontal: spacing.lg },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.xs,
+  },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  headerIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  groupCard: { marginBottom: spacing.sm },
+  groupRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  groupIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  groupMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: 2 },
+  groupRight: { alignItems: 'center', gap: spacing.sm },
+  countBadge: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  emptyWrap: { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.huge },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: radius.xxl,
+    borderTopRightRadius: radius.xxl,
+    padding: spacing.xxl,
+    gap: spacing.md,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  modalClose: {
+    position: 'absolute',
+    right: 0,
+    padding: spacing.xs,
+  },
+  modalInput: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  inputText: { fontSize: 15, fontWeight: '500', padding: 0 },
+  modalBtns: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
 });
