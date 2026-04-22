@@ -3,12 +3,13 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   TextInput,
   Image,
   Alert,
   StyleSheet,
 } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   Calendar,
   MapPin,
@@ -21,10 +22,10 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
-import { getColors } from '../utils/theme';
 import { getFullUrl } from '../utils/api';
 import Avatar from '../components/Avatar';
-import GlassCard from '../components/GlassCard';
+import { LiquidGlassCard, HapticPressable, AmbientBackground, GlowButton } from '../design';
+import { colors, radius, typography } from '../design/tokens';
 import PageHeader from '../components/PageHeader';
 import Modal from '../components/Modal';
 
@@ -41,7 +42,7 @@ function formatDate(d) {
 export default function TournamentDetailScreen({ route, navigation }) {
   const { id } = route.params;
   const { dark } = useTheme();
-  const c = getColors(dark);
+  const theme = dark ? colors.dark : colors.light;
   const { auth } = useAuth();
   const { data, update, updateTournament, deleteTournament } = useData();
 
@@ -124,10 +125,11 @@ export default function TournamentDetailScreen({ route, navigation }) {
 
   if (!tournament) {
     return (
-      <View style={[styles.container, { backgroundColor: c.bg }]}>
+      <View style={[styles.container, { backgroundColor: theme.bg }]}>
+        <AmbientBackground />
         <PageHeader title="Турнир" back onBack={() => navigation.goBack()} />
         <View style={styles.centered}>
-          <Text style={[styles.emptyText, { color: c.textSecondary }]}>
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
             Турнир не найден
           </Text>
         </View>
@@ -139,16 +141,17 @@ export default function TournamentDetailScreen({ route, navigation }) {
   const title = tournament.title || tournament.name || 'Турнир';
 
   return (
-    <View style={[styles.container, { backgroundColor: c.bg }]}>
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
+      <AmbientBackground />
       <PageHeader title="Турнир" back onBack={() => navigation.goBack()}>
         {isAdmin && (
           <>
-            <TouchableOpacity onPress={openEdit} style={styles.headerBtn}>
-              <Edit3 size={20} color={c.purple} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleDelete} style={styles.headerBtn}>
-              <Trash2 size={20} color={c.red} />
-            </TouchableOpacity>
+            <HapticPressable haptic="light" onPress={openEdit} style={styles.headerBtn}>
+              <Edit3 size={20} color={colors.semantic.purple} />
+            </HapticPressable>
+            <HapticPressable haptic="light" onPress={handleDelete} style={styles.headerBtn}>
+              <Trash2 size={20} color={colors.semantic.danger} />
+            </HapticPressable>
           </>
         )}
       </PageHeader>
@@ -158,104 +161,114 @@ export default function TournamentDetailScreen({ route, navigation }) {
         showsVerticalScrollIndicator={false}
       >
         {/* Cover image */}
-        {coverUrl ? (
-          <Image source={{ uri: coverUrl }} style={styles.coverImage} />
-        ) : (
-          <View style={[styles.coverPlaceholder, { backgroundColor: c.purpleBg }]}>
-            <Trophy size={48} color={c.purple} />
-          </View>
-        )}
+        <Animated.View entering={FadeInDown.delay(0).springify()}>
+          {coverUrl ? (
+            <Image source={{ uri: coverUrl }} style={styles.coverImage} />
+          ) : (
+            <View style={[styles.coverPlaceholder, { backgroundColor: colors.semantic.purpleBg }]}>
+              <Trophy size={48} color={colors.semantic.purple} />
+            </View>
+          )}
+        </Animated.View>
 
         {/* Title */}
-        <Text style={[styles.title, { color: c.text }]}>{title}</Text>
+        <Animated.View entering={FadeInDown.delay(80).springify()}>
+          <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
+        </Animated.View>
 
         {/* Info cards */}
-        <View style={styles.infoRow}>
-          <GlassCard style={styles.infoCard}>
-            <View style={[styles.infoIconWrap, { backgroundColor: c.blueBg }]}>
-              <Calendar size={18} color={c.blue} />
+        <Animated.View entering={FadeInDown.delay(160).springify()} style={styles.infoRow}>
+          <LiquidGlassCard dark={dark} radius={20} padding={16} style={styles.infoCard}>
+            <View style={[styles.infoIconWrap, { backgroundColor: colors.semantic.infoBg }]}>
+              <Calendar size={18} color={colors.semantic.info} />
             </View>
-            <Text style={[styles.infoLabel, { color: c.textSecondary }]}>Дата</Text>
-            <Text style={[styles.infoValue, { color: c.text }]}>
+            <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Дата</Text>
+            <Text style={[styles.infoValue, { color: theme.text }]}>
               {formatDate(tournament.date)}
             </Text>
-          </GlassCard>
+          </LiquidGlassCard>
 
-          <GlassCard style={styles.infoCard}>
-            <View style={[styles.infoIconWrap, { backgroundColor: c.greenBg }]}>
-              <MapPin size={18} color={c.green} />
+          <LiquidGlassCard dark={dark} radius={20} padding={16} style={styles.infoCard}>
+            <View style={[styles.infoIconWrap, { backgroundColor: colors.semantic.successBg }]}>
+              <MapPin size={18} color={colors.semantic.success} />
             </View>
-            <Text style={[styles.infoLabel, { color: c.textSecondary }]}>Место</Text>
-            <Text style={[styles.infoValue, { color: c.text }]} numberOfLines={2}>
+            <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Место</Text>
+            <Text style={[styles.infoValue, { color: theme.text }]} numberOfLines={2}>
               {tournament.location || '—'}
             </Text>
-          </GlassCard>
-        </View>
+          </LiquidGlassCard>
+        </Animated.View>
 
         {/* Description */}
         {tournament.description ? (
-          <GlassCard style={styles.descriptionCard}>
-            <Text style={[styles.descriptionTitle, { color: c.text }]}>
-              Описание
-            </Text>
-            <Text style={[styles.descriptionText, { color: c.textSecondary }]}>
-              {tournament.description}
-            </Text>
-          </GlassCard>
+          <Animated.View entering={FadeInDown.delay(240).springify()}>
+            <LiquidGlassCard dark={dark} radius={20} padding={16} style={styles.descriptionCard}>
+              <Text style={[styles.descriptionTitle, { color: theme.text }]}>
+                Описание
+              </Text>
+              <Text style={[styles.descriptionText, { color: theme.textSecondary }]}>
+                {tournament.description}
+              </Text>
+            </LiquidGlassCard>
+          </Animated.View>
         ) : null}
 
         {/* Students registration (trainer only) */}
         {isTrainer && students.length > 0 && (
           <View style={styles.registrationSection}>
-            <Text style={[styles.sectionTitle, { color: c.text }]}>
-              Регистрация учеников
-            </Text>
-            <Text style={[styles.sectionSubtitle, { color: c.textSecondary }]}>
-              Зарегистрировано: {registrations.length} из {students.length}
-            </Text>
+            <Animated.View entering={FadeInDown.delay(320).springify()}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                Регистрация учеников
+              </Text>
+              <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
+                Зарегистрировано: {registrations.length} из {students.length}
+              </Text>
+            </Animated.View>
 
-            {students.map((student) => {
+            {students.map((student, index) => {
               const isRegistered = registrations.some(
                 (r) => r.studentId === student.id,
               );
               return (
-                <GlassCard key={student.id} style={styles.studentCard}>
-                  <TouchableOpacity
-                    style={styles.studentRow}
-                    onPress={() => toggleRegistration(student.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Avatar
-                      src={student.avatar}
-                      name={student.name}
-                      size={40}
-                    />
-                    <View style={styles.studentInfo}>
-                      <Text style={[styles.studentName, { color: c.text }]}>
-                        {student.name}
-                      </Text>
-                      {student.weight ? (
-                        <Text style={[styles.studentMeta, { color: c.textSecondary }]}>
-                          {student.weight} кг
-                        </Text>
-                      ) : null}
-                    </View>
-                    <View
-                      style={[
-                        styles.toggleBtn,
-                        isRegistered
-                          ? { backgroundColor: c.greenBg }
-                          : { backgroundColor: c.inputBg, borderWidth: 1, borderColor: c.inputBorder },
-                      ]}
+                <Animated.View key={student.id} entering={FadeInDown.delay(400 + index * 60).springify()}>
+                  <LiquidGlassCard dark={dark} radius={20} padding={16} style={styles.studentCard}>
+                    <HapticPressable
+                      haptic="light"
+                      style={styles.studentRow}
+                      onPress={() => toggleRegistration(student.id)}
                     >
-                      {isRegistered ? (
-                        <Check size={18} color={c.green} />
-                      ) : (
-                        <X size={18} color={c.textTertiary} />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                </GlassCard>
+                      <Avatar
+                        src={student.avatar}
+                        name={student.name}
+                        size={40}
+                      />
+                      <View style={styles.studentInfo}>
+                        <Text style={[styles.studentName, { color: theme.text }]}>
+                          {student.name}
+                        </Text>
+                        {student.weight ? (
+                          <Text style={[styles.studentMeta, { color: theme.textSecondary }]}>
+                            {student.weight} кг
+                          </Text>
+                        ) : null}
+                      </View>
+                      <View
+                        style={[
+                          styles.toggleBtn,
+                          isRegistered
+                            ? { backgroundColor: colors.semantic.successBg }
+                            : { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.border },
+                        ]}
+                      >
+                        {isRegistered ? (
+                          <Check size={18} color={colors.semantic.success} />
+                        ) : (
+                          <X size={18} color={theme.textTertiary} />
+                        )}
+                      </View>
+                    </HapticPressable>
+                  </LiquidGlassCard>
+                </Animated.View>
               );
             })}
           </View>
@@ -268,47 +281,54 @@ export default function TournamentDetailScreen({ route, navigation }) {
         onClose={() => setEditVisible(false)}
         title="Редактировать турнир"
       >
-        <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>Название</Text>
+        <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Название</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: c.inputBg, borderColor: c.inputBorder, color: c.text }]}
+          style={[styles.input, { backgroundColor: theme.bgCard, borderColor: theme.border, color: theme.text }]}
           value={form.title}
           onChangeText={(v) => setForm((f) => ({ ...f, title: v }))}
-          placeholderTextColor={c.textTertiary}
+          placeholderTextColor={theme.textTertiary}
           placeholder="Название турнира"
         />
 
-        <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>Дата</Text>
+        <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Дата</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: c.inputBg, borderColor: c.inputBorder, color: c.text }]}
+          style={[styles.input, { backgroundColor: theme.bgCard, borderColor: theme.border, color: theme.text }]}
           value={form.date}
           onChangeText={(v) => setForm((f) => ({ ...f, date: v }))}
-          placeholderTextColor={c.textTertiary}
+          placeholderTextColor={theme.textTertiary}
           placeholder="YYYY-MM-DD"
         />
 
-        <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>Место проведения</Text>
+        <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Место проведения</Text>
         <TextInput
-          style={[styles.input, { backgroundColor: c.inputBg, borderColor: c.inputBorder, color: c.text }]}
+          style={[styles.input, { backgroundColor: theme.bgCard, borderColor: theme.border, color: theme.text }]}
           value={form.location}
           onChangeText={(v) => setForm((f) => ({ ...f, location: v }))}
-          placeholderTextColor={c.textTertiary}
+          placeholderTextColor={theme.textTertiary}
           placeholder="Город, адрес"
         />
 
-        <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>Описание</Text>
+        <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>Описание</Text>
         <TextInput
-          style={[styles.input, styles.inputMulti, { backgroundColor: c.inputBg, borderColor: c.inputBorder, color: c.text }]}
+          style={[styles.input, styles.inputMulti, { backgroundColor: theme.bgCard, borderColor: theme.border, color: theme.text }]}
           value={form.description}
           onChangeText={(v) => setForm((f) => ({ ...f, description: v }))}
-          placeholderTextColor={c.textTertiary}
+          placeholderTextColor={theme.textTertiary}
           placeholder="Описание турнира"
           multiline
           numberOfLines={4}
         />
 
-        <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-          <Text style={styles.saveBtnText}>Сохранить</Text>
-        </TouchableOpacity>
+        <HapticPressable haptic="light" style={styles.saveBtn} onPress={handleSave}>
+          <LinearGradient
+            colors={colors.gradients.trainer}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.saveBtnGradient}
+          >
+            <Text style={styles.saveBtnText}>Сохранить</Text>
+          </LinearGradient>
+        </HapticPressable>
       </Modal>
     </View>
   );
@@ -335,26 +355,25 @@ const styles = StyleSheet.create({
   },
   scroll: {
     paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingBottom: 140,
   },
   coverImage: {
     width: '100%',
     height: 200,
-    borderRadius: 20,
+    borderRadius: radius.lg,
     resizeMode: 'cover',
     marginBottom: 16,
   },
   coverPlaceholder: {
     width: '100%',
     height: 200,
-    borderRadius: 20,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '800',
+    ...typography.title1,
     marginBottom: 16,
   },
   infoRow: {
@@ -368,13 +387,13 @@ const styles = StyleSheet.create({
   infoIconWrap: {
     width: 36,
     height: 36,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
   },
   infoLabel: {
-    fontSize: 12,
+    ...typography.caption,
     marginBottom: 2,
   },
   infoValue: {
@@ -385,20 +404,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   descriptionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...typography.bodyBold,
     marginBottom: 8,
   },
   descriptionText: {
-    fontSize: 14,
+    ...typography.body,
     lineHeight: 20,
   },
   registrationSection: {
     marginTop: 8,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    ...typography.title3,
     marginBottom: 4,
   },
   sectionSubtitle: {
@@ -427,19 +444,18 @@ const styles = StyleSheet.create({
   toggleBtn: {
     width: 36,
     height: 36,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   fieldLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    ...typography.caption,
     marginBottom: 6,
     marginTop: 12,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 14,
+    borderRadius: radius.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
@@ -450,10 +466,13 @@ const styles = StyleSheet.create({
   },
   saveBtn: {
     marginTop: 24,
-    borderRadius: 16,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+  },
+  saveBtnGradient: {
+    borderRadius: radius.md,
     paddingVertical: 14,
     alignItems: 'center',
-    backgroundColor: '#a855f7',
   },
   saveBtnText: {
     color: '#fff',

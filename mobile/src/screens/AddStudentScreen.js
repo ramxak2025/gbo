@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, ScrollView, TextInput, StyleSheet } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ChevronLeft } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { useTheme } from '../context/ThemeContext';
 import PageHeader from '../components/PageHeader';
+import { LiquidGlassCard, HapticPressable, AmbientBackground, GlowButton } from '../design';
+import { colors, radius, typography } from '../design/tokens';
 
 function formatPhone(value) {
   const digits = value.replace(/\D/g, '').slice(0, 11);
@@ -24,11 +28,12 @@ function formatPhone(value) {
 export default function AddStudentScreen({ navigation }) {
   const { auth } = useAuth();
   const { data, addStudent } = useData();
-  const { t } = useTheme();
+  const { t, dark } = useTheme();
   const [form, setForm] = useState({ name: '', phone: '', password: '', groupId: '', weight: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  const theme = dark ? colors.dark : colors.light;
   const myGroups = data.groups.filter(g => g.trainerId === auth.userId);
 
   const handleSave = async () => {
@@ -50,95 +55,118 @@ export default function AddStudentScreen({ navigation }) {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: t.bg }]} contentContainerStyle={styles.content}>
-      <View style={styles.headerRow}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={22} color={t.text} />
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: t.text }]}>Новый спортсмен</Text>
-        <View style={{ width: 22 }} />
-      </View>
+    <ScrollView style={[styles.container, { backgroundColor: theme.bg }]} contentContainerStyle={styles.content}>
+      <AmbientBackground />
 
-      <TextInput
-        style={[styles.input, { backgroundColor: t.input, borderColor: t.inputBorder, color: t.text }]}
-        placeholder="ФИО *"
-        placeholderTextColor={t.textMuted}
-        value={form.name}
-        onChangeText={v => setForm(f => ({ ...f, name: v }))}
-      />
-      <TextInput
-        style={[styles.input, { backgroundColor: t.input, borderColor: t.inputBorder, color: t.text }]}
-        placeholder="Телефон"
-        placeholderTextColor={t.textMuted}
-        keyboardType="phone-pad"
-        value={form.phone}
-        onChangeText={v => setForm(f => ({ ...f, phone: formatPhone(v) }))}
-        maxLength={18}
-      />
-      <TextInput
-        style={[styles.input, { backgroundColor: t.input, borderColor: t.inputBorder, color: t.text }]}
-        placeholder="Пароль для входа"
-        placeholderTextColor={t.textMuted}
-        value={form.password}
-        onChangeText={v => setForm(f => ({ ...f, password: v }))}
-      />
-      <TextInput
-        style={[styles.input, { backgroundColor: t.input, borderColor: t.inputBorder, color: t.text }]}
-        placeholder="Вес (кг)"
-        placeholderTextColor={t.textMuted}
-        keyboardType="numeric"
-        value={form.weight}
-        onChangeText={v => setForm(f => ({ ...f, weight: v }))}
-      />
+      <Animated.View entering={FadeInDown.delay(0).springify()} style={styles.headerRow}>
+        <HapticPressable haptic="light" onPress={() => navigation.goBack()}>
+          <ChevronLeft size={24} color={theme.text} />
+        </HapticPressable>
+        <Text style={[styles.title, { color: theme.text }]}>Новый спортсмен</Text>
+        <View style={{ width: 24 }} />
+      </Animated.View>
+
+      <Animated.View entering={FadeInDown.delay(100).springify()}>
+        <TextInput
+          style={[styles.input, { backgroundColor: theme.bgCard, borderColor: theme.border, color: theme.text }]}
+          placeholder="ФИО *"
+          placeholderTextColor={theme.textTertiary}
+          value={form.name}
+          onChangeText={v => setForm(f => ({ ...f, name: v }))}
+        />
+      </Animated.View>
+      <Animated.View entering={FadeInDown.delay(150).springify()}>
+        <TextInput
+          style={[styles.input, { backgroundColor: theme.bgCard, borderColor: theme.border, color: theme.text }]}
+          placeholder="Телефон"
+          placeholderTextColor={theme.textTertiary}
+          keyboardType="phone-pad"
+          value={form.phone}
+          onChangeText={v => setForm(f => ({ ...f, phone: formatPhone(v) }))}
+          maxLength={18}
+        />
+      </Animated.View>
+      <Animated.View entering={FadeInDown.delay(200).springify()}>
+        <TextInput
+          style={[styles.input, { backgroundColor: theme.bgCard, borderColor: theme.border, color: theme.text }]}
+          placeholder="Пароль для входа"
+          placeholderTextColor={theme.textTertiary}
+          value={form.password}
+          onChangeText={v => setForm(f => ({ ...f, password: v }))}
+        />
+      </Animated.View>
+      <Animated.View entering={FadeInDown.delay(250).springify()}>
+        <TextInput
+          style={[styles.input, { backgroundColor: theme.bgCard, borderColor: theme.border, color: theme.text }]}
+          placeholder="Вес (кг)"
+          placeholderTextColor={theme.textTertiary}
+          keyboardType="numeric"
+          value={form.weight}
+          onChangeText={v => setForm(f => ({ ...f, weight: v }))}
+        />
+      </Animated.View>
 
       {/* Group selection */}
       {myGroups.length > 0 && (
-        <View style={styles.groupSection}>
-          <Text style={[styles.groupLabel, { color: t.textSecondary }]}>Группа</Text>
+        <Animated.View entering={FadeInDown.delay(300).springify()} style={styles.groupSection}>
+          <Text style={[styles.groupLabel, { color: theme.textSecondary }]}>Группа</Text>
           <View style={styles.groupList}>
-            <TouchableOpacity
+            <HapticPressable
+              haptic="light"
               onPress={() => setForm(f => ({ ...f, groupId: '' }))}
-              style={[styles.groupBtn, !form.groupId && { backgroundColor: t.accent + '25', borderColor: t.accent }]}
+              style={[styles.groupBtn, !form.groupId && { backgroundColor: colors.semantic.purpleBg, borderColor: colors.semantic.purple }]}
             >
-              <Text style={{ color: !form.groupId ? t.accent : t.textMuted, fontWeight: '600', fontSize: 13 }}>Без группы</Text>
-            </TouchableOpacity>
+              <Text style={{ color: !form.groupId ? colors.semantic.purple : theme.textTertiary, fontWeight: '600', fontSize: 13 }}>Без группы</Text>
+            </HapticPressable>
             {myGroups.map(g => (
-              <TouchableOpacity
+              <HapticPressable
                 key={g.id}
+                haptic="light"
                 onPress={() => setForm(f => ({ ...f, groupId: g.id }))}
-                style={[styles.groupBtn, form.groupId === g.id && { backgroundColor: t.accent + '25', borderColor: t.accent }]}
+                style={[styles.groupBtn, form.groupId === g.id && { backgroundColor: colors.semantic.purpleBg, borderColor: colors.semantic.purple }]}
               >
-                <Text style={{ color: form.groupId === g.id ? t.accent : t.textMuted, fontWeight: '600', fontSize: 13 }}>{g.name}</Text>
-              </TouchableOpacity>
+                <Text style={{ color: form.groupId === g.id ? colors.semantic.purple : theme.textTertiary, fontWeight: '600', fontSize: 13 }}>{g.name}</Text>
+              </HapticPressable>
             ))}
           </View>
-        </View>
+        </Animated.View>
       )}
 
       {!!error && <Text style={styles.error}>{error}</Text>}
 
-      <TouchableOpacity
-        style={[styles.saveBtn, { opacity: saving ? 0.6 : 1 }]}
-        onPress={handleSave}
-        disabled={saving}
-      >
-        <Text style={styles.saveBtnText}>Добавить спортсмена</Text>
-      </TouchableOpacity>
+      <Animated.View entering={FadeInDown.delay(350).springify()}>
+        <HapticPressable
+          haptic="light"
+          style={[styles.saveBtn, { opacity: saving ? 0.6 : 1 }]}
+          onPress={handleSave}
+          disabled={saving}
+        >
+          <LinearGradient
+            colors={colors.gradients.trainer}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.saveBtnGradient}
+          >
+            <Text style={styles.saveBtnText}>Добавить спортсмена</Text>
+          </LinearGradient>
+        </HapticPressable>
+      </Animated.View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16, gap: 12 },
+  content: { padding: 16, gap: 12, paddingBottom: 140 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  title: { fontSize: 18, fontWeight: '800' },
-  input: { borderRadius: 14, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 14, fontSize: 15 },
+  title: { ...typography.title3 },
+  input: { borderRadius: radius.md, borderWidth: 1, paddingHorizontal: 16, paddingVertical: 14, fontSize: 15 },
   groupSection: { gap: 8 },
-  groupLabel: { fontSize: 12, fontWeight: '600' },
+  groupLabel: { ...typography.caption },
   groupList: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  groupBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: 'transparent' },
-  error: { color: '#ef4444', fontSize: 13, fontWeight: '600', textAlign: 'center' },
-  saveBtn: { backgroundColor: '#7c3aed', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 8 },
+  groupBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.sm, borderWidth: 1, borderColor: 'transparent' },
+  error: { color: colors.semantic.danger, fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  saveBtn: { marginTop: 8, borderRadius: radius.md, overflow: 'hidden' },
+  saveBtnGradient: { borderRadius: radius.md, paddingVertical: 16, alignItems: 'center' },
   saveBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

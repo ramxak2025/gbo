@@ -1,11 +1,14 @@
 import React, { useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Shield, MapPin, Users, Award } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { useTheme } from '../context/ThemeContext';
-import GlassCard from '../components/GlassCard';
+import { LiquidGlassCard, HapticPressable, AmbientBackground, GlowButton } from '../design';
+import { colors, radius, typography } from '../design/tokens';
 import PageHeader from '../components/PageHeader';
 
 export default function ClubsScreen() {
@@ -14,53 +17,61 @@ export default function ClubsScreen() {
   const { t, dark } = useTheme();
   const navigation = useNavigation();
 
+  const theme = dark ? colors.dark : colors.light;
   const clubs = data.clubs || [];
   const trainers = useMemo(() => data.users.filter(u => u.role === 'trainer'), [data.users]);
 
   if (auth?.role !== 'superadmin') {
     return (
-      <View style={[styles.container, { backgroundColor: t.bg, justifyContent: 'center', alignItems: 'center' }]}>
-        <Text style={{ color: t.textMuted }}>Доступ только для администратора</Text>
+      <View style={[styles.container, { backgroundColor: theme.bg, justifyContent: 'center', alignItems: 'center' }]}>
+        <AmbientBackground />
+        <Text style={{ color: theme.textTertiary }}>Доступ только для администратора</Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: t.bg }]} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.bg }]} contentContainerStyle={styles.content}>
+      <AmbientBackground />
       <PageHeader title="Клубы" />
 
       {clubs.length === 0 ? (
-        <View style={{ alignItems: 'center', marginTop: 40 }}>
-          <Ionicons name="shield-outline" size={48} color={t.textMuted} />
-          <Text style={{ color: t.textMuted, marginTop: 12 }}>Клубов пока нет</Text>
-        </View>
+        <Animated.View entering={FadeInDown.delay(100).springify()} style={{ alignItems: 'center', marginTop: 40 }}>
+          <Shield size={48} color={theme.textTertiary} />
+          <Text style={{ color: theme.textTertiary, marginTop: 12 }}>Клубов пока нет</Text>
+        </Animated.View>
       ) : (
-        clubs.map(c => {
+        clubs.map((c, index) => {
           const clubTrainers = trainers.filter(tr => tr.clubId === c.id);
           const head = clubTrainers.find(tr => tr.isHeadTrainer);
           return (
-            <GlassCard key={c.id} style={{ marginBottom: 10 }}>
-              <View style={styles.row}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: t.text, fontWeight: '700', fontSize: 16 }}>{c.name}</Text>
-                  {c.city && (
-                    <Text style={{ color: t.textMuted, fontSize: 11, marginTop: 2 }}>
-                      <Ionicons name="location" size={11} /> {c.city}
-                    </Text>
-                  )}
-                  <View style={styles.metaRow}>
-                    <Text style={[styles.meta, { color: t.textMuted }]}>
-                      <Ionicons name="people" size={11} /> {clubTrainers.length} тренеров
-                    </Text>
-                    {head && (
-                      <Text style={[styles.meta, { color: '#eab308' }]}>
-                        <Ionicons name="ribbon" size={11} /> {head.name}
-                      </Text>
+            <Animated.View key={c.id} entering={FadeInDown.delay(index * 80).springify()}>
+              <LiquidGlassCard dark={dark} radius={20} padding={16} style={{ marginBottom: 10 }}>
+                <View style={styles.row}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: theme.text, fontWeight: '700', fontSize: 16 }}>{c.name}</Text>
+                    {c.city && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                        <MapPin size={11} color={theme.textTertiary} />
+                        <Text style={{ color: theme.textTertiary, fontSize: 11 }}>{c.city}</Text>
+                      </View>
                     )}
+                    <View style={styles.metaRow}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Users size={11} color={theme.textTertiary} />
+                        <Text style={[styles.meta, { color: theme.textTertiary }]}>{clubTrainers.length} тренеров</Text>
+                      </View>
+                      {head && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Award size={11} color="#eab308" />
+                          <Text style={[styles.meta, { color: '#eab308' }]}>{head.name}</Text>
+                        </View>
+                      )}
+                    </View>
                   </View>
                 </View>
-              </View>
-            </GlassCard>
+              </LiquidGlassCard>
+            </Animated.View>
           );
         })
       )}
@@ -70,7 +81,7 @@ export default function ClubsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { padding: 16, paddingBottom: 80 },
+  content: { padding: 16, paddingBottom: 140 },
   row: { flexDirection: 'row', alignItems: 'center' },
   metaRow: { flexDirection: 'row', gap: 12, marginTop: 6 },
   meta: { fontSize: 11 },

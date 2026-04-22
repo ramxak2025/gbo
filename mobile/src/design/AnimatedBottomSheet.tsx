@@ -79,7 +79,7 @@ export default function AnimatedBottomSheet({
         runOnJS(hapticClose)();
       } else {
         translateY.value = withSpring(0, springs.bounce);
-        runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+        runOnJS(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined))();
       }
     });
 

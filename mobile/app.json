@@ -51,13 +51,9 @@
         "expo-build-properties",
         {
           "android": {
-            "newArchEnabled": true,
             "compileSdkVersion": 35,
             "targetSdkVersion": 34,
             "minSdkVersion": 24
-          },
-          "ios": {
-            "newArchEnabled": true
           }
         }
       ]
