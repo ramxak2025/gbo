@@ -1,115 +1,102 @@
+/**
+ * Modal — Bottom Sheet точная копия PWA Modal.jsx
+ *
+ * PWA CSS:
+ *   max-h-[85vh], rounded-t-[32px], p-5 pt-3
+ *   dark: bg-dark-800/95 (#09090b/95%)
+ *   light: bg-[#f5f5f7]/95
+ *   backdrop: bg-black/60, backdrop-blur-sm
+ *   handle: w-10 h-1 rounded-full, dark bg-white/20
+ *   close: X icon 18px in rounded-xl, dark bg-white/[0.05]
+ *   title: text-lg font-bold uppercase italic
+ *   animation: sheetUp 0.4s cubic-bezier(0.22, 1, 0.36, 1)
+ */
 import React from 'react';
-import {
-  Modal as RNModal,
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  Pressable,
-} from 'react-native';
+import { View, Text, Pressable, ScrollView, Modal as RNModal, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
 import { X } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
-import { getColors } from '../utils/theme';
 
-export default function Modal({ visible, onClose, title, children }) {
+const { height: H } = Dimensions.get('window');
+
+export default function Modal({ open, onClose, title, children }) {
   const { dark } = useTheme();
-  const c = getColors(dark);
+
+  if (!open) return null;
 
   return (
     <RNModal
-      visible={visible}
+      visible={open}
       transparent
       animationType="slide"
       onRequestClose={onClose}
+      statusBarTranslucent
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable
-          style={[
-            styles.sheet,
-            { backgroundColor: dark ? '#121218' : '#f5f5f7' },
-          ]}
-          onPress={() => {}}
+      <Pressable
+        style={{
+          flex: 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.60)',
+          justifyContent: 'flex-end',
+        }}
+        onPress={onClose}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          {/* Drag handle */}
-          <View style={styles.handleContainer}>
-            <View
-              style={[
-                styles.handle,
-                { backgroundColor: dark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)' },
-              ]}
-            />
-          </View>
-
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={[styles.title, { color: c.text }]}>{title}</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <X size={22} color={c.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Content */}
-          <ScrollView
-            style={styles.content}
-            contentContainerStyle={styles.contentContainer}
-            showsVerticalScrollIndicator={false}
-            bounces={false}
+          <Pressable
+            onPress={e => e.stopPropagation()}
+            style={{
+              maxHeight: H * 0.85,
+              borderTopLeftRadius: 32,
+              borderTopRightRadius: 32,
+              paddingHorizontal: 20,
+              paddingTop: 12,
+              paddingBottom: 100,
+              backgroundColor: dark ? 'rgba(9, 9, 11, 0.95)' : 'rgba(245, 245, 247, 0.95)',
+            }}
           >
-            {children}
-          </ScrollView>
-        </Pressable>
+            {/* Handle */}
+            <View style={{ alignItems: 'center', marginBottom: 12 }}>
+              <View
+                style={{
+                  width: 40,
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: dark ? 'rgba(255,255,255,0.20)' : 'rgba(0,0,0,0.15)',
+                }}
+              />
+            </View>
+
+            {/* Header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <Text style={{
+                fontSize: 18,
+                fontWeight: '700',
+                textTransform: 'uppercase',
+                fontStyle: 'italic',
+                color: dark ? '#fff' : '#111',
+              }}>
+                {title}
+              </Text>
+              <Pressable
+                onPress={onClose}
+                style={({ pressed }) => ({
+                  padding: 8,
+                  borderRadius: 12,
+                  backgroundColor: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+                  opacity: pressed ? 0.6 : 1,
+                })}
+              >
+                <X size={18} color={dark ? '#fff' : '#111'} />
+              </Pressable>
+            </View>
+
+            {/* Content */}
+            <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+              {children}
+            </ScrollView>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Pressable>
     </RNModal>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    maxHeight: '85%',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingBottom: 34,
-  },
-  handleContainer: {
-    alignItems: 'center',
-    paddingTop: 12,
-    paddingBottom: 4,
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    flex: 1,
-  },
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  content: {
-    paddingHorizontal: 20,
-  },
-  contentContainer: {
-    paddingBottom: 16,
-  },
-});

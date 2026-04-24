@@ -1,51 +1,50 @@
+/**
+ * Avatar — точная копия PWA Avatar.jsx
+ *
+ * PWA: rounded-full, object-cover
+ * fallback: bg-accent (#dc2626), initials (first 2 letters), fontSize = size × 0.35
+ * default size = 40
+ */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Image as ExpoImage } from 'expo-image';
+import { Image } from 'expo-image';
 
-// Cached avatar using expo-image (memory + disk cache by default)
-export default function Avatar({ name, src, size = 44 }) {
+export default function Avatar({ src, name = '?', size = 40, style }) {
+  const initials = (name || '?')
+    .split(' ')
+    .map(w => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
   if (src) {
     return (
-      <ExpoImage
+      <Image
         source={{ uri: src }}
-        style={[styles.image, { width: size, height: size, borderRadius: size / 2 }]}
-        cachePolicy="memory-disk"
+        style={[{ width: size, height: size, borderRadius: size / 2 }, style]}
         contentFit="cover"
-        transition={200}
+        cachePolicy="memory-disk"
       />
     );
   }
 
-  const initials = (name || '?')
-    .split(' ')
-    .slice(0, 2)
-    .map(w => w[0])
-    .join('')
-    .toUpperCase();
-
-  const hue = name
-    ? name.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 360
-    : 200;
-
   return (
     <View
       style={[
-        styles.container,
         {
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: `hsl(${hue}, 60%, 35%)`,
+          backgroundColor: '#dc2626',
+          alignItems: 'center',
+          justifyContent: 'center',
         },
+        style,
       ]}
     >
-      <Text style={[styles.text, { fontSize: size * 0.38 }]}>{initials}</Text>
+      <Text style={{ color: '#fff', fontWeight: '700', fontSize: size * 0.35 }}>
+        {initials}
+      </Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  image: { backgroundColor: 'rgba(255,255,255,0.06)' },
-  container: { alignItems: 'center', justifyContent: 'center' },
-  text: { color: '#fff', fontWeight: '700' },
-});
