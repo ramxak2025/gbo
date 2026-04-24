@@ -1,3 +1,11 @@
+/**
+ * iBorcuha Mobile — App entry point
+ *
+ * Точная навигационная структура как в PWA:
+ * - Role-based bottom tabs (superadmin/trainer/student)
+ * - Stack screens для деталей
+ * - BottomNav как custom tabBar (копия PWA BottomNav.jsx)
+ */
 import 'react-native-gesture-handler';
 import React, { useEffect, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
@@ -8,7 +16,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { Home, Wallet, Users, Trophy, Film, Shield, User } from 'lucide-react-native';
+import { Home, Wallet, Users, Trophy, Film, Shield, User, Sparkles } from 'lucide-react-native';
 
 import { queryClient } from './src/lib/queryClient';
 import { linkingConfig } from './src/lib/deepLinks';
@@ -16,7 +24,7 @@ import { registerForPushNotifications, subscribeToNotificationTaps } from './src
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { DataProvider, useData } from './src/context/DataContext';
-import { FloatingTabBar } from './src/design';
+import BottomNav from './src/components/BottomNav';
 
 import LoginScreen from './src/screens/LoginScreen';
 import DashboardScreen from './src/screens/DashboardScreen';
@@ -39,20 +47,27 @@ const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function makeIcon(Icon) {
-  return ({ focused, color, size }) => <Icon size={size || 22} color={color} strokeWidth={focused ? 2.5 : 2} />;
+  return ({ focused, color, size }) => (
+    <Icon size={size || 22} color={color} strokeWidth={focused ? 2.5 : 1.5} />
+  );
 }
+
+// PWA navConfigs:
+// superadmin: Home(Главная), Shield(Клубы), Users(Люди), Trophy(Турниры), User(Профиль)
+// trainer: Home(Главная), Wallet(Касса), Users(Команда), Trophy(Турниры), Film(Материалы)
+// student: Home(Главная), Users(Команда), Trophy(Турниры), Sparkles(Автор), Film(Материалы)
 
 function TrainerTabs() {
   return (
     <Tab.Navigator
       screenOptions={{ headerShown: false }}
-      tabBar={(props) => <FloatingTabBar {...props} />}
+      tabBar={(props) => <BottomNav {...props} />}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ tabBarLabel: 'Главная', tabBarIcon: makeIcon(Home) }} />
       <Tab.Screen name="Cash" component={CashScreen} options={{ tabBarLabel: 'Касса', tabBarIcon: makeIcon(Wallet) }} />
       <Tab.Screen name="Team" component={TeamScreen} options={{ tabBarLabel: 'Команда', tabBarIcon: makeIcon(Users) }} />
       <Tab.Screen name="Tournaments" component={TournamentsScreen} options={{ tabBarLabel: 'Турниры', tabBarIcon: makeIcon(Trophy) }} />
-      <Tab.Screen name="Materials" component={MaterialsScreen} options={{ tabBarLabel: 'Видео', tabBarIcon: makeIcon(Film) }} />
+      <Tab.Screen name="Materials" component={MaterialsScreen} options={{ tabBarLabel: 'Материалы', tabBarIcon: makeIcon(Film) }} />
     </Tab.Navigator>
   );
 }
@@ -61,10 +76,10 @@ function AdminTabs() {
   return (
     <Tab.Navigator
       screenOptions={{ headerShown: false }}
-      tabBar={(props) => <FloatingTabBar {...props} />}
+      tabBar={(props) => <BottomNav {...props} />}
     >
-      <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ tabBarLabel: 'Панель', tabBarIcon: makeIcon(Home) }} />
-      <Tab.Screen name="Clubs" component={GroupsScreen} options={{ tabBarLabel: 'Клубы', tabBarIcon: makeIcon(Shield) }} />
+      <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ tabBarLabel: 'Главная', tabBarIcon: makeIcon(Home) }} />
+      <Tab.Screen name="Clubs" component={ClubsScreen} options={{ tabBarLabel: 'Клубы', tabBarIcon: makeIcon(Shield) }} />
       <Tab.Screen name="Team" component={TeamScreen} options={{ tabBarLabel: 'Люди', tabBarIcon: makeIcon(Users) }} />
       <Tab.Screen name="Tournaments" component={TournamentsScreen} options={{ tabBarLabel: 'Турниры', tabBarIcon: makeIcon(Trophy) }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: 'Профиль', tabBarIcon: makeIcon(User) }} />
@@ -76,12 +91,12 @@ function StudentTabs() {
   return (
     <Tab.Navigator
       screenOptions={{ headerShown: false }}
-      tabBar={(props) => <FloatingTabBar {...props} />}
+      tabBar={(props) => <BottomNav {...props} />}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ tabBarLabel: 'Главная', tabBarIcon: makeIcon(Home) }} />
       <Tab.Screen name="Team" component={TeamScreen} options={{ tabBarLabel: 'Команда', tabBarIcon: makeIcon(Users) }} />
       <Tab.Screen name="Tournaments" component={TournamentsScreen} options={{ tabBarLabel: 'Турниры', tabBarIcon: makeIcon(Trophy) }} />
-      <Tab.Screen name="Materials" component={MaterialsScreen} options={{ tabBarLabel: 'Видео', tabBarIcon: makeIcon(Film) }} />
+      <Tab.Screen name="Materials" component={MaterialsScreen} options={{ tabBarLabel: 'Материалы', tabBarIcon: makeIcon(Film) }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: 'Профиль', tabBarIcon: makeIcon(User) }} />
     </Tab.Navigator>
   );
@@ -93,7 +108,7 @@ function MainNavigator() {
 
   if (auth === undefined) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0a0f' }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#050505' }}>
         <ActivityIndicator size="large" color="#dc2626" />
       </View>
     );
@@ -132,10 +147,9 @@ function RootNavigator() {
     if (!auth?.userId) return;
     registerForPushNotifications().catch(() => {});
     const unsubscribe = subscribeToNotificationTaps((payload) => {
-      const url = payload?.data?.url;
-      if (!url || !navigationRef.current) return;
+      if (!navigationRef.current) return;
       try {
-        const { type, studentId, tournamentId, trainerId } = payload.data || {};
+        const { type, studentId, tournamentId, trainerId } = payload?.data || {};
         if (type === 'student' && studentId) navigationRef.current.navigate('StudentDetail', { id: studentId });
         else if (type === 'tournament' && tournamentId) navigationRef.current.navigate('TournamentDetail', { id: tournamentId });
         else if (type === 'trainer' && trainerId) navigationRef.current.navigate('TrainerDetail', { id: trainerId });
