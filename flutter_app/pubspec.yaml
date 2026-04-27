@@ -1,0 +1,70 @@
+# iBorcuha Flutter App
+# SaaS платформа для тренеров единоборств
+# Общий бэкенд с веб-версией
+
+name: iborcuha
+description: "iBorcuha - платформа для тренеров единоборств"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Навигация
+  go_router: ^14.0.0
+
+  # Состояние (Provider)
+  provider: ^6.1.0
+
+  # HTTP клиент
+  http: ^1.2.0
+  dio: ^5.4.0
+
+  # Безопасное хранение токенов
+  flutter_secure_storage: ^9.0.0
+
+  # Кэширование
+  shared_preferences: ^2.2.0
+
+  # Изображения
+  cached_network_image: ^3.3.0
+  image_picker: ^1.0.0
+
+  # Анимации
+  flutter_animate: ^4.5.0
+  animations: ^2.0.0
+  shimmer: ^3.0.0
+
+  # Размытие (для Liquid Glass)
+  blur: ^4.0.0
+
+  # Иконки
+  lucide_icons: ^0.257.0
+
+  # Утилиты
+  intl: ^0.19.0
+  url_launcher: ^6.2.0
+
+  # Уведомления
+  firebase_messaging: ^15.0.0
+  firebase_core: ^3.0.0
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  mockito: ^5.4.0
+  build_runner: ^2.4.0
+  mocktail: ^1.0.0
+  network_image_mock: ^2.1.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
