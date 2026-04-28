@@ -55,15 +55,30 @@ export default function LoginScreen({ onLogin }) {
     if (digits.length < 11) { setError('Введите полный номер телефона'); return; }
     if (!password) { setError('Введите пароль'); return; }
     setLoading(true);
-    try { await login(digits, password); if (onLogin) onLogin(); }
-    catch (err) { setError(err.message || 'Ошибка входа'); setErrorType(err.errorType || null); }
+    try {
+      const result = await login(digits, password);
+      console.log('Login success:', JSON.stringify(result).slice(0, 200));
+      if (onLogin) onLogin();
+    }
+    catch (err) {
+      console.log('Login error:', err.message, err.errorType);
+      setError(err.message || 'Ошибка входа');
+      setErrorType(err.errorType || null);
+    }
     finally { setLoading(false); }
   };
 
   const handleDemo = async (p, pw) => {
     setError(''); setErrorType(null); setLoading(true);
-    try { await login(p, pw); if (onLogin) onLogin(); }
-    catch (err) { setError(err.message || 'Ошибка'); }
+    try {
+      await login(p, pw);
+      console.log('Demo login success');
+      if (onLogin) onLogin();
+    }
+    catch (err) {
+      console.log('Demo login error:', err.message);
+      setError(err.message || 'Ошибка');
+    }
     finally { setLoading(false); }
   };
 

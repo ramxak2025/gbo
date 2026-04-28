@@ -106,6 +106,8 @@ function MainNavigator() {
   const { auth } = useAuth();
   const { reload } = useData();
 
+  console.log('[MainNavigator] auth:', auth === undefined ? 'loading' : auth === null ? 'null' : `${auth.userId}/${auth.role}`);
+
   if (auth === undefined) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#050505' }}>

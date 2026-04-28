@@ -37,7 +37,12 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(async (phone, password) => {
+    console.log('[AuthContext] login attempt:', phone);
     const result = await api.login(phone, password);
+    console.log('[AuthContext] login response:', result.userId, result.role);
+    if (!result.token) {
+      throw new Error('Сервер не вернул токен');
+    }
     await SecureStore.setItemAsync('iborcuha_token', result.token);
     const authData = {
       userId: result.userId,
@@ -47,6 +52,7 @@ export function AuthProvider({ children }) {
       student: result.student || null,
     };
     await SecureStore.setItemAsync('iborcuha_auth', JSON.stringify(authData));
+    console.log('[AuthContext] setAuth:', authData.userId, authData.role);
     setAuth(authData);
     return result;
   }, []);
