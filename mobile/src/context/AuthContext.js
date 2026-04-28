@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
+import { Alert } from 'react-native';
 import { api } from '../utils/api';
 
 const AuthContext = createContext();
@@ -16,16 +17,13 @@ export function AuthProvider({ children }) {
           setAuth(parsed);
           try {
             const me = await api.me();
-            if (me) {
-              setAuth(me);
-              await SecureStore.setItemAsync('iborcuha_auth', JSON.stringify(me));
-            } else {
-              setAuth(null);
-              await SecureStore.deleteItemAsync('iborcuha_auth');
-              await SecureStore.deleteItemAsync('iborcuha_token');
+            if (me?.user) {
+              const authData = { userId: me.user.id || me.userId, role: me.user.role || me.role, studentId: me.studentId || null, user: me.user, student: me.student || null };
+              setAuth(authData);
+              await SecureStore.setItemAsync('iborcuha_auth', JSON.stringify(authData)).catch(() => {});
             }
           } catch {
-            // keep cached auth
+            // keep cached
           }
         } else {
           setAuth(null);
@@ -37,13 +35,15 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = useCallback(async (phone, password) => {
-    console.log('[AuthContext] login attempt:', phone);
     const result = await api.login(phone, password);
-    console.log('[AuthContext] login response:', result.userId, result.role);
-    if (!result.token) {
-      throw new Error('Сервер не вернул токен');
+    if (!result || !result.token) {
+      throw new Error('Сервер не вернул данные');
     }
-    await SecureStore.setItemAsync('iborcuha_token', result.token);
+    try {
+      await SecureStore.setItemAsync('iborcuha_token', result.token);
+    } catch (e) {
+      console.warn('SecureStore save token failed:', e);
+    }
     const authData = {
       userId: result.userId,
       role: result.role,
@@ -51,16 +51,19 @@ export function AuthProvider({ children }) {
       user: result.user,
       student: result.student || null,
     };
-    await SecureStore.setItemAsync('iborcuha_auth', JSON.stringify(authData));
-    console.log('[AuthContext] setAuth:', authData.userId, authData.role);
+    try {
+      await SecureStore.setItemAsync('iborcuha_auth', JSON.stringify(authData));
+    } catch (e) {
+      console.warn('SecureStore save auth failed:', e);
+    }
     setAuth(authData);
     return result;
   }, []);
 
   const logout = useCallback(async () => {
     try { await api.logout(); } catch {}
-    await SecureStore.deleteItemAsync('iborcuha_auth');
-    await SecureStore.deleteItemAsync('iborcuha_token');
+    try { await SecureStore.deleteItemAsync('iborcuha_auth'); } catch {}
+    try { await SecureStore.deleteItemAsync('iborcuha_token'); } catch {}
     setAuth(null);
   }, []);
 
