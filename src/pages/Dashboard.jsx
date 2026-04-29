@@ -68,9 +68,22 @@ function SectionTitle({ dark, children, action, onAction }) {
 
 export default function Dashboard() {
   const { auth } = useAuth()
-  const { data } = useData()
+  const { data, loading } = useData()
   const { dark } = useTheme()
   const navigate = useNavigate()
+
+  if (loading) {
+    return (
+      <Layout>
+        <PageHeader title="iBorcuha" logo />
+        <div className="px-4 space-y-4 pt-4">
+          {[1,2,3].map(i => (
+            <div key={i} className={`h-24 rounded-[20px] ${dark ? 'skeleton' : 'skeleton-light'}`} />
+          ))}
+        </div>
+      </Layout>
+    )
+  }
 
   if (auth.role === 'superadmin') return <SuperAdminDash data={data} dark={dark} navigate={navigate} />
   if (auth.role === 'trainer') return <TrainerDash auth={auth} data={data} dark={dark} navigate={navigate} />

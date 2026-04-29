@@ -59,11 +59,25 @@ function StudentCard({ person, dark, onClick, showClub }) {
 
 export default function Team() {
   const { auth } = useAuth()
-  const { data } = useData()
+  const { data, loading } = useData()
   const { dark } = useTheme()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [tab, setTab] = useState('students')
+
+  if (loading) {
+    return (
+      <Layout>
+        <PageHeader title={auth.role === 'superadmin' ? 'Люди' : 'Команда'} />
+        <div className="px-4 space-y-3 pt-4">
+          <div className={`h-10 rounded-[16px] ${dark ? 'skeleton' : 'skeleton-light'}`} />
+          {[1,2,3,4].map(i => (
+            <div key={i} className={`h-16 rounded-[20px] ${dark ? 'skeleton' : 'skeleton-light'}`} />
+          ))}
+        </div>
+      </Layout>
+    )
+  }
 
   if (auth.role === 'student') return <StudentTeam auth={auth} data={data} dark={dark} search={search} setSearch={setSearch} />
 
