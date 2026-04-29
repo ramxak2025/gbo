@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import {
-  View, Text, TextInput, ScrollView, Pressable, Linking,
+  View, Text, TextInput, ScrollView, Pressable, Linking, Keyboard,
   Modal as RNModal, StyleSheet, Dimensions,
 } from 'react-native';
 import {
-  Search, UserPlus, Plus, Phone, MessageCircle, X,
+  Search, UserPlus, Plus, Phone, MessageCircle, X, Users,
 } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
@@ -131,7 +131,7 @@ function StudentTeamView({ auth, data, dark, navigation }) {
           {filtered.map(s => (
             <GlassCard
               key={s.id}
-              onPress={() => setSelected(s)}
+              onPress={() => { Keyboard.dismiss(); setSelected(s); }}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
             >
               <Avatar name={s.name} src={s.avatar} size={48} />
@@ -154,9 +154,12 @@ function StudentTeamView({ auth, data, dark, navigation }) {
             </GlassCard>
           ))}
           {filtered.length === 0 && (
-            <Text style={{ textAlign: 'center', paddingVertical: 32, fontSize: 14, color: dark ? 'rgba(255,255,255,0.3)' : '#6b7280' }}>
-              Нет одногруппников
-            </Text>
+            <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+              <Users size={48} color={dark ? 'rgba(255,255,255,0.3)' : '#6b7280'} style={{ opacity: 0.3, marginBottom: 8 }} />
+              <Text style={{ textAlign: 'center', fontSize: 14, color: dark ? 'rgba(255,255,255,0.3)' : '#6b7280' }}>
+                Нет одногруппников
+              </Text>
+            </View>
           )}
         </View>
       </ScrollView>
@@ -265,9 +268,9 @@ export default function TeamScreen({ navigation }) {
 
   const isAdmin = auth.role === 'superadmin';
   const trainers = data.users.filter(u => u.role === 'trainer');
-  const students = isAdmin
+  const students = useMemo(() => isAdmin
     ? data.students
-    : data.students.filter(s => s.trainerId === auth.userId);
+    : data.students.filter(s => s.trainerId === auth.userId), [data.students, auth.userId, isAdmin]);
   const myGroups = isAdmin
     ? data.groups
     : data.groups.filter(g => g.trainerId === auth.userId);
@@ -483,9 +486,12 @@ export default function TeamScreen({ navigation }) {
               </View>
             )}
             {filteredStudents.length === 0 && (
-              <Text style={{ textAlign: 'center', paddingVertical: 32, fontSize: 14, color: dark ? 'rgba(255,255,255,0.3)' : '#6b7280' }}>
-                {search ? 'Никого не найдено' : 'Нет спортсменов'}
-              </Text>
+              <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+                <Users size={48} color={dark ? 'rgba(255,255,255,0.3)' : '#6b7280'} style={{ opacity: 0.3, marginBottom: 8 }} />
+                <Text style={{ textAlign: 'center', fontSize: 14, color: dark ? 'rgba(255,255,255,0.3)' : '#6b7280' }}>
+                  {search ? 'Никого не найдено' : 'Нет спортсменов'}
+                </Text>
+              </View>
             )}
           </View>
         )}

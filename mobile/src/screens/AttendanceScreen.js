@@ -325,7 +325,7 @@ export default function AttendanceScreen({ route }) {
                   transform: [{ scale: pressed ? 0.96 : 1 }],
                   shadowColor: dirty ? '#dc2626' : '#22c55e',
                   shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: dirty ? 0.25 : 0,
+                  shadowOpacity: dirty ? 0.3 : 0,
                   shadowRadius: 8,
                   elevation: dirty ? 4 : 0,
                 })}

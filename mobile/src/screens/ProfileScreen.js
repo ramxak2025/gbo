@@ -132,11 +132,11 @@ export default function ProfileScreen({ navigation }) {
           </GlassCard>
 
           {/* Logout */}
-          <Pressable onPress={handleLogout} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 14, backgroundColor: 'rgba(239,68,68,0.12)', marginTop: 16, opacity: pressed ? 0.7 : 1 })}>
+          <Pressable onPress={handleLogout} disabled={loggingOut} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 14, backgroundColor: 'rgba(239,68,68,0.12)', marginTop: 16, opacity: loggingOut ? 0.5 : pressed ? 0.7 : 1 })}>
             <LogOut size={18} color="#ef4444" />
-            <Text style={{ fontSize: 14, fontWeight: '700', color: '#ef4444' }}>Выйти из аккаунта</Text>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: '#ef4444' }}>{loggingOut ? 'Выход...' : 'Выйти из аккаунта'}</Text>
           </Pressable>
-        </View>
+        </Animated.View>
       </ScrollView>
     </View>
   );

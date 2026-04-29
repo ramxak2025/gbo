@@ -24,7 +24,7 @@ export default function AddStudentScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const t = dark ? '#fff' : '#111';
   const t2 = dark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.35)';
-  const inputStyle = { backgroundColor: dark ? 'rgba(255,255,255,0.07)' : '#fff', borderWidth: 1, borderColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', borderRadius: 14, padding: 14, color: t, fontSize: 15, marginBottom: 12 };
+  const inputStyle = { backgroundColor: dark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.80)', borderWidth: 1, borderColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', borderRadius: 14, padding: 14, color: t, fontSize: 15, marginBottom: 12 };
 
   const handleSubmit = async () => {
     if (!name.trim()) { Alert.alert('Введите ФИО'); return; }
@@ -66,7 +66,7 @@ export default function AddStudentScreen({ navigation }) {
           <DateButton label="Абонемент до" value={subExpires} onChange={setSubExpires} style={{ marginBottom: 12 }} />
           <TextInput value={password} onChangeText={setPassword} placeholder="Пароль" placeholderTextColor={t2} style={inputStyle} />
           <Pressable onPress={handleSubmit} disabled={loading} style={({ pressed }) => ({ backgroundColor: '#dc2626', borderRadius: 14, paddingVertical: 14, alignItems: 'center', opacity: loading ? 0.5 : pressed ? 0.85 : 1, marginTop: 8 })}>
-            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>Добавить ученика</Text>
+            <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>{loading ? 'Добавление...' : 'Добавить ученика'}</Text>
           </Pressable>
         </View>
       </ScrollView>

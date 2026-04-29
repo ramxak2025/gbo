@@ -210,7 +210,7 @@ export default function TournamentsScreen({ navigation }) {
         {/* Empty */}
         {sorted.length === 0 && allInternal.length === 0 && (
           <View style={{ alignItems: 'center', paddingVertical: 48 }}>
-            <Swords size={48} color={dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.15)'} />
+            <Trophy size={48} color={dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.15)'} style={{ opacity: 0.3 }} />
             <Text style={{ fontSize: 14, color: dark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.5)', marginTop: 12 }}>Нет турниров</Text>
             {auth.role === 'trainer' && (
               <Pressable

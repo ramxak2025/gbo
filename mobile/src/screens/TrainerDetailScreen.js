@@ -19,7 +19,15 @@ export default function TrainerDetailScreen({ route, navigation }) {
   const t = dark ? '#fff' : '#111';
   const t2 = dark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';
 
-  if (!trainer) return <View style={{ flex: 1, backgroundColor: dark ? '#050505' : '#f5f5f7', justifyContent: 'center', alignItems: 'center' }}><Text style={{ color: t2 }}>Тренер не найден</Text></View>;
+  if (!trainer) return (
+    <View style={{ flex: 1, backgroundColor: dark ? '#050505' : '#f5f5f7' }}>
+      <PageHeader title="Тренер" back />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Users size={48} color={t2} style={{ opacity: 0.3 }} />
+        <Text style={{ color: t2, marginTop: 12 }}>Тренер не найден</Text>
+      </View>
+    </View>
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: dark ? '#050505' : '#f5f5f7' }}>

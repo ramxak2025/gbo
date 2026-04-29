@@ -173,20 +173,20 @@ export default function GroupsScreen({ navigation }) {
                   {g.attendanceEnabled ? (
                     <Pressable
                       onPress={() => navigation.navigate('Attendance', { groupId: g.id })}
-                      style={({ pressed }) => ({ padding: 8, opacity: pressed ? 0.6 : 1 })}
+                      style={({ pressed }) => ({ padding: 8, opacity: pressed ? 0.6 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] })}
                     >
                       <ClipboardList size={16} color="#4ade80" />
                     </Pressable>
                   ) : null}
                   <Pressable
                     onPress={() => setEditGroup({ ...g })}
-                    style={({ pressed }) => ({ padding: 8, opacity: pressed ? 0.6 : 1 })}
+                    style={({ pressed }) => ({ padding: 8, opacity: pressed ? 0.6 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] })}
                   >
                     <Edit3 size={16} color={dark ? 'rgba(255,255,255,0.4)' : '#6b7280'} />
                   </Pressable>
                   <Pressable
                     onPress={() => handleDelete(g.id)}
-                    style={({ pressed }) => ({ padding: 8, opacity: pressed ? 0.6 : 1 })}
+                    style={({ pressed }) => ({ padding: 8, opacity: pressed ? 0.6 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] })}
                   >
                     <Trash2 size={16} color="#f87171" />
                   </Pressable>

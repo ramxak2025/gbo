@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import {
-  Calendar, MapPin, Trash2, Edit3, Flame, X, Users, Camera,
+  Calendar, MapPin, Trash2, Edit3, Flame, X, Users, Camera, Trophy,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
@@ -37,7 +37,8 @@ export default function TournamentDetailScreen({ route, navigation }) {
       <View style={{ flex: 1, backgroundColor: dark ? '#050505' : '#f5f5f7' }}>
         <PageHeader title="Турнир" back />
         <View style={{ paddingHorizontal: 16, paddingVertical: 48, alignItems: 'center' }}>
-          <Text style={{ color: dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.5)', fontSize: 14 }}>Турнир не найден</Text>
+          <Trophy size={48} color={dark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'} style={{ opacity: 0.3 }} />
+          <Text style={{ color: dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.5)', fontSize: 14, marginTop: 12 }}>Турнир не найден</Text>
         </View>
       </View>
     );
@@ -168,6 +169,11 @@ export default function TournamentDetailScreen({ route, navigation }) {
               width: '100%', paddingVertical: 16, borderRadius: 20,
               flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
               opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.96 : 1 }],
+              shadowColor: isRegistered ? '#f97316' : '#dc2626',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.2,
+              shadowRadius: 8,
+              elevation: 4,
               ...(isRegistered
                 ? { backgroundColor: 'rgba(249,115,22,0.2)', borderWidth: 1, borderColor: 'rgba(249,115,22,0.3)' }
                 : { backgroundColor: '#dc2626' }),

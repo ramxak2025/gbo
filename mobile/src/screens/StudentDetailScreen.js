@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import {
   Phone, Calendar, Scale, Award, Trash2, Edit3, Camera, Dumbbell,
-  CreditCard, ClipboardList, Key,
+  CreditCard, ClipboardList, Key, Users,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
@@ -91,7 +91,8 @@ export default function StudentDetailScreen({ route, navigation }) {
       <View style={{ flex: 1, backgroundColor: dark ? '#050505' : '#f5f5f7' }}>
         <PageHeader title="Ученик" back />
         <View style={{ paddingHorizontal: 16, paddingVertical: 48, alignItems: 'center' }}>
-          <Text style={{ color: dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.5)', fontSize: 14 }}>Ученик не найден</Text>
+          <Users size={48} color={dark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'} style={{ opacity: 0.3 }} />
+          <Text style={{ color: dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.5)', fontSize: 14, marginTop: 12 }}>Ученик не найден</Text>
         </View>
       </View>
     );
@@ -156,14 +157,14 @@ export default function StudentDetailScreen({ route, navigation }) {
     }
   };
 
-  const inputStyle = {
+  const inputStyle = useMemo(() => ({
     width: '100%', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 16,
     fontSize: 16,
     backgroundColor: dark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.70)',
     borderWidth: 1,
     borderColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.60)',
     color: dark ? '#fff' : '#111',
-  };
+  }), [dark]);
 
   const labelColor = dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.5)';
   const dimColor = dark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
