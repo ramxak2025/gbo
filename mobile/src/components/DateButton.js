@@ -64,6 +64,7 @@ export default function DateButton({ label, value, onChange, style }) {
           borderWidth: 1,
           ...pillStyle,
           opacity: pressed ? 0.7 : 1,
+          transform: [{ scale: pressed ? 0.96 : 1 }],
         })}
       >
         <Calendar size={12} color={textColor} />

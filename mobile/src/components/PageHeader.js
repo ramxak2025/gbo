@@ -63,12 +63,13 @@ export default function PageHeader({ title, back, gradient, children }) {
           <Pressable
             onPress={() => navigation.goBack()}
             style={({ pressed }) => ({
-              padding: 8,
+              padding: 12,
               borderRadius: 12,
               backgroundColor: dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
               marginRight: 8,
               opacity: pressed ? 0.6 : 1,
             })}
+            hitSlop={4}
           >
             <ChevronLeft size={20} color={dark ? '#fff' : '#111'} />
           </Pressable>

@@ -68,6 +68,11 @@ export default function DashboardScreen({ navigation }) {
   const t3 = dark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.25)';
   const bg = dark ? '#050505' : '#f5f5f7';
 
+  const addNewsBtnStyle = { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 14, backgroundColor: 'rgba(220,38,38,0.12)', borderWidth: 1, borderColor: 'rgba(220,38,38,0.20)', marginBottom: 16 };
+  const newsEmptyStyle = { alignItems: 'center', paddingVertical: 24 };
+
+  const balanceDisplay = useMemo(() => `${balance >= 0 ? '+' : ''}${balance.toLocaleString('ru-RU')} ₽`, [balance]);
+
   return (
     <View style={{ flex: 1, backgroundColor: bg }}>
       {/* Background blobs */}
@@ -126,7 +131,7 @@ export default function DashboardScreen({ navigation }) {
               <GlassCard onPress={() => navigation.navigate('Cash')} style={{ marginBottom: 16 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                   <Text style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 28, fontWeight: '900', color: balance >= 0 ? '#22c55e' : '#ef4444' }}>{balance >= 0 ? '+' : ''}{balance.toLocaleString('ru-RU')} ₽</Text>
+                    <Text style={{ fontSize: 28, fontWeight: '900', color: balance >= 0 ? '#22c55e' : '#ef4444' }}>{balanceDisplay}</Text>
                   </Text>
                 </View>
                 <View style={{ flexDirection: 'row', gap: 16 }}>
@@ -163,26 +168,33 @@ export default function DashboardScreen({ navigation }) {
               )}
 
               {/* Add news */}
-              <Pressable onPress={() => setNewsModal(true)} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 14, backgroundColor: 'rgba(220,38,38,0.12)', borderWidth: 1, borderColor: 'rgba(220,38,38,0.20)', marginBottom: 16, opacity: pressed ? 0.7 : 1 })}>
+              <Pressable onPress={() => setNewsModal(true)} style={({ pressed }) => ({ ...addNewsBtnStyle, opacity: pressed ? 0.7 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] })}>
                 <Megaphone size={16} color="#dc2626" />
                 <Text style={{ fontSize: 14, fontWeight: '700', color: '#dc2626' }}>Добавить новость</Text>
               </Pressable>
 
               {/* News */}
-              {data.news?.filter(n => n.trainerId === auth.userId).slice(0, 3).map(n => (
-                <GlassCard key={n.id} style={{ marginBottom: 8 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                    <Newspaper size={16} color={t2} />
-                    <View style={{ marginLeft: 10, flex: 1 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: t }} numberOfLines={1}>{n.title}</Text>
-                      {!!n.content && <Text style={{ fontSize: 13, color: t2, marginTop: 2 }} numberOfLines={2}>{n.content}</Text>}
+              {data.news?.filter(n => n.trainerId === auth.userId).length > 0 ? (
+                data.news.filter(n => n.trainerId === auth.userId).slice(0, 3).map(n => (
+                  <GlassCard key={n.id} style={{ marginBottom: 8 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                      <Newspaper size={16} color={t2} />
+                      <View style={{ marginLeft: 10, flex: 1 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: t }} numberOfLines={1}>{n.title}</Text>
+                        {!!n.content && <Text style={{ fontSize: 13, color: t2, marginTop: 2 }} numberOfLines={2}>{n.content}</Text>}
+                      </View>
+                      <Pressable onPress={() => Alert.alert('Удалить?', '', [{ text: 'Отмена' }, { text: 'Удалить', style: 'destructive', onPress: () => deleteNews(n.id) }])} style={{ padding: 4 }}>
+                        <Trash2 size={14} color="rgba(239,68,68,0.6)" />
+                      </Pressable>
                     </View>
-                    <Pressable onPress={() => Alert.alert('Удалить?', '', [{ text: 'Отмена' }, { text: 'Удалить', style: 'destructive', onPress: () => deleteNews(n.id) }])} style={{ padding: 4 }}>
-                      <Trash2 size={14} color="rgba(239,68,68,0.6)" />
-                    </Pressable>
-                  </View>
-                </GlassCard>
-              ))}
+                  </GlassCard>
+                ))
+              ) : (
+                <View style={newsEmptyStyle}>
+                  <Newspaper size={48} color={t2} style={{ opacity: 0.3 }} />
+                  <Text style={{ fontSize: 14, color: t2, marginTop: 8 }}>Нет новостей</Text>
+                </View>
+              )}
             </>
           )}
 
@@ -257,10 +269,10 @@ export default function DashboardScreen({ navigation }) {
               )}
 
               {/* News */}
-              {data.news?.length > 0 && (
-                <View style={{ marginBottom: 16 }}>
-                  <Text style={{ fontSize: 16, fontWeight: '700', color: t, marginBottom: 10 }}>Новости</Text>
-                  {data.news.slice(-3).reverse().map(n => (
+              <View style={{ marginBottom: 16 }}>
+                <Text style={{ fontSize: 16, fontWeight: '700', color: t, marginBottom: 10 }}>Новости</Text>
+                {data.news?.length > 0 ? (
+                  data.news.slice(-3).reverse().map(n => (
                     <GlassCard key={n.id} style={{ marginBottom: 8 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
                         <Newspaper size={16} color={t2} />
@@ -270,9 +282,14 @@ export default function DashboardScreen({ navigation }) {
                         </View>
                       </View>
                     </GlassCard>
-                  ))}
-                </View>
-              )}
+                  ))
+                ) : (
+                  <View style={newsEmptyStyle}>
+                    <Newspaper size={48} color={t2} style={{ opacity: 0.3 }} />
+                    <Text style={{ fontSize: 14, color: t2, marginTop: 8 }}>Нет новостей</Text>
+                  </View>
+                )}
+              </View>
             </>
           )}
 

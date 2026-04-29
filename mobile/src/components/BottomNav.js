@@ -86,8 +86,8 @@ const styles = StyleSheet.create({
   containerDark: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 32, elevation: 16 },
   containerLight: { shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 32, elevation: 8 },
   tabs: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', height: 62, paddingHorizontal: 8 },
-  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, paddingVertical: 6, borderRadius: 16 },
+  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, paddingVertical: 6, borderRadius: 16, minWidth: 48 },
   tabActiveDark: { backgroundColor: 'rgba(255,255,255,0.12)' },
   tabActiveLight: { backgroundColor: 'rgba(0,0,0,0.06)' },
-  label: { fontSize: 9, letterSpacing: 0.3 },
+  label: { fontSize: 10, letterSpacing: 0.3 },
 });

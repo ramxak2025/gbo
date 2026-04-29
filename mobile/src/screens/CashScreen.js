@@ -8,6 +8,7 @@ import {
   TrendingUp, TrendingDown, ChevronLeft, ChevronRight,
   BarChart3, Wallet, PieChart, Sparkles,
 } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { useTheme } from '../context/ThemeContext';
@@ -45,6 +46,7 @@ function SuccessOverlay({ type, amount, onDone }) {
   const isIncome = type === 'income';
 
   useEffect(() => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Animated.parallel([
       Animated.timing(opacity, { toValue: 1, duration: 300, useNativeDriver: true }),
       Animated.spring(scale, { toValue: 1, friction: 6, useNativeDriver: true }),
@@ -576,7 +578,7 @@ export default function CashScreen({ navigation }) {
             })}
             {filteredTx.length === 0 && (
               <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                <BarChart3 size={32} color={dark ? 'rgba(255,255,255,0.2)' : '#d1d5db'} style={{ marginBottom: 8, opacity: 0.5 }} />
+                <BarChart3 size={48} color={dark ? 'rgba(255,255,255,0.2)' : '#d1d5db'} style={{ marginBottom: 8, opacity: 0.3 }} />
                 <Text style={{ fontSize: 14, fontWeight: '500', color: dark ? 'rgba(255,255,255,0.2)' : '#d1d5db' }}>
                   Нет транзакций
                 </Text>

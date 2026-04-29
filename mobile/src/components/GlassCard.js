@@ -8,12 +8,13 @@ import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 
-export default function GlassCard({ children, style, onPress, padding = 16, borderRadius = 20, intensity = 'regular', glow }) {
+export default function GlassCard({ children, style, onPress, padding = 16, borderRadius = 20, intensity = 'regular', glow, disabled }) {
   const { dark } = useTheme();
 
   const blurAmount = intensity === 'strong' ? 60 : intensity === 'subtle' ? 20 : 40;
 
   const handlePress = () => {
+    if (disabled) return;
     if (onPress) {
       if (Platform.OS !== 'web') {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -52,8 +53,10 @@ export default function GlassCard({ children, style, onPress, padding = 16, bord
     return (
       <Pressable
         onPress={handlePress}
+        disabled={disabled}
         style={({ pressed }) => [
-          pressed && { transform: [{ scale: 0.97 }], opacity: 0.85 },
+          pressed && !disabled && { transform: [{ scale: 0.96 }], opacity: 0.85 },
+          disabled && { opacity: 0.5 },
           !dark && !glow && { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2 },
           style,
         ]}
@@ -63,5 +66,5 @@ export default function GlassCard({ children, style, onPress, padding = 16, bord
     );
   }
 
-  return <View style={[!dark && { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2 }, style]}>{cardContent}</View>;
+  return <View style={[!dark && { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2 }, disabled && { opacity: 0.5 }, style]}>{cardContent}</View>;
 }

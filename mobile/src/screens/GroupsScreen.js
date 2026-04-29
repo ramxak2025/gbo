@@ -3,7 +3,7 @@ import {
   View, Text, TextInput, ScrollView, Pressable, Alert, Switch,
 } from 'react-native';
 import {
-  Plus, Trash2, Edit3, ClipboardList,
+  Plus, Trash2, Edit3, ClipboardList, Dumbbell,
 } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
@@ -130,7 +130,7 @@ export default function GroupsScreen({ navigation }) {
       <PageHeader title="Группы" back>
         <Pressable
           onPress={() => setShowAdd(true)}
-          style={({ pressed }) => ({ padding: 8, opacity: pressed ? 0.6 : 1 })}
+          style={({ pressed }) => ({ padding: 8, opacity: pressed ? 0.6 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] })}
         >
           <Plus size={20} color={dark ? '#fff' : '#111'} />
         </Pressable>
@@ -228,9 +228,15 @@ export default function GroupsScreen({ navigation }) {
           );
         })}
         {myGroups.length === 0 && (
-          <Text style={{ textAlign: 'center', paddingVertical: 48, fontSize: 14, color: dark ? 'rgba(255,255,255,0.3)' : '#6b7280' }}>
-            Нет групп. Нажмите + чтобы создать.
-          </Text>
+          <View style={{ alignItems: 'center', paddingVertical: 48 }}>
+            <Dumbbell size={48} color={dark ? 'rgba(255,255,255,0.2)' : '#d1d5db'} style={{ opacity: 0.3 }} />
+            <Text style={{ fontSize: 14, fontWeight: '500', color: dark ? 'rgba(255,255,255,0.3)' : '#6b7280', marginTop: 12 }}>
+              Нет групп
+            </Text>
+            <Text style={{ fontSize: 12, color: dark ? 'rgba(255,255,255,0.2)' : '#9ca3af', marginTop: 4 }}>
+              Нажмите + чтобы создать
+            </Text>
+          </View>
         )}
       </ScrollView>
 

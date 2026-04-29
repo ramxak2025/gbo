@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, ScrollView, Pressable, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, Pressable, Alert, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Users, TrendingUp, Dumbbell, Bell, LogOut, MapPin, Shield, Award, Scale, Calendar, CreditCard, Phone, ChevronRight, Crown } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
@@ -28,6 +28,10 @@ export default function ProfileScreen({ navigation }) {
   const isTrainer = auth.role === 'trainer';
   const isStudent = auth.role === 'student';
 
+  const [loggingOut, setLoggingOut] = useState(false);
+  const fadeAnim = useState(new Animated.Value(0))[0];
+  useEffect(() => { Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start(); }, []);
+
   const t = dark ? '#fff' : '#111';
   const t2 = dark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.45)';
   const bg = dark ? '#050505' : '#f5f5f7';
@@ -36,7 +40,7 @@ export default function ProfileScreen({ navigation }) {
   const handleLogout = () => {
     Alert.alert('Выйти?', 'Вы уверены?', [
       { text: 'Отмена' },
-      { text: 'Выйти', style: 'destructive', onPress: logout },
+      { text: 'Выйти', style: 'destructive', onPress: async () => { setLoggingOut(true); try { await logout(); } finally { setLoggingOut(false); } } },
     ]);
   };
 
@@ -47,7 +51,7 @@ export default function ProfileScreen({ navigation }) {
       <ScrollView contentContainerStyle={{ paddingBottom: 128 }} showsVerticalScrollIndicator={false}>
         <PageHeader title="Профиль" back />
 
-        <View style={{ paddingHorizontal: 16 }}>
+        <Animated.View style={{ paddingHorizontal: 16, opacity: fadeAnim }}>
           {/* Hero */}
           <GlassCard style={{ marginBottom: 16, alignItems: 'center', padding: 24 }}>
             <View style={{ borderWidth: 3, borderColor: ringColor, borderRadius: 50, padding: 3, marginBottom: 12 }}>

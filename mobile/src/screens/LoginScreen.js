@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, ScrollView, Pressable, KeyboardAvoidingView,
   Platform, Dimensions, ActivityIndicator, Linking, Alert, Animated as RNAnimated,
+  Keyboard, StyleSheet,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -95,7 +96,7 @@ export default function LoginScreen({ onLogin }) {
       )}
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24, paddingTop: insets.top + 60 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24, paddingTop: insets.top + 60 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} onScrollBeginDrag={Keyboard.dismiss}>
           <RNAnimated.View style={{ maxWidth: 400, width: '100%', alignSelf: 'center', opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
             {mode === 'login' && (
@@ -252,5 +253,3 @@ export default function LoginScreen({ onLogin }) {
     </View>
   );
 }
-
-const StyleSheet = require('react-native').StyleSheet;
