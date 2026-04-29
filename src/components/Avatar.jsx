@@ -10,7 +10,8 @@ export default function Avatar({ src, name, size = 40, className = '' }) {
     return (
       <img
         src={src}
-        alt={name}
+        alt={name || 'Avatar'}
+        loading="lazy"
         className={`rounded-full object-cover ${className}`}
         style={{ width: size, height: size }}
       />

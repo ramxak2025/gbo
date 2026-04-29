@@ -2,9 +2,20 @@ import { useTheme } from '../context/ThemeContext'
 
 export default function GlassCard({ children, className = '', onClick }) {
   const { dark } = useTheme()
+
+  const handleKeyDown = (e) => {
+    if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault()
+      onClick(e)
+    }
+  }
+
   return (
     <div
       onClick={onClick}
+      onKeyDown={onClick ? handleKeyDown : undefined}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
       className={`
         rounded-[20px] p-4
         backdrop-blur-xl glass-hover

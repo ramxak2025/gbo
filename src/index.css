@@ -126,6 +126,23 @@ input, select, textarea {
   opacity: 0.85;
 }
 
+/* Focus visible for keyboard navigation */
+.press-scale:focus-visible {
+  outline: 2px solid rgba(139, 92, 246, 0.5);
+  outline-offset: 2px;
+}
+
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid rgba(139, 92, 246, 0.4);
+  outline-offset: 1px;
+}
+
+/* Smoother glass transitions */
+.glass-card-enter {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
 /* === Bottom sheet modal === */
 .modal-overlay {
   animation: overlayIn 0.3s ease-out forwards;
